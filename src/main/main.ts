@@ -13,6 +13,11 @@ import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
 import dotenv from 'dotenv';
+import {
+  installExtension,
+  REACT_DEVELOPER_TOOLS,
+  REDUX_DEVTOOLS,
+} from 'electron-devtools-installer';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 
@@ -83,6 +88,14 @@ const createWindow = async () => {
         : path.join(__dirname, '../../.erb/dll/preload.js'),
     },
   });
+
+  if (isDebug) {
+    mainWindow.webContents.once('dom-ready', async () => {
+      await installExtension([REDUX_DEVTOOLS, REACT_DEVELOPER_TOOLS])
+        .then((name) => console.log(`Added Extension:  ${name}`))
+        .catch((err) => console.log('An error occurred: ', err));
+    });
+  }
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
 

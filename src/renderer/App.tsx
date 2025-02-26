@@ -1,8 +1,8 @@
-import { MemoryRouter as Router, Route, Routes } from 'react-router';
+import { RouterProvider } from 'react-router';
 import './App.module.scss';
 import { Auth0Provider } from '@auth0/auth0-react';
-import Root from '../routes/Root';
-import Login from '../routes/Login';
+import StoreProvider from '../provider/StoreProvider';
+import router from '../constants/routes';
 
 export default function App() {
   return (
@@ -16,16 +16,12 @@ export default function App() {
       }}
       cacheLocation="localstorage"
       onRedirectCallback={(appState) => {
-        console.log(appState);
         window.location.href = appState?.returnTo || '/login';
       }}
     >
-      <Router>
-        <Routes>
-          <Route path="/" element={<Root />} />
-          <Route path="/login" element={<Login />} />
-        </Routes>
-      </Router>
+      <StoreProvider>
+        <RouterProvider router={router} />
+      </StoreProvider>
     </Auth0Provider>
   );
 }

@@ -1,20 +1,24 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { notification } from 'antd';
 import { ProjectDataType } from './types';
+import { readProjects } from '../../../../api/projects';
 
 export const fetchProjects = createAsyncThunk(
   'projects/fetchProjects',
   async (orgSlug: string, { rejectWithValue }) => {
     try {
-      // Replace with your actual API call, e.g.:
-      // const fetchedProjects = await readProjects(orgSlug);
-      // return fetchedProjects.map((project: any) => ({
-      //   id: project.id,
-      //   title: project.title,
-      //   details: project.details,
-      //   organization: project.organization,
-      // }));
-      return [] as ProjectDataType[];
+      const fetchedProjects = await readProjects(orgSlug);
+
+      const transformedProjects: ProjectDataType[] = fetchedProjects.map(
+        (project: any) => ({
+          id: project.id,
+          title: project.title,
+          details: project.details,
+          organization: project.organization,
+        }),
+      );
+
+      return transformedProjects;
     } catch (error: any) {
       console.error('[Thunk] Failed to fetch projects:', error);
       notification.error({

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Button, Modal } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { OrganizationBlockModalForm } from './OrganizationBlockModalForm';
-import * as styles from './OrganizationBlockModal.module.scss';
+import styles from './OrganizationBlockModal.module.scss';
 import { OrganizationBlockDataType } from '../../../Context/OrganizationItemsContext';
 
 interface OrganizationBlockModalProps {
@@ -17,13 +17,13 @@ interface OrganizationBlockModalProps {
   onDelete: () => Promise<void>;
 }
 
-export const OrganizationBlockModal = ({
+export function OrganizationBlockModal({
   selectedBlocks,
   isModalOpen,
   onAdd,
   onEdit,
   onDelete,
-}: OrganizationBlockModalProps) => {
+}: OrganizationBlockModalProps) {
   const [open, setOpen] = useState(isModalOpen);
 
   const handleAdd = async (data: Omit<OrganizationBlockDataType, '_id'>) => {
@@ -37,13 +37,8 @@ export const OrganizationBlockModal = ({
 
       const updatedData = { ...data };
 
-      console.log('Editing block with old slug:', blockToEdit.slug);
-      console.log('Editing block with new data:', updatedData);
-
       onEdit(updatedData, blockToEdit.slug)
-        .then(() => {
-          console.log('Block edited successfully:', updatedData);
-        })
+        .then()
         .catch((error) => {
           console.error('Error editing block:', error);
         });
@@ -101,4 +96,4 @@ export const OrganizationBlockModal = ({
       </Modal>
     </>
   );
-};
+}

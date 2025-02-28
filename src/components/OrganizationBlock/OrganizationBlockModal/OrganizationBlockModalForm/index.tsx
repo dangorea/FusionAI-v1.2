@@ -1,17 +1,17 @@
 import React, { useEffect } from 'react';
 import { Button, Form, Input } from 'antd';
 import { OrganizationBlockDataType } from '../../../../Context/OrganizationItemsContext';
-import * as styles from './OrganizationBlockModalForm.module.scss';
+import styles from './OrganizationBlockModalForm.module.scss';
 
 interface OrganizationBlockModalFormProps {
   onSubmit: (data: Omit<OrganizationBlockDataType, '_id' | 'key'>) => void;
   block?: OrganizationBlockDataType;
 }
 
-export const OrganizationBlockModalForm = ({
+export function OrganizationBlockModalForm({
   onSubmit,
   block,
-}: OrganizationBlockModalFormProps) => {
+}: OrganizationBlockModalFormProps) {
   const [form] = Form.useForm();
 
   useEffect(() => {
@@ -29,7 +29,6 @@ export const OrganizationBlockModalForm = ({
     slug: string;
     description: string;
   }) => {
-    console.log('Submitting data from form:', values);
     onSubmit({
       name: values.name,
       slug: values.slug,
@@ -80,4 +79,4 @@ export const OrganizationBlockModalForm = ({
       </Form.Item>
     </Form>
   );
-};
+}

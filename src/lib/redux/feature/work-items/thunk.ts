@@ -8,6 +8,12 @@ import {
   UpdateWorkItemParams,
 } from './types';
 import { WorkItem } from '../../../../types/common';
+import {
+  createWorkItem as createWorkItemApi,
+  deleteWorkItem as deleteWorkItemApi,
+  fetchWorkItems,
+  updateWorkItem,
+} from '../../../../api/workItems';
 
 export const loadWorkItemsThunk = createAsyncThunk<
   LoadWorkItemsResponse,
@@ -19,17 +25,14 @@ export const loadWorkItemsThunk = createAsyncThunk<
     { rejectWithValue },
   ) => {
     try {
-      console.log('loadWorkItemsThunk', {
-        page,
-        limit,
-        searchTerm,
+      const response = await fetchWorkItems(
         orgSlug,
         projectId,
-      });
-      // Replace with your actual API call, e.g.:
-      // const response = await fetchWorkItems(orgSlug, projectId, page, limit, searchTerm);
-      // return response;
-      return {} as LoadWorkItemsResponse;
+        searchTerm,
+        limit,
+        page,
+      );
+      return response;
     } catch (error: any) {
       console.error('Error loading work items:', error);
       return rejectWithValue(error);
@@ -44,12 +47,13 @@ export const createWorkItemThunk = createAsyncThunk<
   'workItems/createWorkItem',
   async ({ orgSlug, projectId, description }, { rejectWithValue }) => {
     try {
-      console.log('createWorkItemThunk', { description, orgSlug, projectId });
-      // Replace with your actual API call, e.g.:
-      // const newWorkItem = await createWorkItemApi(orgSlug, projectId, { description });
-      // return newWorkItem;
-      return {} as WorkItem;
+      const newWorkItem = await createWorkItemApi(orgSlug, projectId, {
+        description,
+        projectId,
+      });
+      return newWorkItem;
     } catch (error: any) {
+      console.error('Error creating work item:', error);
       return rejectWithValue(error);
     }
   },
@@ -62,12 +66,9 @@ export const updateWorkItemThunk = createAsyncThunk<
   'workItems/updateWorkItem',
   async ({ orgSlug, projectId, workItem }, { rejectWithValue }) => {
     try {
-      console.log('updateWorkItemThunk', { workItem, orgSlug, projectId });
-      // Replace with your actual API call, e.g.:
-      // const updatedItem = await updateWorkItem(orgSlug, projectId, workItem);
-      // notification.success({ message: 'Work Item Updated Successfully' });
-      // return updatedItem;
-      return {} as WorkItem;
+      const updatedItem = await updateWorkItem(orgSlug, projectId, workItem);
+      notification.success({ message: 'Work Item Updated Successfully' });
+      return updatedItem;
     } catch (error: any) {
       console.error('Error updating work item:', error);
       notification.error({
@@ -86,9 +87,7 @@ export const deleteWorkItemThunk = createAsyncThunk<
   'workItems/deleteWorkItem',
   async ({ orgSlug, projectId, id }, { rejectWithValue }) => {
     try {
-      console.log('deleteWorkItemThunk', { orgSlug, projectId, id });
-      // Replace with your actual API call, e.g.:
-      // await deleteWorkItemApi(orgSlug, projectId, id);
+      await deleteWorkItemApi(orgSlug, projectId, id);
       return id;
     } catch (error: any) {
       console.error('Error deleting work item:', error);

@@ -8,9 +8,7 @@ export interface OrganizationBlockDataType {
 }
 
 export interface OrganizationBlockState {
-  // Normalized state shape
   ids: EntityId[];
   entities: Record<string, OrganizationBlockDataType>;
-  // UI state: selected organization is stored as its slug
   selectedOrganization: string | null;
 }

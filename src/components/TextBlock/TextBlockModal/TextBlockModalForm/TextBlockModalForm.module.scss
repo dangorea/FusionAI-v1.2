@@ -1,0 +1,15 @@
+.form {
+  label {
+    font-size: 20px;
+    color: var(--app-color-title);
+    font-weight: bold;
+  }
+
+  .submitButtonForm {
+    display: flex;
+    justify-content: flex-end;
+    span {
+      color: var(--app-color-white);
+    }
+  }
+}

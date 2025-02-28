@@ -1,0 +1,28 @@
+.componentRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  gap: 10px;
+}
+
+.textBlocksList {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  padding: 1em;
+  overflow-y: auto;
+}
+
+.appBar {
+  position: sticky;
+  z-index: 0;
+  bottom: 0;
+  background-color: #ffffff;
+}
+
+.actions {
+  display: flex;
+  gap: 1em;
+  padding: 1em;
+  justify-content: flex-end;
+}

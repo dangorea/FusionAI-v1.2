@@ -1,0 +1,28 @@
+.card {
+  min-height: 300px;
+}
+
+.card-header {
+  padding: 0 1em;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .card-title {
+    color: var(--app-color-title);
+    margin: 0;
+  }
+
+  .actions {
+    display: flex;
+    align-items: center;
+
+    .action-button {
+      margin-left: 8px;
+
+      &:hover {
+        color: var(--app-color-iconHover);
+      }
+    }
+  }
+}

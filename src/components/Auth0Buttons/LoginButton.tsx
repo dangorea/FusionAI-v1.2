@@ -1,7 +1,7 @@
 import { useAuth0 } from '@auth0/auth0-react';
-import { Avatar, Button, message, Space, Tooltip, Typography } from 'antd';
+import { Button, Space, Avatar, Tooltip, Typography, message } from 'antd';
 import { useEffect } from 'react';
-// import { setAuthToken } from '../../api/utils/axiosInstance';
+import { setAuthToken } from '../../api/utils/axiosInstance';
 import { CopyOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -15,7 +15,7 @@ const LoginButton = () => {
       if (isAuthenticated) {
         try {
           const token = await getAccessTokenSilently();
-          // setAuthToken(token);
+          setAuthToken(token);
         } catch (error) {
           console.error('Failed to fetch token:', error);
         }
@@ -37,10 +37,6 @@ const LoginButton = () => {
         });
     }
   };
-
-  if (!user) {
-    return null;
-  }
 
   return isAuthenticated ? (
     <Space>

@@ -17,7 +17,9 @@ const organizationSlice = createSlice({
       state,
       action: PayloadAction<OrganizationBlockDataType | null>,
     ) {
-      state.selectedOrganization = action.payload ? action.payload.slug : null;
+      state.selectedOrganization = action.payload
+        ? (action.payload._id ?? null)
+        : null;
     },
     addOrganizationBlock: organizationAdapter.addOne,
     setOrganizationBlocks: organizationAdapter.setAll,

@@ -7,9 +7,20 @@ const selectOrganizationState = (state: RootState) => state.organization;
 export const {
   selectAll: selectAllOrganizations,
   selectById: selectOrganizationById,
-} = organizationAdapter.getSelectors(selectOrganizationState);
+  selectEntities: selectOrganizationEntities,
+  selectIds: selectOrganizationIds,
+  selectTotal: selectOrganizationTotal,
+} = organizationAdapter.getSelectors<RootState>(selectOrganizationState);
 
-export const selectCurrentOrgSlug = createSelector(
+export const selectCurrentOrganizationId = createSelector(
   selectOrganizationState,
   (state) => state.selectedOrganization || 'default',
+);
+
+export const selectSelectedOrganizationEntity = createSelector(
+  [selectAllOrganizations, selectCurrentOrganizationId],
+  (organizations, currentId) => {
+    if (!currentId) return null;
+    return organizations.find((org) => org._id === currentId) ?? null;
+  },
 );

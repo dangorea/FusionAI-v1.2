@@ -8,7 +8,6 @@ export interface TextBlockDataType {
 }
 
 export interface TextBlockState {
-  // Normalized state shape
   ids: EntityId[];
   entities: Record<string, TextBlockDataType>;
 }

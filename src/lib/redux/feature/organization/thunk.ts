@@ -1,15 +1,13 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { notification } from 'antd';
+import { readOrganizationBlocks } from '../../../../api/organizationBlocks';
 
 export const fetchOrganizationBlocks = createAsyncThunk(
   'orgBlocks/fetchOrganizationBlocks',
   async (_, { rejectWithValue }) => {
     try {
-      console.log('[Thunk] Fetching organization blocks...');
-      // Replace the following with your actual API call, e.g.:
-      // const blocks = await readOrganizationBlocks();
-      // return blocks;
-      return []; // For now, return an empty array
+      const blocks = await readOrganizationBlocks();
+      return blocks;
     } catch (error: any) {
       console.error('[Thunk] Failed to fetch organization blocks:', error);
       notification.error({

@@ -5,5 +5,5 @@ export const organizationAdapter = createEntityAdapter<
   OrganizationBlockDataType,
   EntityId
 >({
-  selectId: (block) => block.slug,
+  selectId: (block) => block._id!,
 });

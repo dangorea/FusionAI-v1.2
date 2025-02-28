@@ -1,0 +1,34 @@
+.header {
+  display: flex;
+  padding: 0 10px;
+  background-color: var(--app-color-itemBackground);
+}
+
+.burgerBtn {
+  margin: 16px;
+  border: none;
+
+  svg {
+    transition: fill 0.3s ease;
+
+    &:hover {
+      fill: var(--app-color-iconHover);
+    }
+  }
+}
+
+.pageTitle {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.content {
+  height: 100%;
+  padding: 6px 16px;
+  width: 100%;
+}
+
+.styledBox {
+  flex: 1;
+  overflow: auto;
+}

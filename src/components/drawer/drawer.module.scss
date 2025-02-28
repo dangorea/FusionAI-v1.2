@@ -1,0 +1,44 @@
+.list-item {
+  cursor: pointer;
+  padding-right: 10px;
+  display: flex;
+  justify-content: flex-start;
+  transition: background-color 0.3s ease;
+
+  .text {
+    display: flex;
+    align-items: center;
+    text-decoration: inherit;
+    color: inherit;
+  }
+
+  &:hover {
+    background-color: var(--app-color-itemHover);
+
+    .icon {
+      color: goldenrod;
+      transition: color 0.3s ease, fill 0.3s ease;
+    }
+  }
+
+  .icon {
+    margin: 0 10px;
+    font-size: 18px;
+    color: inherit;
+  }
+}
+
+.close-button {
+  font-size: 16px;
+  width: 100%;
+  margin: 10px 0;
+  border: none;
+  display: flex;
+  align-items: center;
+  transition: color 0.3s ease;
+
+  &:hover svg {
+    transform: translateX(-10px);
+    transition: transform 0.5s ease;
+  }
+}

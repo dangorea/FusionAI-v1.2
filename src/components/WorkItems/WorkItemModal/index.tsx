@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, Form, Input, Button } from 'antd';
+import { Button, Form, Input, Modal } from 'antd';
 import { WorkItem } from '../../../api/types/WorkItem';
 
 interface WorkItemsModalProps {
@@ -16,8 +16,6 @@ export const WorkItemsModal: React.FC<WorkItemsModalProps> = ({
   const [form] = Form.useForm();
 
   const handleFinish = (values: { id?: string; description: string }) => {
-    console.log('Submitting Work Item:', values);
-
     const data = {
       id: values.id,
       description: values.description,
@@ -42,10 +40,7 @@ export const WorkItemsModal: React.FC<WorkItemsModalProps> = ({
           name="description"
           rules={[{ required: true, message: 'Please input the description!' }]}
         >
-          <Input.TextArea 
-            placeholder="Enter description"
-            rows={4}
-          />
+          <Input.TextArea placeholder="Enter description" rows={4} />
         </Form.Item>
 
         <Form.Item>

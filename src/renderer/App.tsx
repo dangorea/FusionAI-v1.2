@@ -1,10 +1,15 @@
-import { RouterProvider } from 'react-router';
-import './App.module.scss';
+import React from 'react';
 import { Auth0Provider } from '@auth0/auth0-react';
+import { RouterProvider } from 'react-router';
+import { useIndexedDB } from '../database';
 import StoreProvider from '../provider/StoreProvider';
-import router from '../constants/routes';
+import router from '../app/router';
+import './App.module.scss';
+// import './global.css';
 
 export default function App() {
+  useIndexedDB();
+
   return (
     <Auth0Provider
       domain={window.env.AUTH0_DOMAIN}

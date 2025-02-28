@@ -16,6 +16,10 @@ module.exports = {
     'import/prefer-default-export': 'warn',
     'no-underscore-dangle': 'off',
     'class-methods-use-this': 'off',
+    'react/require-default-props': [
+      'error',
+      { ignoreFunctionalComponents: true },
+    ],
   },
   parserOptions: {
     ecmaVersion: 2022,

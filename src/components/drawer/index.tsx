@@ -27,12 +27,6 @@ export function DrawerRenderer({ open, onClose }: DrawerProps) {
         return '/work-items';
       case DrawerOption.OrganizationManagement:
         return '/organization-management';
-      case DrawerOption.PromptGenerator:
-        return '/prompt-generator';
-      case DrawerOption.ShellExecutor:
-        return '/shell-executor';
-      case DrawerOption.GPTIntegrator:
-        return '/gpt-integrator';
       default:
         return '/';
     }

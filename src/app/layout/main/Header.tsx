@@ -6,9 +6,9 @@ import {
 } from '@ant-design/icons';
 import styles from './main-layout.module.scss';
 import { OrganizationDropdown } from '../../../components/OrganizationBlock/OrganizationDropDown';
-import { ProjectsDropdown } from '../../../components/ProjectsDropdown';
-import LoginButton from '../../../components/Auth0Buttons/LoginButton';
-import LogoutButton from '../../../components/Auth0Buttons/LogoutButton';
+import { ProjectsDropdown } from '../../../components/Project/ProjectsDropdown';
+import UserAvatar from './UserAvatar';
+import LogoutButton from './logout-button';
 
 const { Header, Content } = Layout;
 
@@ -26,16 +26,14 @@ export default function LayoutHeader({
   onCreateWorkItem,
 }: AppHeaderProps) {
   const getPageTitle = (path: string) => {
-    if (path.includes('prompt-generator')) return 'Prompt Generator';
     if (path.includes('organizations')) return 'Organizations';
     if (path.includes('projects')) return 'Projects';
     if (path.includes('work-items')) return 'Work Items';
     if (path.includes('text-blocks')) return 'Rules';
-    if (path.includes('shell-executor')) return 'Shell Executor';
-    if (path.includes('gpt-integrator')) return 'GPT Integrator';
     if (path.includes('organization-management'))
       return 'Organization Management';
     if (path.includes('settings')) return 'Settings';
+    return '';
   };
 
   return (
@@ -74,7 +72,7 @@ export default function LayoutHeader({
           Create Work Item
         </Button>
         <div>
-          <LoginButton />
+          <UserAvatar />
           <LogoutButton />
         </div>
       </Content>

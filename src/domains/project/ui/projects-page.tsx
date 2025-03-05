@@ -5,40 +5,36 @@ import styles from './Projects.module.scss';
 import { NOTIFICATION_DURATION_SHORT } from '../../../utils/notifications';
 
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
-import { selectCurrentOrganizationId } from '../../../lib/redux/feature/organization/selectors';
+import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
 import { selectAllProjects } from '../../../lib/redux/feature/projects/selectors';
-import {
-  addProject,
-  deleteProject,
-  editProject,
-} from '../../../lib/redux/feature/projects/reducer';
-import { ProjectDataType } from '../../../lib/redux/feature/projects/types';
+import { ProjectType } from '../model/type';
 
 import {
-  createProject,
-  deleteProject as apiDeleteProject,
-  updateProject,
-} from '../../../api/projects';
+  createProjectThunk,
+  deleteProjectsThunk,
+  updateProjectThunk,
+} from '../../../lib/redux/feature/projects/thunk';
 
 export function Projects() {
   const dispatch = useAppDispatch();
   const projects = useAppSelector(selectAllProjects);
-  const orgId = useAppSelector(selectCurrentOrganizationId);
+  const org = useAppSelector(selectSelectedOrganizationEntity);
 
-  const [selectedProjects, setSelectedProjects] = useState<ProjectDataType[]>(
-    [],
-  );
-  const [isModalOpen] = useState(false);
+  const [selectedProjects, setSelectedProjects] = useState<ProjectType[]>([]);
 
-  const handleAddProject = async (newProject: {
-    id?: string | undefined;
-    title: string;
-    details: string;
-  }) => {
+  const handleAddProject = async (
+    newProject: Pick<ProjectType, 'title' | 'details'>,
+  ) => {
     try {
-      if (!orgId) throw new Error('No organization selected');
-      const createdProject = await createProject(orgId, newProject);
-      dispatch(addProject(createdProject));
+      if (!org?.slug) throw new Error('No organization selected');
+
+      await dispatch(
+        createProjectThunk({
+          orgSlug: org.slug,
+          newProject,
+        }),
+      ).unwrap();
+
       notification.success({
         message: 'Project Added',
         duration: NOTIFICATION_DURATION_SHORT,
@@ -51,20 +47,22 @@ export function Projects() {
     }
   };
 
-  const handleEditProject = async (updatedProject: {
-    id?: string | undefined;
-    title: string;
-    details: string;
-  }) => {
+  const handleEditProject = async (
+    updatedProject: Pick<ProjectType, 'id' | 'title' | 'details'>,
+  ) => {
     try {
-      if (!orgId) throw new Error('No organization selected');
+      if (!org?.slug) throw new Error('No organization selected');
       if (!updatedProject.id) {
-        console.error('Project ID is missing for update.', updatedProject);
         throw new Error('Project ID is missing for update.');
       }
 
-      const response = await updateProject(orgId, updatedProject);
-      dispatch(editProject(response));
+      await dispatch(
+        updateProjectThunk({
+          orgSlug: org.slug,
+          updatedProject,
+        }),
+      ).unwrap();
+
       notification.success({
         message: 'Project Updated',
         duration: NOTIFICATION_DURATION_SHORT,
@@ -80,17 +78,30 @@ export function Projects() {
 
   const handleDeleteProject = async () => {
     try {
-      if (!orgId) throw new Error('No organization selected');
-      selectedProjects.map(async (project) => {
-        await apiDeleteProject(orgId, project.id);
-        dispatch(deleteProject(project.id));
-      });
+      if (!org?.slug) throw new Error('No organization selected');
+      if (selectedProjects.length === 0) {
+        notification.warning({
+          message: 'No Projects Selected',
+          duration: NOTIFICATION_DURATION_SHORT,
+        });
+        return;
+      }
+
+      const projectIds = selectedProjects.map((p) => p.id);
+
+      await dispatch(
+        deleteProjectsThunk({
+          orgSlug: org.slug,
+          projectIds,
+        }),
+      ).unwrap();
+
+      setSelectedProjects([]);
 
       notification.success({
         message: 'Selected Projects Deleted',
         duration: NOTIFICATION_DURATION_SHORT,
       });
-      setSelectedProjects([]);
     } catch (error) {
       notification.error({
         message: 'Failed to Delete Selected Projects',
@@ -110,7 +121,6 @@ export function Projects() {
     <div className={styles.componentRoot}>
       <ProjectModal
         selectedProjects={selectedProjects}
-        isModalOpen={isModalOpen}
         onAdd={handleAddProject}
         onEdit={handleEditProject}
         onDelete={handleDeleteProject}

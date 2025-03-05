@@ -1,14 +1,8 @@
 import { EntityId } from '@reduxjs/toolkit';
-
-export interface ProjectDataType {
-  id: string;
-  title: string;
-  details: string;
-  organization: string;
-}
+import { ProjectType } from '../../../../domains/project/model/type';
 
 export interface ProjectsState {
   ids: EntityId[];
-  entities: Record<string, ProjectDataType>;
+  entities: Record<string, ProjectType>;
   selectedProjectId: string | null;
 }

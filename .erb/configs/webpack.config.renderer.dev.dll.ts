@@ -10,6 +10,8 @@ import webpackPaths from './webpack.paths';
 import { dependencies } from '../../package.json';
 import checkNodeEnv from '../scripts/check-node-env';
 
+const Dotenv = require('dotenv-webpack');
+
 checkNodeEnv('development');
 
 const dist = webpackPaths.dllPath;

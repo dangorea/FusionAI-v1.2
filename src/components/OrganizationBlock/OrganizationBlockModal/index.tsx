@@ -1,37 +1,34 @@
 import React, { useState } from 'react';
 import { Button, Modal } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { OrganizationBlockModalForm } from './OrganizationBlockModalForm';
+import { OrganizationModalForm } from './OrganizationBlockModalForm';
 import styles from './OrganizationBlockModal.module.scss';
-import { OrganizationBlockDataType } from '../../../Context/OrganizationItemsContext';
+import { OrganizationType } from '../../../domains/organization/model/types';
 
 interface OrganizationBlockModalProps {
-  selectedBlocks: OrganizationBlockDataType[];
-  isModalOpen: boolean;
-  onClose: () => void;
-  onAdd: (newBlock: Omit<OrganizationBlockDataType, '_id'>) => Promise<void>;
+  selectedBlocks: OrganizationType[];
+  onAdd: (newBlock: Omit<OrganizationType, '_id'>) => Promise<void>;
   onEdit: (
-    updatedBlock: OrganizationBlockDataType,
+    updatedBlock: OrganizationType,
     previousSlug: string,
   ) => Promise<void>;
   onDelete: () => Promise<void>;
 }
 
-export function OrganizationBlockModal({
+export function OrganizationModal({
   selectedBlocks,
-  isModalOpen,
   onAdd,
   onEdit,
   onDelete,
 }: OrganizationBlockModalProps) {
-  const [open, setOpen] = useState(isModalOpen);
+  const [open, setOpen] = useState<boolean>(false);
 
-  const handleAdd = async (data: Omit<OrganizationBlockDataType, '_id'>) => {
+  const handleAdd = async (data: Omit<OrganizationType, '_id'>) => {
     await onAdd(data);
     setOpen(false);
   };
 
-  const handleEdit = (data: Omit<OrganizationBlockDataType, '_id'>) => {
+  const handleEdit = (data: Omit<OrganizationType, '_id'>) => {
     if (selectedBlocks.length > 0) {
       const blockToEdit = selectedBlocks[0];
 
@@ -89,7 +86,7 @@ export function OrganizationBlockModal({
         width={1000}
         footer={null}
       >
-        <OrganizationBlockModalForm
+        <OrganizationModalForm
           onSubmit={selectedBlocks.length ? handleEdit : handleAdd}
           block={selectedBlocks[0] || undefined}
         />

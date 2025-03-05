@@ -1,19 +1,19 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { SearchOutlined } from '@ant-design/icons';
-import { Table, Input } from 'antd';
+import { Input, Table } from 'antd';
 import type { InputRef } from 'antd/es/input';
 import type { FilterDropdownProps } from 'antd/es/table/interface';
-import { OrganizationBlockDataType } from '../../../Context/OrganizationItemsContext';
+import { OrganizationType } from '../../../domains/organization/model/types';
 
 interface OrganizationBlockTableProps {
-  organizationBlocks: OrganizationBlockDataType[];
+  organizationBlocks: OrganizationType[];
   onSelectChange: (selectedIds: React.Key[]) => void;
 }
 
-export const OrganizationBlockTable = ({
+export function OrganizationBlockTable({
   organizationBlocks,
   onSelectChange,
-}: OrganizationBlockTableProps) => {
+}: OrganizationBlockTableProps) {
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -42,9 +42,7 @@ export const OrganizationBlockTable = ({
     setSearchText(selectedKeys[0] || '');
   };
 
-  const getColumnSearchProps = (
-    dataIndex: keyof OrganizationBlockDataType,
-  ) => ({
+  const getColumnSearchProps = (dataIndex: keyof OrganizationType) => ({
     filterDropdown: ({
       setSelectedKeys,
       selectedKeys,
@@ -53,10 +51,10 @@ export const OrganizationBlockTable = ({
       <div style={{ padding: 8 }}>
         <Input
           ref={searchInput}
-          placeholder={`Search`}
+          placeholder="Search"
           value={selectedKeys[0] as string}
           onChange={(e) => {
-            const value = e.target.value;
+            const { value } = e.target;
             setSelectedKeys(value ? [value] : []);
             setSearchText(value);
           }}
@@ -77,7 +75,7 @@ export const OrganizationBlockTable = ({
         }}
       />
     ),
-    onFilter: (value: string, record: OrganizationBlockDataType) => {
+    onFilter: (value: string, record: OrganizationType) => {
       const fieldValue = record[dataIndex];
       return fieldValue
         ? fieldValue.toString().toLowerCase().includes(value.toLowerCase())
@@ -113,7 +111,7 @@ export const OrganizationBlockTable = ({
       title: 'Description',
       dataIndex: 'description',
       key: 'description',
-      render: (text: string, record: OrganizationBlockDataType) => {
+      render: (text: string, record: OrganizationType) => {
         const isExpanded = expandedRowKeys.includes(record._id);
         const contentPreview =
           text && text.length > 1000 && !isExpanded
@@ -151,7 +149,7 @@ export const OrganizationBlockTable = ({
         position: ['bottomRight'],
         style: { position: 'sticky', bottom: 0 },
         current: currentPage,
-        pageSize: pageSize,
+        pageSize,
         total: filteredData.length,
         onChange: (page, size) => {
           setCurrentPage(page);
@@ -163,4 +161,4 @@ export const OrganizationBlockTable = ({
       style={{ width: '100%' }}
     />
   );
-};
+}

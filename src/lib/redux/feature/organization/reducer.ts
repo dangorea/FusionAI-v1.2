@@ -1,8 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { OrganizationBlockDataType, OrganizationBlockState } from './types';
+import { OrganizationBlockState } from './types';
 import { fetchOrganizationBlocks } from './thunk';
 import { organizationAdapter } from './adapter';
 import { ORGANIZATION_REDUCER_NAME } from '../../reducer-constant';
+import { OrganizationType } from '../../../../domains/organization/model/types';
 
 const initialState: OrganizationBlockState =
   organizationAdapter.getInitialState({
@@ -15,7 +16,7 @@ const organizationSlice = createSlice({
   reducers: {
     setSelectedOrganization(
       state,
-      action: PayloadAction<OrganizationBlockDataType | null>,
+      action: PayloadAction<OrganizationType | null>,
     ) {
       state.selectedOrganization = action.payload
         ? (action.payload._id ?? null)

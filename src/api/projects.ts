@@ -1,24 +1,19 @@
-import axiosInstance, { BASE_URL } from './utils/axiosInstance';
-import { DataType } from '../types/common';
+import index, { BASE_URL } from '../services/api';
+import { ProjectType } from '../domains/project/model/type';
 
-export const readProjects = async (orgSlug: string): Promise<DataType[]> => {
+export const readProjects = async (orgSlug: string): Promise<ProjectType[]> => {
   try {
     if (!orgSlug || orgSlug === 'default') {
       return [];
     }
 
     const url = `${BASE_URL}/orgs/${orgSlug}/projects`;
-    const response = await axiosInstance.get(url);
+    const response = await index.get(url);
 
     if (!response.data || !Array.isArray(response.data)) {
       throw new Error('Invalid response structure');
     }
-    return response.data.map((project: any) => ({
-      id: project.id,
-      title: project.title,
-      details: project.details,
-      organization: project.organization,
-    }));
+    return response.data;
   } catch (error) {
     console.error('[API] GET request failed:', error);
     throw error;
@@ -27,11 +22,11 @@ export const readProjects = async (orgSlug: string): Promise<DataType[]> => {
 
 export const createProject = async (
   orgSlug: string,
-  newProject: Omit<DataType, 'id'>,
-): Promise<DataType> => {
+  newProject: Pick<ProjectType, 'title' | 'details'>,
+): Promise<ProjectType> => {
   try {
     const url = `${BASE_URL}/orgs/${orgSlug}/projects`;
-    const response = await axiosInstance.post<DataType>(url, newProject);
+    const response = await index.post<ProjectType>(url, newProject);
     return { ...response.data };
   } catch (error) {
     console.error('[API] POST request failed:', error);
@@ -41,8 +36,8 @@ export const createProject = async (
 
 export const updateProject = async (
   orgSlug: string,
-  updatedProject: DataType,
-): Promise<DataType> => {
+  updatedProject: Pick<ProjectType, 'id' | 'title' | 'details'>,
+): Promise<ProjectType> => {
   try {
     const { id, ...projectWithoutId } = updatedProject;
 
@@ -52,7 +47,7 @@ export const updateProject = async (
     }
 
     const url = `${BASE_URL}/orgs/${orgSlug}/projects/${id}`;
-    const response = await axiosInstance.patch<DataType>(url, projectWithoutId);
+    const response = await index.patch<ProjectType>(url, projectWithoutId);
     return response.data;
   } catch (error) {
     console.error('[API] PATCH request failed:', error);
@@ -69,7 +64,7 @@ export const deleteProject = async (
       throw new Error('Project ID is missing for delete.');
     }
     const url = `${BASE_URL}/orgs/${orgSlug}/projects/${id}`;
-    await axiosInstance.delete(url);
+    await index.delete(url);
   } catch (error) {
     console.error('[API] DELETE request failed:', error);
     throw error;

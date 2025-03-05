@@ -1,19 +1,19 @@
-import React, { useState, useRef } from 'react';
-import { Table, Input } from 'antd';
+import React, { useRef, useState } from 'react';
+import { Input, Table } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import type { InputRef } from 'antd/es/input';
 import type { FilterDropdownProps } from 'antd/es/table/interface';
-import { OrganizationManagementDataType } from '../../../Context/OrganizationManagmentContext';
+import { OrganizationManagementDataType } from '../../../lib/redux/feature/user/types';
 
 interface OrganizationManagementTableProps {
   organizationManagements: OrganizationManagementDataType[];
   onSelectChange: (selectedIds: React.Key[]) => void;
 }
 
-export const OrganizationManagementTable = ({
+export function OrganizationManagementTable({
   organizationManagements,
   onSelectChange,
-}: OrganizationManagementTableProps) => {
+}: OrganizationManagementTableProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchText, setSearchText] = useState<string>('');
@@ -44,10 +44,10 @@ export const OrganizationManagementTable = ({
       <div style={{ padding: 8 }}>
         <Input
           ref={searchInput}
-          placeholder={`Search`}
+          placeholder="Search"
           value={selectedKeys[0] as string}
           onChange={(e) => {
-            const value = e.target.value;
+            const { value } = e.target;
             setSelectedKeys(value ? [value] : []);
             setSearchText(value);
           }}
@@ -81,7 +81,9 @@ export const OrganizationManagementTable = ({
     const roles = item.roles || [];
     return (
       userId.toLowerCase().includes(searchText.toLowerCase()) ||
-      roles.find((role) => role.toLowerCase().includes(searchText.toLowerCase()))
+      roles.find((role) =>
+        role.toLowerCase().includes(searchText.toLowerCase()),
+      )
     );
   });
 
@@ -116,7 +118,7 @@ export const OrganizationManagementTable = ({
         position: ['bottomRight'],
         style: { position: 'sticky', bottom: 0 },
         current: currentPage,
-        pageSize: pageSize,
+        pageSize,
         total: filteredData.length,
         onChange: (page, size) => {
           setCurrentPage(page);
@@ -128,4 +130,4 @@ export const OrganizationManagementTable = ({
       style={{ width: '100%' }}
     />
   );
-};
+}

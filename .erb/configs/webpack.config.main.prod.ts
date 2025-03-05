@@ -7,10 +7,13 @@ import webpack from 'webpack';
 import { merge } from 'webpack-merge';
 import TerserPlugin from 'terser-webpack-plugin';
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
+import * as dotenv from 'dotenv';
 import baseConfig from './webpack.config.base';
 import webpackPaths from './webpack.paths';
 import checkNodeEnv from '../scripts/check-node-env';
 import deleteSourceMaps from '../scripts/delete-source-maps';
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 checkNodeEnv('production');
 deleteSourceMaps();
@@ -69,6 +72,15 @@ const configuration: webpack.Configuration = {
 
     new webpack.DefinePlugin({
       'process.type': '"browser"',
+      'process.env.BASE_URL': JSON.stringify(process.env.BASE_URL),
+      'process.env.AUTH0_DOMAIN': JSON.stringify(process.env.AUTH0_DOMAIN),
+      'process.env.AUTH0_CLIENT_ID': JSON.stringify(
+        process.env.AUTH0_CLIENT_ID,
+      ),
+      'process.env.AUTH0_AUDIENCE': JSON.stringify(process.env.AUTH0_AUDIENCE),
+      'process.env.ELECTRON_START_URL': JSON.stringify(
+        process.env.ELECTRON_START_URL || '',
+      ),
     }),
   ],
 

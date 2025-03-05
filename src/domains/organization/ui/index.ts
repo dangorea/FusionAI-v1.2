@@ -1,2 +1,2 @@
 export { OrganizationManagement } from './organization-management-page';
-export { OrganizationBlocks } from './organization-blocks-page';
+export { Organization } from './organization-page';

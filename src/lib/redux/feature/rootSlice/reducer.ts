@@ -1,8 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { TextBlockDataType } from '../text-blocks/types';
-import { GptFileTreeNode } from '../../../../state/types';
 import { FileTreeNode } from '../../../../ipc';
-import { RootState } from '../../store';
+import { GptFileTreeNode } from '../../../../types/common';
 
 interface RootUIState {
   selectedFiles: string[];
@@ -13,7 +12,6 @@ interface RootUIState {
   description: string;
   taskDescription: string;
   selectedGptFiles: GptFileTreeNode | null;
-  // ... etc.
 }
 
 const initialState: RootUIState = {
@@ -77,16 +75,5 @@ export const {
   setTaskDescription,
   setSelectedGptFiles,
 } = rootSlice.actions;
-
-export const selectDescription = (state: RootState) => state.rootUI.description;
-
-export const selectTaskDescription = (state: RootState) =>
-  state.rootUI.taskDescription;
-
-export const selectSelectedFiles = (state: RootState) =>
-  state.rootUI.selectedFiles;
-
-export const selectSelectedTextBlocks = (state: RootState) =>
-  state.rootUI.selectedTextBlocks;
 
 export default rootSlice.reducer;

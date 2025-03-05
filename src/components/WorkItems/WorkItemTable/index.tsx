@@ -1,21 +1,13 @@
 import React from 'react';
-import { Table, Input } from 'antd';
-import type { NewWorkItem } from '../../../api/types/WorkItem';
+import { Input, Table } from 'antd';
 import dayjs from 'dayjs';
-
-interface Project {
-  id: string;
-  title: string;
-}
+import { WorkItemType } from '../../../domains/work-item/model/types';
 
 interface WorkItemTableProps {
-  workItems: NewWorkItem[];
-  projects: Project[];
+  workItems: WorkItemType[]; // Changed so we can pass the entire item
   selectedRowKeys: React.Key[];
   onSelectChange: (selectedKeys: React.Key[]) => void;
-  expandedRowKeys: string[];
-  toggleExpandRow: (id: string) => void;
-  onRowClick?: (record: NewWorkItem) => void;
+  onRowClick?: (record: WorkItemType) => void;
   currentPage: number;
   pageSize: number;
   total: number;
@@ -23,7 +15,7 @@ interface WorkItemTableProps {
   onSearch?: (value: string) => void;
 }
 
-export const WorkItemTable = ({
+export function WorkItemTable({
   workItems,
   selectedRowKeys,
   onSelectChange,
@@ -33,11 +25,7 @@ export const WorkItemTable = ({
   total,
   onPageChange,
   onSearch,
-}: WorkItemTableProps) => {
-  const workItemsNames = workItems.map((item) => ({
-    ...item,
-  }));
-
+}: WorkItemTableProps) {
   const columns = [
     {
       title: 'Name',
@@ -50,9 +38,10 @@ export const WorkItemTable = ({
       key: 'createdAt',
       width: '20%',
       render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm'),
-      sorter: (a: any, b: any) => dayjs(b.createdAt).unix() - dayjs(a.createdAt).unix(),
+      sorter: (a: any, b: any) =>
+        dayjs(b.createdAt).unix() - dayjs(a.createdAt).unix(),
       defaultSortOrder: 'descend' as const,
-    }
+    },
   ];
 
   return (
@@ -69,13 +58,13 @@ export const WorkItemTable = ({
           onChange: onSelectChange,
         }}
         columns={columns}
-        dataSource={workItemsNames}
+        dataSource={workItems}
         rowKey="id"
         scroll={{ y: 800 }}
         pagination={{
           current: currentPage,
-          pageSize: pageSize,
-          total: total,
+          pageSize,
+          total,
           onChange: onPageChange,
         }}
         style={{ width: '100%' }}
@@ -86,4 +75,4 @@ export const WorkItemTable = ({
       />
     </>
   );
-};
+}

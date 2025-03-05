@@ -3,12 +3,10 @@ import { Button, Modal } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { OrganizationManagementModalForm } from './OrganizationManagementModalForm';
 import styles from './OrganizationManagementModal.module.scss';
-import { OrganizationManagementDataType } from '../../../Context/OrganizationManagmentContext';
+import { OrganizationManagementDataType } from '../../../lib/redux/feature/user/types';
 
 interface OrganizationManagementModalProps {
   selectedManagements: OrganizationManagementDataType[];
-  isModalOpen: boolean;
-  onClose: () => void;
   onAdd: (newManagement: OrganizationManagementDataType) => Promise<void>;
   onEdit: (updatedManagement: OrganizationManagementDataType) => Promise<void>;
   onDelete: () => Promise<void>;
@@ -16,12 +14,11 @@ interface OrganizationManagementModalProps {
 
 export function OrganizationManagementModal({
   selectedManagements,
-  isModalOpen,
   onAdd,
   onEdit,
   onDelete,
 }: OrganizationManagementModalProps) {
-  const [open, setOpen] = useState(isModalOpen);
+  const [open, setOpen] = useState<boolean>(false);
 
   const handleAdd = async (data: OrganizationManagementDataType) => {
     await onAdd(data);

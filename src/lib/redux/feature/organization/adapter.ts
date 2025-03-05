@@ -1,5 +1,5 @@
 import { createEntityAdapter, EntityId } from '@reduxjs/toolkit';
-import { OrganizationBlockDataType } from './types';
+import { OrganizationType } from './types';
 
 export const organizationAdapter = createEntityAdapter<
   OrganizationBlockDataType,

@@ -2,34 +2,25 @@ import React, { useState } from 'react';
 import { Button, Modal } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { ProjectModalForm } from './ProjectModalForm';
-import { DirectorySelector } from '../../DirectorySelector';
 import styles from './ProjectModal.module.scss';
-import { DataType } from '../../../types/common';
+import { ProjectType } from '../../../domains/project/model/type';
 
 interface ProjectModalProps {
-  selectedProjects: DataType[];
-  isModalOpen: boolean;
-  onAdd: (newProject: {
-    id?: string;
-    title: string;
-    details: string;
-  }) => Promise<void>;
-  onEdit: (updatedProject: {
-    id?: string;
-    title: string;
-    details: string;
-  }) => Promise<void>;
+  selectedProjects: ProjectType[];
+  onAdd: (newProject: Pick<ProjectType, 'title' | 'details'>) => Promise<void>;
+  onEdit: (
+    updatedProject: Pick<ProjectType, 'id' | 'title' | 'details'>,
+  ) => Promise<void>;
   onDelete: () => Promise<void>;
 }
 
 export function ProjectModal({
   selectedProjects,
-  isModalOpen,
   onAdd,
   onEdit,
   onDelete,
 }: ProjectModalProps) {
-  const [open, setOpen] = useState(isModalOpen);
+  const [open, setOpen] = useState(false);
 
   const handleAdd = async (data: { title: string; details: string }) => {
     await onAdd(data);
@@ -91,12 +82,6 @@ export function ProjectModal({
           onSubmit={selectedProjects.length ? handleEdit : handleAdd}
           project={selectedProjects[0] || null}
         />
-
-        {selectedProjects.length > 0 && (
-          <div className={styles.directorySelectorContainer}>
-            <DirectorySelector projectId={selectedProjects[0].id} />
-          </div>
-        )}
       </Modal>
     </>
   );

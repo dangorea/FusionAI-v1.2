@@ -1,33 +1,55 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button, Form, Input, Modal } from 'antd';
-import { WorkItem } from '../../../api/types/WorkItem';
+import { WorkItemType } from '../../../domains/work-item/model/types';
+
+type PartialWorkItem = Pick<WorkItemType, 'description'>;
 
 interface WorkItemsModalProps {
   isModalOpen: boolean;
+  modalMode: 'create' | 'edit' | null;
+  editingItemIds?: string[];
+  allWorkItems?: WorkItemType[];
   onClose: () => void;
-  onSubmit: (data: Pick<WorkItem, 'description' | 'projectId'>) => void;
+  onCreate: (data: PartialWorkItem) => void;
+  onEdit: (data: PartialWorkItem) => void;
 }
 
-export const WorkItemsModal: React.FC<WorkItemsModalProps> = ({
+export function WorkItemsModal({
   isModalOpen,
+  modalMode,
+  editingItemIds = [],
+  allWorkItems = [],
   onClose,
-  onSubmit,
-}) => {
+  onCreate,
+  onEdit,
+}: WorkItemsModalProps) {
   const [form] = Form.useForm();
 
-  const handleFinish = (values: { id?: string; description: string }) => {
-    const data = {
-      id: values.id,
-      description: values.description,
-    };
+  const itemsToEdit = allWorkItems.filter((w) => editingItemIds.includes(w.id));
 
-    onSubmit(data);
+  useEffect(() => {
+    if (modalMode === 'edit' && itemsToEdit.length === 1) {
+      form.setFieldsValue({ description: itemsToEdit[0].description });
+    } else {
+      form.resetFields();
+    }
+  }, [modalMode, itemsToEdit, form]);
+
+  const handleFinish = (value: PartialWorkItem) => {
+    if (modalMode === 'edit') {
+      onEdit(value);
+    } else {
+      onCreate(value);
+    }
     form.resetFields();
   };
 
+  // Decide the title based on mode:
+  const title = modalMode === 'edit' ? 'Edit Work Item(s)' : 'Add Work Item';
+
   return (
     <Modal
-      title="Add Work Item"
+      title={title}
       centered
       open={isModalOpen}
       onCancel={onClose}
@@ -44,11 +66,12 @@ export const WorkItemsModal: React.FC<WorkItemsModalProps> = ({
         </Form.Item>
 
         <Form.Item>
-          <Button type="primary" htmlType="submit">
+          <Button type="primary" htmlType="submit" style={{ marginRight: 8 }}>
             Submit
           </Button>
+          <Button onClick={onClose}>Cancel</Button>
         </Form.Item>
       </Form>
     </Modal>
   );
-};
+}

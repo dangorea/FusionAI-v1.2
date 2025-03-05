@@ -1,14 +1,14 @@
 import React, { useEffect } from 'react';
 import { Button, Form, Input } from 'antd';
-import { OrganizationBlockDataType } from '../../../../Context/OrganizationItemsContext';
 import styles from './OrganizationBlockModalForm.module.scss';
+import { OrganizationType } from '../../../../domains/organization/model/types';
 
 interface OrganizationBlockModalFormProps {
-  onSubmit: (data: Omit<OrganizationBlockDataType, '_id' | 'key'>) => void;
-  block?: OrganizationBlockDataType;
+  onSubmit: (data: Omit<OrganizationType, '_id' | 'key'>) => void;
+  block?: OrganizationType;
 }
 
-export function OrganizationBlockModalForm({
+export function OrganizationModalForm({
   onSubmit,
   block,
 }: OrganizationBlockModalFormProps) {

@@ -1,4 +1,4 @@
-import axiosInstance, { BASE_URL } from './utils/axiosInstance';
+import index, { BASE_URL } from '../services/api';
 import { OrganizationManagementDataType } from '../lib/redux/feature/user/types';
 
 const ORGANIZATION_MANAGEMENT_URL = `${BASE_URL}/orgs`;
@@ -8,8 +8,7 @@ export const fetchOrganizationMembers = async (
 ): Promise<OrganizationManagementDataType[]> => {
   try {
     const url = `${ORGANIZATION_MANAGEMENT_URL}/${slug}/members`;
-    const response =
-      await axiosInstance.get<OrganizationManagementDataType[]>(url);
+    const response = await index.get<OrganizationManagementDataType[]>(url);
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('[API] GET request failed for members:', error);
@@ -23,7 +22,7 @@ export const addOrganizationMember = async (
 ): Promise<OrganizationManagementDataType> => {
   try {
     const url = `${ORGANIZATION_MANAGEMENT_URL}/${slug}/members`;
-    const response = await axiosInstance.post<OrganizationManagementDataType>(
+    const response = await index.post<OrganizationManagementDataType>(
       url,
       newMember,
     );
@@ -40,7 +39,7 @@ export const updateOrganizationMemberRole = async (
 ): Promise<OrganizationManagementDataType> => {
   try {
     const url = `${ORGANIZATION_MANAGEMENT_URL}/${slug}/members`;
-    const response = await axiosInstance.patch<OrganizationManagementDataType>(
+    const response = await index.patch<OrganizationManagementDataType>(
       url,
       updatedData,
     );
@@ -61,7 +60,7 @@ export const removeOrganizationMember = async (
 ): Promise<void> => {
   try {
     const url = `${ORGANIZATION_MANAGEMENT_URL}/${slug}/members`;
-    await axiosInstance.delete(url, { data });
+    await index.delete(url, { data });
   } catch (error) {
     console.error('[API] DELETE request failed for removing member:', error);
     throw error;

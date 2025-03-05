@@ -1,5 +1,5 @@
 import { EntityId } from '@reduxjs/toolkit';
-import { WorkItem } from '../../../../types/common';
+import { WorkItemType } from '../../../../domains/work-item/model/types';
 
 export interface LoadWorkItemsParams {
   page?: number;
@@ -10,34 +10,29 @@ export interface LoadWorkItemsParams {
 }
 
 export interface LoadWorkItemsResponse {
-  data: WorkItem[];
+  data: WorkItemType[];
   totalCount: number;
   totalPages: number;
   currentPage: number;
 }
 
-export interface CreateWorkItemParams {
+export interface CreateWorkItemParams
+  extends Pick<WorkItemType, 'projectId' | 'description'> {
   orgSlug: string;
-  projectId: string;
-  description: string;
 }
 
-export interface UpdateWorkItemParams {
+export interface UpdateWorkItemParams extends Pick<WorkItemType, 'projectId'> {
   orgSlug: string;
-  projectId: string;
-  workItem: WorkItem;
+  workItem: Pick<WorkItemType, 'id' | 'description'>;
 }
 
-export interface DeleteWorkItemParams {
+export interface DeleteWorkItemParams
+  extends Pick<WorkItemType, 'id' | 'projectId'> {
   orgSlug: string;
-  projectId: string;
-  id: string;
 }
 
 export interface WorkItemsState {
-  // Normalized state shape
   ids: EntityId[];
-  entities: Record<string, WorkItem>;
-  // UI state: store the editing work item id
+  entities: Record<string, WorkItemType>;
   editingWorkItem: string | null;
 }

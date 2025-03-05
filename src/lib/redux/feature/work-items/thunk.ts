@@ -7,13 +7,13 @@ import {
   LoadWorkItemsResponse,
   UpdateWorkItemParams,
 } from './types';
-import { WorkItem } from '../../../../types/common';
 import {
   createWorkItem as createWorkItemApi,
   deleteWorkItem as deleteWorkItemApi,
   fetchWorkItems,
   updateWorkItem,
 } from '../../../../api/workItems';
+import { WorkItemType } from '../../../../domains/work-item/model/types';
 
 export const loadWorkItemsThunk = createAsyncThunk<
   LoadWorkItemsResponse,
@@ -41,17 +41,16 @@ export const loadWorkItemsThunk = createAsyncThunk<
 );
 
 export const createWorkItemThunk = createAsyncThunk<
-  WorkItem,
+  WorkItemType,
   CreateWorkItemParams
 >(
   'workItems/createWorkItem',
   async ({ orgSlug, projectId, description }, { rejectWithValue }) => {
     try {
-      const newWorkItem = await createWorkItemApi(orgSlug, projectId, {
+      return await createWorkItemApi(orgSlug, projectId, {
         description,
         projectId,
       });
-      return newWorkItem;
     } catch (error: any) {
       console.error('Error creating work item:', error);
       return rejectWithValue(error);
@@ -60,7 +59,7 @@ export const createWorkItemThunk = createAsyncThunk<
 );
 
 export const updateWorkItemThunk = createAsyncThunk<
-  WorkItem,
+  WorkItemType,
   UpdateWorkItemParams
 >(
   'workItems/updateWorkItem',

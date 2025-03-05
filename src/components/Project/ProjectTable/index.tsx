@@ -1,19 +1,19 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { SearchOutlined } from '@ant-design/icons';
-import { Table, Input } from 'antd';
+import { Input, Table } from 'antd';
 import type { InputRef } from 'antd/es/input';
 import type { FilterDropdownProps } from 'antd/es/table/interface';
-import { DataType } from '../../../Context/ProjectsContext';
+import { ProjectType } from '../../../domains/project/model/type';
 
 interface ProjectTableProps {
-  projectBlocks: DataType[];
+  projectBlocks: ProjectType[];
   onSelectChange: (selectedIds: React.Key[]) => void;
 }
 
-export const ProjectTable = ({
+export function ProjectTable({
   projectBlocks,
   onSelectChange,
-}: ProjectTableProps) => {
+}: ProjectTableProps) {
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -42,7 +42,7 @@ export const ProjectTable = ({
     setSearchText(selectedKeys[0] || '');
   };
 
-  const getColumnSearchProps = (dataIndex: keyof DataType) => ({
+  const getColumnSearchProps = (dataIndex: keyof ProjectType) => ({
     filterDropdown: ({
       setSelectedKeys,
       selectedKeys,
@@ -51,10 +51,10 @@ export const ProjectTable = ({
       <div style={{ padding: 8 }}>
         <Input
           ref={searchInput}
-          placeholder={`Search`}
+          placeholder="Search"
           value={selectedKeys[0] as string}
           onChange={(e) => {
-            const value = e.target.value;
+            const { value } = e.target;
             setSelectedKeys(value ? [value] : []);
             setSearchText(value);
           }}
@@ -75,7 +75,7 @@ export const ProjectTable = ({
         }}
       />
     ),
-    onFilter: (value: string, record: DataType) => {
+    onFilter: (value: string, record: ProjectType) => {
       const fieldValue = record[dataIndex];
       return fieldValue
         ? fieldValue.toString().toLowerCase().includes(value.toLowerCase())
@@ -86,7 +86,7 @@ export const ProjectTable = ({
   const filteredData = (projectBlocks || []).filter((item) => {
     const title = item.title || '';
     const details = item.details || '';
-    const organization = item.organization || '';
+    const organization = item.orgId || '';
     return (
       title.toLowerCase().includes(searchText.toLowerCase()) ||
       details.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -112,7 +112,7 @@ export const ProjectTable = ({
       title: 'Details',
       dataIndex: 'details',
       key: 'details',
-      render: (text: string, record: DataType) => {
+      render: (text: string, record: ProjectType) => {
         const isExpanded = expandedRowKeys.includes(record.id);
         const contentPreview =
           text && text.length > 1000 && !isExpanded
@@ -120,17 +120,16 @@ export const ProjectTable = ({
             : text || '';
 
         return (
-          <span
-            onClick={() => toggleExpandRow(record.id)}
-            style={{ cursor: 'pointer' }}
+          <button
+            type="button"
+            onClick={toggleExpandRow.bind(null, record.id)}
+            style={{ cursor: 'pointer', background: 'none', border: 'none' }}
           >
             {contentPreview}
             {text && text.length > 1000 && !isExpanded && (
-              <span style={{ marginLeft: 5, fontWeight: 'bold' }}>
-                Read more
-              </span>
+              <strong style={{ marginLeft: 5 }}>Read more</strong>
             )}
-          </span>
+          </button>
         );
       },
     },
@@ -150,7 +149,7 @@ export const ProjectTable = ({
         position: ['bottomRight'],
         style: { position: 'sticky', bottom: 0 },
         current: currentPage,
-        pageSize: pageSize,
+        pageSize,
         total: filteredData.length,
         onChange: (page, size) => {
           setCurrentPage(page);
@@ -162,4 +161,4 @@ export const ProjectTable = ({
       style={{ width: '100%' }}
     />
   );
-};
+}

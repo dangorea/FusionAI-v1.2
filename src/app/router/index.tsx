@@ -3,21 +3,30 @@ import { createMemoryRouter } from 'react-router';
 import MainLayout from '../layout/main';
 import { LoginPage } from '../../domains/auth/ui';
 import {
-  OrganizationBlocks,
+  Organization,
   OrganizationManagement,
 } from '../../domains/organization/ui';
 import { Projects } from '../../domains/project/ui';
 import { TextBlocks } from '../../domains/text-block/ui';
 import { WorkItems } from '../../domains/work-item/ui';
-import { PromptGenerator } from '../../domains/prompt-generator/ui';
-import { GPTIntegrator } from '../../domains/gpt-integrator/ui';
 import { Settings } from '../../domains/settings/ui';
 import { Root } from '../../domains/root/ui';
+import { NotFound } from '../error/not-found';
+import { RouterError } from '../error/router-error';
 
 const router = createMemoryRouter([
   {
     path: '/login',
     element: <LoginPage />,
+    errorElement: <RouterError />,
+  },
+  {
+    path: '/main_window',
+    element: (
+      <Root>
+        <MainLayout />
+      </Root>
+    ),
   },
   {
     path: '/',
@@ -26,8 +35,9 @@ const router = createMemoryRouter([
         <MainLayout />
       </Root>
     ),
+    errorElement: <RouterError />,
     children: [
-      { index: true, path: 'organizations', element: <OrganizationBlocks /> },
+      { index: true, path: 'organizations', element: <Organization /> },
       {
         path: 'organization-management',
         element: <OrganizationManagement />,
@@ -35,9 +45,8 @@ const router = createMemoryRouter([
       { path: 'projects', element: <Projects /> },
       { path: 'text-blocks', element: <TextBlocks /> },
       { path: 'work-items', element: <WorkItems /> },
-      { path: 'prompt-generator', element: <PromptGenerator /> },
-      { path: 'gpt-integrator', element: <GPTIntegrator /> },
       { path: 'settings', element: <Settings /> },
+      { path: '*', element: <NotFound /> },
     ],
   },
 ]);

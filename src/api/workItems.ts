@@ -1,19 +1,19 @@
-import axiosInstance, { BASE_URL } from './utils/axiosInstance';
-import { WorkItem } from '../types/common';
+import index, { BASE_URL } from '../services/api';
+import { WorkItemType } from '../domains/work-item/model/types';
 
 const WORK_ITEMS_BASE_URL = (orgSlug: string, projectId: string) =>
   `${BASE_URL}/orgs/${orgSlug}/projects/${projectId}/work-items`;
 
-export type CreateWorkItem = Pick<WorkItem, 'description' | 'projectId'>;
+export type CreateWorkItem = Pick<WorkItemType, 'description' | 'projectId'>;
 
 export const createWorkItem = async (
   orgSlug: string,
   projectId: string,
   data: CreateWorkItem,
-): Promise<WorkItem> => {
+): Promise<WorkItemType> => {
   try {
     const url = WORK_ITEMS_BASE_URL(orgSlug, projectId);
-    const response = await axiosInstance.post<WorkItem>(url, data);
+    const response = await index.post<WorkItemType>(url, data);
     return response.data;
   } catch (error) {
     console.error('[API] POST request failed:', error);
@@ -24,8 +24,8 @@ export const createWorkItem = async (
 export const updateWorkItem = async (
   orgSlug: string,
   projectId: string,
-  updatedWorkItem: WorkItem,
-): Promise<WorkItem> => {
+  updatedWorkItem: Partial<WorkItemType>,
+): Promise<WorkItemType> => {
   try {
     if (!updatedWorkItem || !updatedWorkItem.id) {
       throw new Error(
@@ -35,14 +35,11 @@ export const updateWorkItem = async (
     const { id, ...workItemWithoutId } = updatedWorkItem;
 
     delete workItemWithoutId.compiledMessage;
-    delete workItemWithoutId.projectId;
+    delete (workItemWithoutId as Partial<WorkItemType>).projectId;
 
     const url = `${WORK_ITEMS_BASE_URL(orgSlug, projectId)}/${id}`;
 
-    const response = await axiosInstance.patch<WorkItem>(
-      url,
-      workItemWithoutId,
-    );
+    const response = await index.patch<WorkItemType>(url, workItemWithoutId);
     return response.data;
   } catch (error) {
     console.error('[API] PATCH request failed:', error);
@@ -57,7 +54,7 @@ export const fetchWorkItems = async (
   limit?: number,
   page: number = 1,
 ): Promise<{
-  data: WorkItem[];
+  data: WorkItemType[];
   totalCount: number;
   totalPages: number;
   currentPage: number;
@@ -65,8 +62,8 @@ export const fetchWorkItems = async (
   try {
     const url = `${WORK_ITEMS_BASE_URL(orgSlug, projectId)}?page=${page}&limit=${limit}${searchTerm ? `&search=${searchTerm}` : ''}`;
 
-    const response = await axiosInstance.get<{
-      data: WorkItem[];
+    const response = await index.get<{
+      data: WorkItemType[];
       totalCount: number;
       totalPages: number;
       currentPage: number;
@@ -85,7 +82,7 @@ export const deleteWorkItem = async (
 ): Promise<void> => {
   try {
     const url = `${WORK_ITEMS_BASE_URL(orgSlug, projectId)}/${id}`;
-    return await axiosInstance.delete(url);
+    return await index.delete(url);
   } catch (error) {
     console.error('[API] DELETE request failed:', error);
     throw error;

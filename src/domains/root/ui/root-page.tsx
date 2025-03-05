@@ -1,20 +1,19 @@
-import React, { ReactNode } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import React, { ReactNode, useState } from 'react';
 import { Navigate } from 'react-router';
 import { Space, Spin } from 'antd';
+import { useAppSelector } from '../../../lib/redux/hook';
+import { getToken } from '../../../lib/redux/feature/auth/selectors';
 
-type Props = {
-  children: ReactNode;
-};
+type Props = { children: ReactNode };
 
 export function Root({ children }: Props) {
-  const { isAuthenticated, isLoading } = useAuth0();
+  const token = useAppSelector(getToken);
+  const [loading, setLoading] = useState(false);
 
-  if (isLoading) {
+  if (loading) {
     return (
       <Space
         style={{
-          display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
           height: '100vh',
@@ -25,5 +24,5 @@ export function Root({ children }: Props) {
     );
   }
 
-  return isAuthenticated ? children : <Navigate to="/login" />;
+  return token ? children : <Navigate to="/login" replace />;
 }

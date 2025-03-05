@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import { Button, Form, Input } from 'antd';
 import styles from './ProjectModal.module.scss';
-import { DataType } from '../../../../types/common';
+import { ProjectType } from '../../../../domains/project/model/type';
 
 interface ProjectModalFormProps {
   onSubmit: (data: { title: string; details: string }) => void;
-  project: DataType;
+  project: ProjectType;
 }
 
 export function ProjectModalForm({ onSubmit, project }: ProjectModalFormProps) {
@@ -17,6 +17,8 @@ export function ProjectModalForm({ onSubmit, project }: ProjectModalFormProps) {
         title: project.title,
         details: project.details,
       });
+    } else {
+      form.resetFields();
     }
   }, [project, form]);
 

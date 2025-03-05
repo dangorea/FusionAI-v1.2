@@ -1,6 +1,6 @@
 import type { Middleware } from '@reduxjs/toolkit';
 import type { RootState } from '../store';
-import apiClient from '../../../services/api';
+import { setAuthToken } from '../../../services/api';
 
 export const axiosTokenMiddleware: Middleware =
   (store) => (next) => async (action) => {
@@ -8,9 +8,7 @@ export const axiosTokenMiddleware: Middleware =
 
     const { token } = (store.getState() as RootState).auth;
     if (token) {
-      apiClient.defaults.headers.common.Authorization = `Bearer ${token}`;
-    } else {
-      delete apiClient.defaults.headers.common.Authorization;
+      setAuthToken(token);
     }
 
     return result;

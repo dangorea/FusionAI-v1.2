@@ -1,6 +1,6 @@
 import { createEntityAdapter, EntityId } from '@reduxjs/toolkit';
-import { ProjectDataType } from './types';
+import { ProjectType } from '../../../../domains/project/model/type';
 
-export const projectsAdapter = createEntityAdapter<ProjectDataType, EntityId>({
+export const projectsAdapter = createEntityAdapter<ProjectType, EntityId>({
   selectId: (project) => project.id,
 });

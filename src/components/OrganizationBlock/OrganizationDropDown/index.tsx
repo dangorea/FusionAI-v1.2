@@ -2,8 +2,6 @@ import React, { useEffect } from 'react';
 import { Dropdown, Menu, Space, Typography } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import { LocalStorageKeys } from '../../../utils/localStorageKeys';
-
-// NEW IMPORTS for Redux
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import { fetchOrganizationBlocks } from '../../../lib/redux/feature/organization/thunk';
 import {

@@ -1,16 +1,14 @@
-import axiosInstance, { BASE_URL } from './utils/axiosInstance';
-import { OrganizationBlockDataType } from '../lib/redux/feature/organization/types';
+import index, { BASE_URL } from '../services/api';
+import { OrganizationType } from '../domains/organization/model/types';
 
 const ORGANIZATION_BLOCKS_URL = `${BASE_URL}/orgs`;
 
-export const readOrganizationBlocks = async (): Promise<
-  OrganizationBlockDataType[]
-> => {
+export const readOrganizationBlocks = async (): Promise<OrganizationType[]> => {
   try {
     await new Promise((resolve) => {
       setTimeout(resolve, 1000);
     });
-    const response = await axiosInstance.get<OrganizationBlockDataType[]>(
+    const response = await index.get<OrganizationType[]>(
       ORGANIZATION_BLOCKS_URL,
     );
     return Array.isArray(response.data) ? response.data : [];
@@ -21,10 +19,10 @@ export const readOrganizationBlocks = async (): Promise<
 };
 
 export const createOrganizationBlock = async (
-  newOrganizationBlock: Omit<OrganizationBlockDataType, 'id'>,
-): Promise<OrganizationBlockDataType> => {
+  newOrganizationBlock: Omit<OrganizationType, 'id'>,
+): Promise<OrganizationType> => {
   try {
-    const response = await axiosInstance.post<OrganizationBlockDataType>(
+    const response = await index.post<OrganizationType>(
       ORGANIZATION_BLOCKS_URL,
       newOrganizationBlock,
     );
@@ -36,13 +34,13 @@ export const createOrganizationBlock = async (
 };
 
 export const updateOrganizationBlock = async (
-  updatedOrganizationBlock: OrganizationBlockDataType,
+  updatedOrganizationBlock: OrganizationType,
   previousSlug: string,
-): Promise<OrganizationBlockDataType> => {
+): Promise<OrganizationType> => {
   try {
     const url = `${ORGANIZATION_BLOCKS_URL}/${previousSlug}`;
 
-    const response = await axiosInstance.patch<OrganizationBlockDataType>(
+    const response = await index.patch<OrganizationType>(
       url,
       updatedOrganizationBlock,
     );
@@ -57,7 +55,7 @@ export const updateOrganizationBlock = async (
 export const deleteOrganizationBlock = async (slug: string): Promise<void> => {
   try {
     const url = `${ORGANIZATION_BLOCKS_URL}/${slug}`;
-    await axiosInstance.delete(url);
+    await index.delete(url);
   } catch (error) {
     console.error('[API] DELETE request failed:', error);
     throw error;

@@ -5,6 +5,7 @@ import { DrawerRenderer } from '../../../components/drawer';
 import styles from './main-layout.module.scss';
 import Header from './Header';
 import { WorkItemsModal } from '../../../components';
+import { WorkItemType } from '../../../domains/work-item/model/types';
 
 const { Content } = Layout;
 
@@ -21,10 +22,9 @@ export default function MainLayout() {
     }
   }, [location, navigate]);
 
-  const handleAddWorkItem = async (newItem: {
-    description: string;
-    projectId: string;
-  }) => {
+  const handleAddWorkItem = async (
+    newItem: Pick<WorkItemType, 'description'>,
+  ) => {
     navigate('/prompt-generator');
   };
 
@@ -36,12 +36,15 @@ export default function MainLayout() {
     <Layout style={{ height: '100%' }}>
       <Header
         currentPath={location.pathname}
-        onOpenDrawer={() => setDrawerOpen(true)}
+        onOpenDrawer={setDrawerOpen.bind(null, true)}
         onBackToWorkItems={handleBackToWorkItems}
-        onCreateWorkItem={() => setModalOpen(true)}
+        onCreateWorkItem={setModalOpen.bind(null, true)}
       />
 
-      <DrawerRenderer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
+      <DrawerRenderer
+        open={drawerOpen}
+        onClose={setDrawerOpen.bind(null, false)}
+      />
 
       <Content className={styles.content}>
         <Outlet />
@@ -49,8 +52,12 @@ export default function MainLayout() {
 
       <WorkItemsModal
         isModalOpen={isModalOpen}
-        onClose={() => setModalOpen(false)}
-        onSubmit={handleAddWorkItem}
+        onClose={setModalOpen.bind(null, false)}
+        onCreate={handleAddWorkItem}
+        modalMode="create"
+        onEdit={function (data: { description: string }): void {
+          throw new Error('Function not implemented.');
+        }}
       />
     </Layout>
   );

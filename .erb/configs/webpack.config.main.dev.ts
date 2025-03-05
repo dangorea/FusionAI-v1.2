@@ -6,9 +6,12 @@ import path from 'path';
 import webpack from 'webpack';
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 import { merge } from 'webpack-merge';
+import * as dotenv from 'dotenv';
 import checkNodeEnv from '../scripts/check-node-env';
 import baseConfig from './webpack.config.base';
 import webpackPaths from './webpack.paths';
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // When an ESLint server is running, we can't set the NODE_ENV so we'll check if it's
 // at the dev webpack config is not accidentally run in a production environment
@@ -46,6 +49,15 @@ const configuration: webpack.Configuration = {
 
     new webpack.DefinePlugin({
       'process.type': '"browser"',
+      'process.env.BASE_URL': JSON.stringify(process.env.BASE_URL),
+      'process.env.AUTH0_DOMAIN': JSON.stringify(process.env.AUTH0_DOMAIN),
+      'process.env.AUTH0_CLIENT_ID': JSON.stringify(
+        process.env.AUTH0_CLIENT_ID,
+      ),
+      'process.env.AUTH0_AUDIENCE': JSON.stringify(process.env.AUTH0_AUDIENCE),
+      'process.env.ELECTRON_START_URL': JSON.stringify(
+        process.env.ELECTRON_START_URL || '',
+      ),
     }),
   ],
 

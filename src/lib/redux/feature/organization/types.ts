@@ -1,14 +1,8 @@
 import { EntityId } from '@reduxjs/toolkit';
-
-export interface OrganizationBlockDataType {
-  name: string;
-  slug: string;
-  description: string;
-  _id?: string;
-}
+import { OrganizationType } from '../../../../domains/organization/model/types';
 
 export interface OrganizationBlockState {
   ids: EntityId[];
-  entities: Record<string, OrganizationBlockDataType>;
+  entities: Record<string, OrganizationType>;
   selectedOrganization: string | null;
 }

@@ -8,14 +8,11 @@ import {
 } from '@ant-design/icons';
 
 export enum DrawerOption {
-  PromptGenerator = 'Prompt Generator',
-  ShellExecutor = 'Shell Executor',
   TextBlocks = 'Rules',
   Settings = 'Settings',
   Projects = 'Projects',
-  WorkItems = 'WorkItems',
+  WorkItems = 'Work Items',
   Organizations = 'Organizations',
-  GPTIntegrator = 'GPTIntegrator',
   OrganizationManagement = 'Organization Management',
 }
 

@@ -10,10 +10,13 @@ import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
 import CssMinimizerPlugin from 'css-minimizer-webpack-plugin';
 import { merge } from 'webpack-merge';
 import TerserPlugin from 'terser-webpack-plugin';
+import * as dotenv from 'dotenv';
 import baseConfig from './webpack.config.base';
 import webpackPaths from './webpack.paths';
 import checkNodeEnv from '../scripts/check-node-env';
 import deleteSourceMaps from '../scripts/delete-source-maps';
+
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 checkNodeEnv('production');
 deleteSourceMaps();
@@ -106,6 +109,7 @@ const configuration: webpack.Configuration = {
      * NODE_ENV should be production so that modules do not perform certain
      * development checks
      */
+
     new webpack.EnvironmentPlugin({
       NODE_ENV: 'production',
       DEBUG_PROD: false,
@@ -134,6 +138,15 @@ const configuration: webpack.Configuration = {
 
     new webpack.DefinePlugin({
       'process.type': '"renderer"',
+      'process.env.BASE_URL': JSON.stringify(process.env.BASE_URL),
+      'process.env.AUTH0_DOMAIN': JSON.stringify(process.env.AUTH0_DOMAIN),
+      'process.env.AUTH0_CLIENT_ID': JSON.stringify(
+        process.env.AUTH0_CLIENT_ID,
+      ),
+      'process.env.AUTH0_AUDIENCE': JSON.stringify(process.env.AUTH0_AUDIENCE),
+      'process.env.ELECTRON_START_URL': JSON.stringify(
+        process.env.ELECTRON_START_URL || '',
+      ),
     }),
   ],
 };

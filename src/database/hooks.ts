@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { DB_NAME, DB_STORES_SCHEMAS, DB_VERSION } from './consts';
+import { DB_NAME, DB_STORES_SCHEMAS, DB_VERSION } from '../constants/database';
 import { DBStores } from './types';
 
 function getDatabase(): Promise<IDBDatabase> {

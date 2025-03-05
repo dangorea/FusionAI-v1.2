@@ -1,4 +1,4 @@
-import axiosInstance, { BASE_URL } from './utils/axiosInstance';
+import index, { BASE_URL } from '../services/api';
 import { TextBlockDataType } from '../lib/redux/feature/text-blocks/types';
 
 const TEXT_BLOCKS_BASE_URL = (orgSlug: string) =>
@@ -13,7 +13,7 @@ export const readTextBlocks = async (
     }
     const url = `${BASE_URL}/orgs/${orgSlug}/text-blocks`;
 
-    const response = await axiosInstance.get(url);
+    const response = await index.get(url);
 
     if (!response.data || !Array.isArray(response.data)) {
       throw new Error('Invalid response structure');
@@ -32,10 +32,7 @@ export const createTextBlock = async (
 ): Promise<TextBlockDataType> => {
   try {
     const url = TEXT_BLOCKS_BASE_URL(orgSlug);
-    const response = await axiosInstance.post<TextBlockDataType>(
-      url,
-      newTextBlock,
-    );
+    const response = await index.post<TextBlockDataType>(url, newTextBlock);
     return response.data;
   } catch (error) {
     console.error('[API] POST request failed:', error);
@@ -50,7 +47,7 @@ export const updateTextBlock = async (
   try {
     const { id, ...textBlockWithoutId } = updatedTextBlock;
     const url = `${TEXT_BLOCKS_BASE_URL(orgSlug)}/${id}`;
-    const response = await axiosInstance.patch<TextBlockDataType>(
+    const response = await index.patch<TextBlockDataType>(
       url,
       textBlockWithoutId,
     );
@@ -67,7 +64,7 @@ export const deleteTextBlock = async (
 ): Promise<void> => {
   try {
     const url = `${TEXT_BLOCKS_BASE_URL(orgSlug)}/${id}`;
-    await axiosInstance.delete(url);
+    await index.delete(url);
   } catch (error) {
     console.error('[API] DELETE request failed:', error);
     throw error;

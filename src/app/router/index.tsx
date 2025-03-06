@@ -1,24 +1,24 @@
 import React from 'react';
 import { createMemoryRouter } from 'react-router';
 import MainLayout from '../layout/main';
-import { LoginPage } from '../../domains/auth/ui';
+import { Login } from '../../domains/auth/ui';
 import {
   Organization,
   OrganizationManagement,
 } from '../../domains/organization/ui';
 import { Projects } from '../../domains/project/ui';
-import { TextBlocks } from '../../domains/text-block/ui';
+import { Rules } from '../../domains/rules/ui';
 import { WorkItems } from '../../domains/work-item/ui';
 import { Settings } from '../../domains/settings/ui';
 import { Root } from '../../domains/root/ui';
 import { NotFound } from '../error/not-found';
 import { RouterError } from '../error/router-error';
-import { PromptGeneratorPage } from '../../domains/prompt-generator/ui/PromptGeneratorPage';
+import { PromptGenerator } from '../../domains/prompt-generator/ui';
 
 const router = createMemoryRouter([
   {
     path: '/login',
-    element: <LoginPage />,
+    element: <Login />,
     errorElement: <RouterError />,
   },
   {
@@ -44,10 +44,10 @@ const router = createMemoryRouter([
         element: <OrganizationManagement />,
       },
       { path: 'projects', element: <Projects /> },
-      { path: 'text-blocks', element: <TextBlocks /> },
+      { path: 'rules', element: <Rules /> },
       { path: 'work-items', element: <WorkItems /> },
       { path: 'settings', element: <Settings /> },
-      { path: 'prompt-generator/:id', element: <PromptGeneratorPage /> },
+      { path: 'prompt-generator/:id', element: <PromptGenerator /> },
       { path: '*', element: <NotFound /> },
     ],
   },

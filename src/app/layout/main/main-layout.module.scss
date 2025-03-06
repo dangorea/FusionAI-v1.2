@@ -1,34 +1,44 @@
+/* File: /src/app/layout/main/main-layout.module.scss */
+
+/* Make sure no scroll is forced here */
+.mainLayout {
+  height: 100%;
+  display: flex;
+}
+
+/* Header styling – avoid forcing overflow. */
 .header {
+  /* Keep your custom header styles, but no height: 100%. */
   display: flex;
   padding: 0 10px;
   background-color: var(--app-color-itemBackground);
-}
 
-.burgerBtn {
-  margin: 16px;
-  border: none;
+  .burgerBtn {
+    margin: 16px;
+    border: none;
 
-  svg {
-    transition: fill 0.3s ease;
+    svg {
+      transition: fill 0.3s ease;
 
-    &:hover {
-      fill: var(--app-color-iconHover);
+      &:hover {
+        fill: var(--app-color-iconHover);
+      }
     }
   }
 }
 
-.pageTitle {
-  font-size: 18px;
-  font-weight: 600;
-}
-
+/* Content styling – also no forced height or overflow. */
 .content {
-  height: 100%;
-  padding: 6px 16px;
+  /* If you do want it to expand, just let it flex or block.
+     No overflow here, so we don't scroll in the main content. */
+  flex: 1;
   width: 100%;
+  /* remove overflow: auto; if you had that somewhere */
 }
 
-.styledBox {
-  flex: 1;
+/* Example usage: if you have a special .scrollable class
+   for specific components, do it separately: */
+.scrollable {
   overflow: auto;
+  max-height: 600px; /* or some height limit */
 }

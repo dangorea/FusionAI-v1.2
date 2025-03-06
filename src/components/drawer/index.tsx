@@ -20,7 +20,7 @@ export function DrawerRenderer({ open, onClose }: DrawerProps) {
       case DrawerOption.Projects:
         return '/projects';
       case DrawerOption.TextBlocks:
-        return '/text-blocks';
+        return '/rules';
       case DrawerOption.Settings:
         return '/settings';
       case DrawerOption.WorkItems:

@@ -30,9 +30,7 @@ export async function generateCodeChallenge(
   const encoder = new TextEncoder();
   const data = encoder.encode(codeVerifier);
   const digest = await window.crypto.subtle.digest('SHA-256', data);
-  // Convert ArrayBuffer to base64 string
   const base64String = btoa(String.fromCharCode(...new Uint8Array(digest)));
-  // Convert base64 to base64url
   return base64String
     .replace(/\+/g, '-')
     .replace(/\//g, '_')

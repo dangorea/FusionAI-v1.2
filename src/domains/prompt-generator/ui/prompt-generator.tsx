@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Button, Layout, notification, Space } from 'antd';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Button, Layout, notification } from 'antd';
 import { useAppSelector } from '../../../lib/redux/hook';
 import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
 import { LocalStorageKeys } from '../../../utils/localStorageKeys';
@@ -8,21 +8,28 @@ import FileTree from '../../../components/file-tree';
 import TaskDescriptionInput, {
   TaskDescriptionInputRef,
 } from './components/task-description/task-description-input';
-import CodeViewer from './components/CodeViewer';
+
+import CodeViewer from './components/code-viewer';
 
 const { Sider, Content } = Layout;
 
-export function PromptGeneratorPage() {
+export function PromptGenerator() {
   const selectedProjectId = useAppSelector(selectSelectedProjectId);
   const [projectPath, setProjectPath] = useState<string>('');
   const taskDescRef = useRef<TaskDescriptionInputRef>(null);
+
   const [selectedFiles, setSelectedFiles] = useState<
     { filePath: string; content: string }[]
   >([]);
+
   const [showCodeViewer, setShowCodeViewer] = useState<boolean>(false);
+
   const [originalFileContent, setOriginalFileContent] = useState<string>('');
   const [comparisonFileContent, setComparisonFileContent] =
     useState<string>('');
+
+  console.log('originalFileContent', originalFileContent);
+
   const watchedFiles = useRef<Set<string>>(new Set());
 
   useEffect(() => {
@@ -41,7 +48,7 @@ export function PromptGeneratorPage() {
     return text.replace(pattern, '');
   };
 
-  const handleMultipleSelect = async (filePaths: string[]) => {
+  const handleMultipleSelect = useCallback(async (filePaths: string[]) => {
     const files = await Promise.all(
       filePaths.map(async (filePath) => {
         const content = await window.fileAPI.readFileContent(filePath);
@@ -49,18 +56,20 @@ export function PromptGeneratorPage() {
       }),
     );
     setSelectedFiles(files);
-  };
+  }, []);
 
-  const handleSingleSelect = async (filePath: string) => {
+  const handleSingleSelect = useCallback(async (filePath: string) => {
     const content = await window.fileAPI.readFileContent(filePath);
     console.log('Single file selected for preview:', { filePath, content });
-  };
+  }, []);
 
   useEffect(() => {
     if (taskDescRef.current) {
       const currentContent = taskDescRef.current.getContent();
       const cleanedContent = removeAllFileBlocks(currentContent);
+
       taskDescRef.current.setContent(cleanedContent);
+
       selectedFiles.forEach((file) => {
         taskDescRef.current?.addExtraContent(
           `\n\n=== File: ${file.filePath} ===\n${file.content}\n=== EndFile: ${file.filePath} ===\n\n`,
@@ -98,17 +107,17 @@ export function PromptGeneratorPage() {
         projectPath && data.filePath.startsWith(projectPath)
           ? data.filePath.slice(projectPath.length)
           : data.filePath;
+
       notification.info({
         message: `${rootFolder} File Updated`,
         description: `File changed: ${relativePath}`,
       });
     }) as (...args: unknown[]) => void);
+
     return () => {
       unsubscribe();
     };
   }, [projectPath]);
-
-  console.log();
 
   useEffect(() => {
     const newFilePaths = new Set(selectedFiles.map((file) => file.filePath));
@@ -129,63 +138,69 @@ export function PromptGeneratorPage() {
   }, [selectedFiles]);
 
   return (
-    <Layout style={{ background: '#F5F7FB' }}>
-      <Space
+    <Layout style={{ minHeight: '100vh', background: '#F5F7FB' }}>
+      <Sider
+        width={300}
+        theme="light"
         style={{
+          background: '#fff',
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
+          overflowY: 'auto',
+          padding: '16px 0',
         }}
       >
-        <Sider width={300} className={styles.sider}>
-          {projectPath ? (
-            <FileTree
-              rootPath={projectPath}
-              onFileSelectionChange={handleMultipleSelect}
-              onSingleSelect={handleSingleSelect}
-            />
-          ) : (
-            <p>Please select a directory for this project.</p>
-          )}
-        </Sider>
+        {/* FileTree and Rules */}
+        <div style={{ padding: '0 16px' }}>
+          <FileTree
+            rootPath={projectPath}
+            onFileSelectionChange={handleMultipleSelect}
+            onSingleSelect={handleSingleSelect}
+          />
 
-        <Sider
-          width={300}
-          style={{ background: '#fff', padding: '16px' }}
-          className={styles.sider}
+          <div style={{ marginTop: 16 }}>
+            <h3 style={{ marginBottom: 16 }}>Rules</h3>
+            <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
+              <li style={{ marginBottom: 8, cursor: 'pointer' }}>Rule 1</li>
+              {/* ... more rules ... */}
+            </ul>
+            <Button
+              type="dashed"
+              block
+              style={{ marginTop: 16 }}
+              onClick={() => console.log('Add new text prompt clicked')}
+            >
+              Add new text prompt
+            </Button>
+          </div>
+        </div>
+      </Sider>
+
+      <Layout style={{ background: '#F5F7FB' }}>
+        <Content
+          className={styles.content}
+          style={{
+            padding: '16px',
+            display: 'flex',
+            flexDirection: 'column',
+            overflowY: 'auto',
+          }}
         >
-          <h3 style={{ marginBottom: '16px' }}>Rules</h3>
-          <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-            <li style={{ marginBottom: '8px', cursor: 'pointer' }}>Rule 1</li>
-          </ul>
-          <Button
-            type="dashed"
-            block
-            style={{ marginTop: '16px' }}
-            onClick={() => console.log('Add new text prompt clicked')}
-          >
-            Add new text prompt
-          </Button>
-        </Sider>
-      </Space>
-
-      <Layout>
-        <Content className={styles.content} style={{ height: '100%' }}>
-          {!showCodeViewer ? (
-            <TaskDescriptionInput ref={taskDescRef} onSend={handleSend} />
-          ) : (
-            <CodeViewer
-              originalFile={originalFileContent}
-              comparisonFile={comparisonFileContent}
-              onCommentsUpdate={(comments) =>
-                console.log('Comments updated:', comments)
-              }
-            />
-          )}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {!showCodeViewer ? (
+              <TaskDescriptionInput ref={taskDescRef} onSend={handleSend} />
+            ) : (
+              <CodeViewer
+                originalCode={originalFileContent}
+                modifiedCode={comparisonFileContent}
+                code={originalFileContent}
+                language="typescript"
+              />
+            )}
+          </div>
         </Content>
       </Layout>
     </Layout>
   );
 }
-
-export default PromptGeneratorPage;

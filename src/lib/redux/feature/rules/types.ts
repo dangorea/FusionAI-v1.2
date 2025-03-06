@@ -1,13 +1,13 @@
 import { EntityId } from '@reduxjs/toolkit';
 
-export interface TextBlockDataType {
+export interface RuleType {
   id: string;
   title: string;
   details: string;
   organization?: string;
 }
 
-export interface TextBlockState {
+export interface RuleState {
   ids: EntityId[];
-  entities: Record<string, TextBlockDataType>;
+  entities: Record<string, RuleType>;
 }

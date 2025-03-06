@@ -113,7 +113,6 @@ export function getFileTree(dir: string, isRoot = true) {
           if (stat.isDirectory()) {
             return getFileTree(fullPath, false);
           } else {
-            // Skip files that are too large.
             if (stat.size > MAX_FILE_SIZE) {
               return null;
             }

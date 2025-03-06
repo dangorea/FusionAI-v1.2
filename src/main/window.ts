@@ -36,7 +36,6 @@ export async function createWindow() {
     },
   });
 
-  // Optionally install additional devtools in debug mode
   if (isDebug) {
     mainWindow.webContents.once('dom-ready', async () => {
       try {

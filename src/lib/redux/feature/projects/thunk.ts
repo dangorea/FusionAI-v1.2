@@ -13,7 +13,6 @@ import {
   editProject,
 } from './reducer';
 
-// Already existing fetchProjects
 export const fetchProjects = createAsyncThunk(
   'projects/fetchProjects',
   async (orgSlug: string, { rejectWithValue }) => {
@@ -47,10 +46,8 @@ export const createProjectThunk = createAsyncThunk(
   ) => {
     try {
       const createdProject = await createProject(orgSlug, newProject);
-      // Update store
       dispatch(addProject(createdProject));
 
-      // Optional success notification here (or you can handle in component)
       notification.success({
         message: 'Project Added',
         description: `Project "${createdProject.title}" created successfully!`,
@@ -88,10 +85,8 @@ export const updateProjectThunk = createAsyncThunk(
       }
 
       const response = await updateProject(orgSlug, updatedProject);
-      // Update store
       dispatch(editProject(response));
 
-      // Optional success notification here (or you can handle in component)
       notification.success({
         message: 'Project Updated',
         description: `Project "${response.title}" updated successfully!`,
@@ -124,13 +119,10 @@ export const deleteProjectsThunk = createAsyncThunk(
     { dispatch, rejectWithValue },
   ) => {
     try {
-      // Delete all in parallel
       await Promise.all(projectIds.map((id) => apiDeleteProject(orgSlug, id)));
 
-      // Remove from store
       projectIds.forEach((id) => dispatch(removeProject(id)));
 
-      // Optional success notification here (or you can handle in component)
       notification.success({
         message: 'Selected Projects Deleted',
       });

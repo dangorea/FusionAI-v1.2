@@ -1,11 +1,11 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { TextBlockDataType } from '../text-blocks/types';
+import { RuleType } from '../rules/types';
 import { FileTreeNode } from '../../../../ipc';
 import { GptFileTreeNode } from '../../../../types/common';
 
 interface RootUIState {
   selectedFiles: string[];
-  selectedTextBlocks: TextBlockDataType[];
+  selectedTextBlocks: RuleType[];
   projectDirectory: string | null;
   fileTree: FileTreeNode | null;
   gptFileTree: GptFileTreeNode[] | null;
@@ -32,10 +32,7 @@ export const rootSlice = createSlice({
     setSelectedFiles: (state, action: PayloadAction<string[]>) => {
       state.selectedFiles = action.payload;
     },
-    setSelectedTextBlocks: (
-      state,
-      action: PayloadAction<TextBlockDataType[]>,
-    ) => {
+    setSelectedTextBlocks: (state, action: PayloadAction<RuleType[]>) => {
       state.selectedTextBlocks = action.payload;
     },
     setProjectDirectory: (state, action: PayloadAction<string | null>) => {

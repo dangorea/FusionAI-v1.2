@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { notification } from 'antd';
 import { OrganizationBlockTable, OrganizationModal } from '../../../components';
-import styles from './OrganizationBlocks.module.scss';
+import styles from './organization-blocks.module.scss';
 import { NOTIFICATION_DURATION_SHORT } from '../../../utils/notifications';
 import {
   addOrganizationBlock,

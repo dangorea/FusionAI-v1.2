@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { WorkItemType } from '../../../domains/work-item/model/types';
 
 interface WorkItemTableProps {
-  workItems: WorkItemType[]; // Changed so we can pass the entire item
+  workItems: WorkItemType[];
   selectedRowKeys: React.Key[];
   onSelectChange: (selectedKeys: React.Key[]) => void;
   onRowClick?: (record: WorkItemType) => void;

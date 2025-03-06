@@ -2,7 +2,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import organizationReducer from './feature/organization/reducer';
 import userReducer from './feature/user/reducer';
 import projectsReducer from './feature/projects/reducer';
-import textBlocksReducer from './feature/text-blocks/reducer';
+import rulesReducer from './feature/rules/reducer';
 import workItemsReducer from './feature/work-items/reducer';
 import rootUI from './feature/rootSlice/reducer';
 import authReducer from './feature/auth/reducer';
@@ -14,7 +14,7 @@ export const makeStore = () => {
       organization: organizationReducer,
       user: userReducer,
       projects: projectsReducer,
-      textBlocks: textBlocksReducer,
+      rules: rulesReducer,
       workItems: workItemsReducer,
       auth: authReducer,
       rootUI,

@@ -5,5 +5,5 @@ export interface TextBlockEntity {
 }
 
 export enum DBStores {
-  TextBlocks = 'text-blocks',
+  TextBlocks = 'rules',
 }

@@ -10,6 +10,7 @@ import { notification, unstableSetRender } from 'antd';
 import { createRoot } from 'react-dom/client';
 
 import '@ant-design/v5-patch-for-react-19';
+import { ThemeProvider } from '../provider/theme-provider';
 
 export default function App() {
   const [, contextHolder] = notification.useNotification();
@@ -29,8 +30,10 @@ export default function App() {
   return (
     <StoreProvider>
       <AuthProvider>
-        {contextHolder}
-        <RouterProvider router={router} />
+        <ThemeProvider>
+          {contextHolder}
+          <RouterProvider router={router} />
+        </ThemeProvider>
       </AuthProvider>
     </StoreProvider>
   );

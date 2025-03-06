@@ -1,7 +1,6 @@
 import React, { forwardRef, Ref, useImperativeHandle, useState } from 'react';
 import { Button, Input } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
-import './task-description-input.module.scss';
 
 export interface TaskDescriptionInputProps {
   onSend?: (content: string) => void;
@@ -35,13 +34,15 @@ const TaskDescriptionInput = forwardRef(
     return (
       <div
         style={{
+          display: 'flex',
+          flexDirection: 'column',
           border: '1px solid #D8DBF4',
           borderRadius: '8px',
-          overflow: 'hidden',
-          height: 'auto',
-          minHeight: '100%',
+          maxHeight: '90vh',
+          height: '100%',
         }}
       >
+        {/* Header */}
         <div
           style={{
             padding: '16px',
@@ -53,13 +54,12 @@ const TaskDescriptionInput = forwardRef(
           Task Description
         </div>
 
+        {/* Scrollable middle section */}
         <div
           style={{
             flex: 1,
             padding: '16px',
             overflowY: 'auto',
-            height: 'auto',
-            minHeight: '90%',
             backgroundColor: '#EFF0FB',
           }}
         >
@@ -67,26 +67,27 @@ const TaskDescriptionInput = forwardRef(
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="Write your task description..."
-            autoSize={{ minRows: 38, maxRows: 38 }}
+            autoSize={{ minRows: 10, maxRows: 20 }}
             style={{
               border: 'none',
               background: 'transparent',
               resize: 'none',
               outline: 'none',
               boxShadow: 'none',
-              padding: 0,
               width: '100%',
-              height: '100%',
             }}
           />
         </div>
 
+        {/* Footer with Send button */}
         <div
           style={{
             display: 'flex',
             justifyContent: 'flex-end',
             padding: '8px 16px',
             borderTop: '1px solid #eee',
+            borderBottomRightRadius: '7px',
+            borderBottomLeftRadius: '7px',
             backgroundColor: '#EFF0FB',
           }}
         >
@@ -95,7 +96,6 @@ const TaskDescriptionInput = forwardRef(
             shape="circle"
             icon={<SendOutlined />}
             onClick={handleSend}
-            style={{ boxShadow: 'none' }}
           />
         </div>
       </div>

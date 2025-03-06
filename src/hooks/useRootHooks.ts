@@ -9,14 +9,10 @@ import {
   setSelectedFiles,
   setSelectedGptFiles,
   setSelectedTextBlocks,
-  setTaskDescription,
+  setTaskDescription
 } from '../lib/redux/feature/rootSlice/reducer';
-// For the Work Items from Redux:
 import { selectEditingWorkItemEntity } from '../lib/redux/feature/work-items/selectors';
-
-// Example type from your code
-import { FileTreeNode } from '../ipc';
-import { TextBlockDataType } from '../lib/redux/feature/text-blocks/types';
+import { RuleType } from '../lib/redux/feature/rules/types';
 import { GptFileTreeNode } from '../types/common';
 import { updateWorkItemThunk } from '../lib/redux/feature/work-items/thunk';
 
@@ -59,9 +55,7 @@ export const useToggleSelectedFiles = (currentSelectedFiles: string[]) => {
 /**
  * Toggle selected text blocks in Redux + optionally update editingWorkItem
  */
-export const useToggleSelectedTextBlocks = (
-  currentTextBlocks: TextBlockDataType[],
-) => {
+export const useToggleSelectedTextBlocks = (currentTextBlocks: RuleType[]) => {
   const dispatch = useAppDispatch();
   const editingWorkItem = useAppSelector(selectEditingWorkItemEntity);
 
@@ -71,7 +65,7 @@ export const useToggleSelectedTextBlocks = (
     }
   }, [editingWorkItem?.textBlocks, dispatch]);
 
-  return (updatedBlocks: TextBlockDataType[]) => {
+  return (updatedBlocks: RuleType[]) => {
     dispatch(setSelectedTextBlocks(updatedBlocks));
 
     if (editingWorkItem?.id) {

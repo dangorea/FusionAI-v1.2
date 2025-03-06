@@ -17,7 +17,7 @@ import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/sel
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
 import { WorkItemType } from '../model/types';
 import { useNavigate } from 'react-router';
-import styles from '../../organization/ui/OrganizationManagement.module.scss';
+import styles from '../../organization/ui/organization-management.module.scss';
 
 export function WorkItems() {
   const dispatch = useAppDispatch();
@@ -142,7 +142,6 @@ export function WorkItems() {
       );
 
       if (createWorkItemThunk.fulfilled.match(action)) {
-        // On success
         const createdWorkItem = action.payload;
         notification.success({
           message: 'Work Item Added',
@@ -151,10 +150,8 @@ export function WorkItems() {
         setModalOpen(false);
         setModalMode(null);
 
-        // Optionally set the newly created item as "editing" so you can navigate or show details:
         dispatch(setEditingWorkItem(createdWorkItem.id));
 
-        // Reload data
         dispatch(
           loadWorkItemsThunk({
             page: currentPage,
@@ -210,7 +207,6 @@ export function WorkItems() {
         message: `Successfully updated ${editingItemIds.length} Work Item(s)`,
       });
 
-      // Clear everything
       setEditingItemIds([]);
       setModalOpen(false);
       setModalMode(null);

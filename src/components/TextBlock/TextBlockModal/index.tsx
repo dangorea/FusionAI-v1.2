@@ -3,13 +3,13 @@ import { Button, Modal } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { TextBlockModalForm } from './TextBlockModalForm';
 import styles from './TextBlockModal.module.scss';
-import { TextBlockDataType } from '../../../lib/redux/feature/text-blocks/types';
+import { RuleType } from '../../../lib/redux/feature/rules/types';
 
 interface TextBlockModalProps {
-  selectedBlocks: TextBlockDataType[];
+  selectedBlocks: RuleType[];
   isModalOpen: boolean;
-  onAdd: (newBlock: Omit<TextBlockDataType, 'id'>) => Promise<void>;
-  onEdit: (updatedBlock: TextBlockDataType) => Promise<void>;
+  onAdd: (newBlock: Omit<RuleType, 'id'>) => Promise<void>;
+  onEdit: (updatedBlock: RuleType) => Promise<void>;
   onDelete: () => Promise<void>;
 }
 
@@ -22,12 +22,12 @@ export function TextBlockModal({
 }: TextBlockModalProps) {
   const [open, setOpen] = useState(isModalOpen);
 
-  const handleAdd = async (data: Omit<TextBlockDataType, 'id'>) => {
+  const handleAdd = async (data: Omit<RuleType, 'id'>) => {
     await onAdd(data);
     setOpen(false);
   };
 
-  const handleEdit = async (data: Omit<TextBlockDataType, 'id'>) => {
+  const handleEdit = async (data: Omit<RuleType, 'id'>) => {
     if (selectedBlocks.length > 0) {
       const blockToEdit = selectedBlocks[0];
       await onEdit({

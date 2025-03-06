@@ -1,11 +1,11 @@
 import React, { useEffect } from 'react';
 import { Button, Form, Input } from 'antd';
 import styles from './TextBlockModalForm.module.scss';
-import { TextBlockDataType } from '../../../../lib/redux/feature/text-blocks/types';
+import { RuleType } from '../../../../lib/redux/feature/rules/types';
 
 interface TextBlockModalFormProps {
-  onSubmit: (data: Omit<TextBlockDataType, 'id' | 'key'>) => void;
-  block?: TextBlockDataType;
+  onSubmit: (data: Omit<RuleType, 'id' | 'key'>) => void;
+  block?: RuleType;
 }
 
 export function TextBlockModalForm({

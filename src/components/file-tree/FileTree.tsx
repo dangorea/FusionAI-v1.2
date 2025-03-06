@@ -65,7 +65,7 @@ const FileTree: React.FC<FileTreeProps> = ({
     filePath: string,
     fileStyle?: { fileIcon?: React.ReactNode },
   ): React.ReactNode => {
-    if (fileStyle && fileStyle.fileIcon) return fileStyle.fileIcon;
+    if (fileStyle?.fileIcon) return fileStyle.fileIcon;
     const ext = filePath.split('.').pop()?.toLowerCase();
     switch (ext) {
       case 'js':
@@ -81,6 +81,13 @@ const FileTree: React.FC<FileTreeProps> = ({
     }
   };
 
+  const getFolderIcon = (folderStyle?: {
+    folderIcon?: React.ReactNode;
+  }): React.ReactNode => {
+    if (folderStyle?.folderIcon) return folderStyle.folderIcon;
+    return defaultFolderIcon;
+  };
+
   const isKeyInTree = (key: React.Key, node: DataNode): boolean => {
     if (node.key === key) return true;
     if (node.children) {
@@ -89,26 +96,6 @@ const FileTree: React.FC<FileTreeProps> = ({
       }
     }
     return false;
-  };
-
-  const getFolderIcon = (folderStyle?: {
-    folderIcon?: React.ReactNode;
-  }): React.ReactNode => {
-    if (folderStyle && folderStyle.folderIcon) return folderStyle.folderIcon;
-    return defaultFolderIcon;
-  };
-
-  const getDirectoryKeys = (nodes: DataNode[]): React.Key[] => {
-    let keys: React.Key[] = [];
-    nodes.forEach((node) => {
-      if (!node.isLeaf) {
-        keys.push(node.key);
-        if (node.children) {
-          keys = keys.concat(getDirectoryKeys(node.children));
-        }
-      }
-    });
-    return keys;
   };
 
   const buildAntTreeData = (
@@ -122,6 +109,7 @@ const FileTree: React.FC<FileTreeProps> = ({
     const children = node.children?.map((child) =>
       buildAntTreeData(child, styleOverride),
     );
+
     return {
       key: node.path,
       title: (
@@ -130,8 +118,8 @@ const FileTree: React.FC<FileTreeProps> = ({
             display: 'flex',
             alignItems: 'center',
             whiteSpace: 'nowrap',
-            overflow: 'hidden',
             textOverflow: 'ellipsis',
+            overflow: 'hidden',
           }}
         >
           {isLeaf
@@ -150,7 +138,7 @@ const FileTree: React.FC<FileTreeProps> = ({
     const visibleSets = fileSets.filter((fs) =>
       visibleFileSetIds.includes(fs.id),
     );
-    const fileSetNodes: DataNode[] = visibleSets.map((fs) => {
+    return visibleSets.map((fs) => {
       const data = buildAntTreeData(fs.tree, fs.style);
       return {
         key: fs.id,
@@ -158,7 +146,6 @@ const FileTree: React.FC<FileTreeProps> = ({
         children: [data],
       };
     });
-    return fileSetNodes;
   };
 
   const preserveExpandedKeys = (
@@ -171,21 +158,19 @@ const FileTree: React.FC<FileTreeProps> = ({
   };
 
   const loadSingleTree = async (
-    preserveExpansion: boolean = false,
+    preserveExpansion = false,
     oldExpandedKeys: React.Key[] = [],
   ) => {
     if (!rootPath) return;
     setLoading(true);
+
     try {
       const tree: FileNode | null = await window.fileAPI.getFileTree(rootPath);
       if (tree) {
         const dataNode = buildAntTreeData(tree);
         setTreeData([dataNode]);
         if (preserveExpansion) {
-          const newExpandedKeys = preserveExpandedKeys(oldExpandedKeys, [
-            dataNode,
-          ]);
-          setExpandedKeys(newExpandedKeys);
+          setExpandedKeys(preserveExpandedKeys(oldExpandedKeys, [dataNode]));
         } else {
           setExpandedKeys([dataNode.key]);
         }
@@ -206,9 +191,10 @@ const FileTree: React.FC<FileTreeProps> = ({
 
   const filterTreeByModified = (nodes: DataNode[]): DataNode[] => {
     if (!modifiedPaths || modifiedPaths.length === 0) return nodes;
+
     const filterNode = (node: DataNode): DataNode | null => {
       const keyStr = String(node.key);
-      let matched = modifiedPaths.some((modPath) => modPath === keyStr);
+      let matched = modifiedPaths.includes(keyStr);
       let filteredChildren: DataNode[] | undefined;
       if (node.children) {
         filteredChildren = node.children
@@ -218,11 +204,9 @@ const FileTree: React.FC<FileTreeProps> = ({
           matched = true;
         }
       }
-      if (matched) {
-        return { ...node, children: filteredChildren };
-      }
-      return null;
+      return matched ? { ...node, children: filteredChildren } : null;
     };
+
     return nodes.map((node) => filterNode(node)).filter(Boolean) as DataNode[];
   };
 
@@ -233,6 +217,7 @@ const FileTree: React.FC<FileTreeProps> = ({
         combined = filterTreeByModified(combined);
       }
       setTreeData(combined);
+
       const fileSetKeys = fileSets
         .filter((fs) => fs.visible)
         .map((fs) => fs.id);
@@ -244,70 +229,42 @@ const FileTree: React.FC<FileTreeProps> = ({
   }, [rootPath, fileSets, visibleFileSetIds, showModifiedOnly]);
 
   useEffect(() => {
-    if (rootPath) {
+    if (!rootPath) return;
+    if (window.fileAPI && typeof window.fileAPI.watchDirectory === 'function') {
       window.fileAPI.watchDirectory(rootPath);
-
-      const debouncedUpdate = debounce(async () => {
-        const previousExpanded = expandedKeysRef.current;
-        await loadSingleTree(true, previousExpanded);
-      }, 300);
-
-      const fileTreeUpdatedHandler = (_event: any, updatedTree: FileNode) => {
-        debouncedUpdate();
-      };
-
-      const unsubscribe = window.electron.ipcRenderer.on(
-        'file-tree-updated',
-        fileTreeUpdatedHandler as (...args: unknown[]) => void,
-      );
-
-      return () => {
-        unsubscribe();
-        debouncedUpdate.cancel && debouncedUpdate.cancel();
-      };
+    } else {
+      console.warn('fileAPI is not available');
     }
+
+    const debouncedUpdate = debounce(async () => {
+      const previousExpanded = expandedKeysRef.current;
+      await loadSingleTree(true, previousExpanded);
+    }, 300);
+
+    const fileTreeUpdatedHandler = (_event: any, updatedTree: FileNode) => {
+      debouncedUpdate();
+    };
+
+    const unsubscribe = window.electron.ipcRenderer.on(
+      'file-tree-updated',
+      fileTreeUpdatedHandler as (...args: unknown[]) => void,
+    );
+
+    return () => {
+      unsubscribe();
+      debouncedUpdate.cancel?.();
+    };
   }, [rootPath]);
 
   useEffect(() => {
-    if (preselectedFiles && preselectedFiles.length > 0) {
+    if (preselectedFiles.length > 0) {
       setCheckedKeys(preselectedFiles);
     }
   }, [preselectedFiles]);
 
   useEffect(() => {
-    if (onFileSelectionChange) {
-      onFileSelectionChange(checkedKeys.map(String));
-    }
-  }, [checkedKeys]);
-
-  const handleCheck = (
-    checked: React.Key[] | { checked: React.Key[]; halfChecked: React.Key[] },
-  ) => {
-    const checkedArr = Array.isArray(checked) ? checked : checked.checked;
-    const filePaths = checkedArr.filter((key) => {
-      const node = findNodeByKey(treeData, String(key));
-      return node && node.isLeaf;
-    });
-    setCheckedKeys(filePaths);
-    if (onFileSelectionChange) {
-      onFileSelectionChange(filePaths.map(String));
-    }
-  };
-
-  const handleSelect = (selected: React.Key[]) => {
-    setSelectedKeys(selected);
-    if (selected.length === 1) {
-      const filePath = String(selected[0]);
-      const node = findNodeByKey(treeData, filePath);
-      if (node && node.isLeaf && onSingleSelect) {
-        onSingleSelect(filePath);
-      }
-    } else {
-      if (onSingleSelect) {
-        onSingleSelect('');
-      }
-    }
-  };
+    onFileSelectionChange?.(checkedKeys.map(String));
+  }, [checkedKeys, onFileSelectionChange]);
 
   const findNodeByKey = (nodes: DataNode[], key: string): DataNode | null => {
     for (const node of nodes) {
@@ -320,12 +277,34 @@ const FileTree: React.FC<FileTreeProps> = ({
     return null;
   };
 
+  const handleCheck = (
+    checked: React.Key[] | { checked: React.Key[]; halfChecked: React.Key[] },
+  ) => {
+    const checkedArr = Array.isArray(checked) ? checked : checked.checked;
+    const filePaths = checkedArr.filter((key) => {
+      const node = findNodeByKey(treeData, String(key));
+      return node?.isLeaf;
+    });
+    setCheckedKeys(filePaths);
+  };
+
+  const handleSelect = (selected: React.Key[]) => {
+    setSelectedKeys(selected);
+    if (selected.length === 1) {
+      const filePath = String(selected[0]);
+      const node = findNodeByKey(treeData, filePath);
+      if (node?.isLeaf) {
+        onSingleSelect?.(filePath);
+      }
+    } else {
+      onSingleSelect?.('');
+    }
+  };
+
   const handleFileSetToggle = (id: string, checked: boolean) => {
     let newVisible = [...visibleFileSetIds];
     if (checked) {
-      if (!newVisible.includes(id)) {
-        newVisible.push(id);
-      }
+      if (!newVisible.includes(id)) newVisible.push(id);
     } else {
       newVisible = newVisible.filter((v) => v !== id);
     }
@@ -345,7 +324,7 @@ const FileTree: React.FC<FileTreeProps> = ({
   }
 
   return (
-    <div style={{ maxHeight: '650px', overflowY: 'auto' }}>
+    <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 4 }}>
       <div
         style={{
           marginBottom: '8px',
@@ -375,6 +354,7 @@ const FileTree: React.FC<FileTreeProps> = ({
           </div>
         )}
       </div>
+
       <style>{`
         .ant-tree-switcher {
           display: flex;
@@ -382,6 +362,7 @@ const FileTree: React.FC<FileTreeProps> = ({
           justify-content: center;
         }
       `}</style>
+
       <Tree
         checkable
         checkStrictly={false}

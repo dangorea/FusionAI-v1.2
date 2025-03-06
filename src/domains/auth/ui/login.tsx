@@ -13,7 +13,7 @@ import { setAuthToken } from '../../../services/api';
 
 const { Title } = Typography;
 
-export function LoginPage() {
+export function Login() {
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();

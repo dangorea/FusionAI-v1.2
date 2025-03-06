@@ -43,8 +43,7 @@ export function WorkItemsModal({
     }
     form.resetFields();
   };
-
-  // Decide the title based on mode:
+  
   const title = modalMode === 'edit' ? 'Edit Work Item(s)' : 'Add Work Item';
 
   return (

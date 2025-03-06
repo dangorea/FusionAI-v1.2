@@ -28,7 +28,7 @@ export default function LayoutHeader({
     if (path.includes('organizations')) return 'Organizations';
     if (path.includes('projects')) return 'Projects';
     if (path.includes('work-items')) return 'Work Items';
-    if (path.includes('text-blocks')) return 'Rules';
+    if (path.includes('rules')) return 'Rules';
     if (path.includes('organization-management'))
       return 'Organization Management';
     if (path.includes('settings')) return 'Settings';

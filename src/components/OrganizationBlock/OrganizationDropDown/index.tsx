@@ -33,7 +33,6 @@ export function OrganizationDropdown() {
 
     if (savedOrganization) {
       const parsedOrganization = JSON.parse(savedOrganization);
-      // We can see if this slug is in the store
       const organization = organizationBlocks.find(
         (block) => block.slug === parsedOrganization.slug,
       );

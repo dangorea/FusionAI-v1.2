@@ -33,29 +33,33 @@ export default function MainLayout() {
   };
 
   return (
-    <Layout style={{ height: '100%' }}>
+    <Layout className={styles.mainLayout}>
       <Header
         currentPath={location.pathname}
-        onOpenDrawer={setDrawerOpen.bind(null, true)}
+        onOpenDrawer={() => setDrawerOpen(true)}
         onBackToWorkItems={handleBackToWorkItems}
-        onCreateWorkItem={setModalOpen.bind(null, true)}
+        onCreateWorkItem={() => setModalOpen(true)}
       />
 
-      <DrawerRenderer
-        open={drawerOpen}
-        onClose={setDrawerOpen.bind(null, false)}
-      />
+      <DrawerRenderer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
+      {/*
+        We remove "height: 100%" and let the layout expand naturally.
+        We also remove any "overflow: auto" or "overflow: scroll".
+        If child components need scroll,
+        they should have an internal <div style={{overflow: 'auto'}}>
+        or a table with max-height, etc.
+      */}
       <Content className={styles.content}>
         <Outlet />
       </Content>
 
       <WorkItemsModal
         isModalOpen={isModalOpen}
-        onClose={setModalOpen.bind(null, false)}
+        onClose={() => setModalOpen(false)}
         onCreate={handleAddWorkItem}
         modalMode="create"
-        onEdit={function (data: { description: string }): void {
+        onEdit={() => {
           throw new Error('Function not implemented.');
         }}
       />

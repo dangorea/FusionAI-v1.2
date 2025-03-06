@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
 import { notification } from 'antd';
 import { TextBlockModal, TextBlockTable } from '../../../components';
-import styles from './TextBlocks.module.scss';
+import styles from './rules.module.scss';
 import { NOTIFICATION_DURATION_SHORT } from '../../../utils/notifications';
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import {
-  addTextBlock,
-  deleteTextBlock,
-  editTextBlock,
-} from '../../../lib/redux/feature/text-blocks/reducer';
+  addRule,
+  deleteRule,
+  editRule,
+} from '../../../lib/redux/feature/rules/reducer';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
-import { TextBlockDataType } from '../../../lib/redux/feature/text-blocks/types';
+import { RuleType } from '../../../lib/redux/feature/rules/types';
 
 import {
   createTextBlock,
@@ -18,23 +18,21 @@ import {
   updateTextBlock,
 } from '../../../api/textBlocks';
 
-export function TextBlocks() {
+export function Rules() {
   const dispatch = useAppDispatch();
   const textBlocks = useAppSelector((state) => {
     return state.textBlocks.ids.map((id) => state.textBlocks.entities[id]);
   });
   const org = useAppSelector(selectSelectedOrganizationEntity);
 
-  const [selectedBlocks, setSelectedBlocks] = useState<TextBlockDataType[]>([]);
+  const [selectedBlocks, setSelectedBlocks] = useState<RuleType[]>([]);
   const [isModalOpen] = useState(false);
 
-  const handleAddTextBlock = async (
-    newBlock: Omit<TextBlockDataType, 'id'>,
-  ) => {
+  const handleAddTextBlock = async (newBlock: Omit<RuleType, 'id'>) => {
     try {
       if (!org?.slug) throw new Error('Organization slug not found');
       const createdBlock = await createTextBlock(org.slug, newBlock);
-      dispatch(addTextBlock(createdBlock));
+      dispatch(addRule(createdBlock));
       notification.success({
         message: 'Rule Added',
         duration: NOTIFICATION_DURATION_SHORT,
@@ -47,11 +45,11 @@ export function TextBlocks() {
     }
   };
 
-  const handleEditTextBlock = async (updatedBlock: TextBlockDataType) => {
+  const handleEditTextBlock = async (updatedBlock: RuleType) => {
     try {
       if (!org?.slug) throw new Error('Organization slug not found');
       const response = await updateTextBlock(org.slug, updatedBlock);
-      dispatch(editTextBlock(response));
+      dispatch(editRule(response));
       notification.success({
         message: 'Rule Updated',
         duration: NOTIFICATION_DURATION_SHORT,
@@ -69,7 +67,7 @@ export function TextBlocks() {
       if (!org?.slug) throw new Error('Organization slug not found');
       for (const block of selectedBlocks) {
         await apiDeleteTextBlock(org.slug, block.id);
-        dispatch(deleteTextBlock(block.id));
+        dispatch(deleteRule(block.id));
       }
       notification.success({
         message: 'Selected Rules Deleted',
@@ -87,7 +85,7 @@ export function TextBlocks() {
   const handleSelectChange = (selectedIds: React.Key[]) => {
     const selectedItems = textBlocks.filter(
       (block) => block && selectedIds.includes(block.id),
-    ) as TextBlockDataType[];
+    ) as RuleType[];
     setSelectedBlocks(selectedItems);
   };
 
@@ -101,7 +99,7 @@ export function TextBlocks() {
         onDelete={handleDeleteTextBlock}
       />
       <TextBlockTable
-        textBlocks={(textBlocks as TextBlockDataType[]).filter(Boolean)}
+        textBlocks={(textBlocks as RuleType[]).filter(Boolean)}
         onSelectChange={handleSelectChange}
       />
     </div>

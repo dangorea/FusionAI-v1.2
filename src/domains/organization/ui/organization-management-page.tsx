@@ -4,7 +4,7 @@ import {
   OrganizationManagementModal,
   OrganizationManagementTable,
 } from '../../../components';
-import styles from './OrganizationManagement.module.scss';
+import styles from './organization-management.module.scss';
 import { NOTIFICATION_DURATION_SHORT } from '../../../utils/notifications';
 import { OrganizationManagementDataType } from '../../../lib/redux/feature/user/types';
 import {

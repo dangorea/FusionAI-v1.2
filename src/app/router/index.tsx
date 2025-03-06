@@ -13,6 +13,7 @@ import { Settings } from '../../domains/settings/ui';
 import { Root } from '../../domains/root/ui';
 import { NotFound } from '../error/not-found';
 import { RouterError } from '../error/router-error';
+import { PromptGeneratorPage } from '../../domains/prompt-generator/ui/PromptGeneratorPage';
 
 const router = createMemoryRouter([
   {
@@ -46,6 +47,7 @@ const router = createMemoryRouter([
       { path: 'text-blocks', element: <TextBlocks /> },
       { path: 'work-items', element: <WorkItems /> },
       { path: 'settings', element: <Settings /> },
+      { path: 'prompt-generator/:id', element: <PromptGeneratorPage /> },
       { path: '*', element: <NotFound /> },
     ],
   },

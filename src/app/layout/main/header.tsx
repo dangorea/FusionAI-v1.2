@@ -5,9 +5,8 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import styles from './main-layout.module.scss';
-import { OrganizationDropdown } from '../../../components/OrganizationBlock/OrganizationDropDown';
-import { ProjectsDropdown } from '../../../components/Project/ProjectsDropdown';
-import UserAvatar from './UserAvatar';
+import { OrganizationDropdown, ProjectsDropdown } from '../../../components';
+import UserAvatar from './user-avatar';
 import LogoutButton from './logout-button';
 
 const { Header, Content } = Layout;
@@ -33,6 +32,7 @@ export default function LayoutHeader({
     if (path.includes('organization-management'))
       return 'Organization Management';
     if (path.includes('settings')) return 'Settings';
+    if (path.includes('prompt-generator')) return 'Prompt Generator';
     return '';
   };
 

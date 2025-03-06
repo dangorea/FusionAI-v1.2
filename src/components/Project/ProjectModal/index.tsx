@@ -4,6 +4,7 @@ import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { ProjectModalForm } from './ProjectModalForm';
 import styles from './ProjectModal.module.scss';
 import { ProjectType } from '../../../domains/project/model/type';
+import { DirectorySelector } from '../../directoty-selector';
 
 interface ProjectModalProps {
   selectedProjects: ProjectType[];
@@ -82,6 +83,10 @@ export function ProjectModal({
           onSubmit={selectedProjects.length ? handleEdit : handleAdd}
           project={selectedProjects[0] || null}
         />
+
+        <div className={styles.directorySelectorContainer}>
+          <DirectorySelector projectId={selectedProjects[0]?.id} />
+        </div>
       </Modal>
     </>
   );

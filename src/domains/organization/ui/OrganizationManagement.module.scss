@@ -4,3 +4,9 @@
   height: 100%;
   gap: 10px;
 }
+
+.buttonContainer {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}

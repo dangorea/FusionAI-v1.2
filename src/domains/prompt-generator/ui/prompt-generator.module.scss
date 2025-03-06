@@ -1,0 +1,16 @@
+.sider {
+  background-color: #ffffff;
+  overflow: auto;
+  padding: 16px;
+}
+
+.content {
+  padding: 16px;
+  background-color: var(--app-color-itemBackground);
+  height: 100%;
+}
+
+.emptyTree {
+  color: #999;
+  padding: 8px;
+}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, notification, Space } from 'antd';
+import { Button, notification } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { WorkItemsModal, WorkItemTable } from '../../../components';
 import { NOTIFICATION_DURATION_LONG } from '../../../utils/notifications';
@@ -16,9 +16,12 @@ import { selectAllWorkItems } from '../../../lib/redux/feature/work-items/select
 import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
 import { WorkItemType } from '../model/types';
+import { useNavigate } from 'react-router';
+import styles from '../../organization/ui/OrganizationManagement.module.scss';
 
 export function WorkItems() {
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const selectedProjectId = useAppSelector(selectSelectedProjectId);
   const allWorkItems = useAppSelector(selectAllWorkItems);
   const org = useAppSelector(selectSelectedOrganizationEntity);
@@ -221,16 +224,12 @@ export function WorkItems() {
     }
   };
 
-  // -------------------------
-  // Table Selections, Row Clicks, Pagination, Search
-  // -------------------------
   const onSelectChange = (selectedKeys: React.Key[]) => {
     setSelectedRowKeys(selectedKeys);
   };
 
   const handleRowClick = (record: WorkItemType) => {
-    // If row is clicked, let's open the edit modal for that single item
-    openEditModal(record.id);
+    navigate(`/prompt-generator/${record.id}`);
   };
 
   const handlePageChange = (page: number, size: number) => {
@@ -244,8 +243,8 @@ export function WorkItems() {
   };
 
   return (
-    <>
-      <Space style={{ marginBottom: 16, float: 'right' }}>
+    <div className={styles.componentRoot}>
+      <div className={styles.buttonContainer}>
         <Button
           icon={<PlusOutlined />}
           type="text"
@@ -264,7 +263,7 @@ export function WorkItems() {
           icon={<DeleteOutlined />}
           onClick={handleDeleteWorkItem}
         />
-      </Space>
+      </div>
 
       <WorkItemTable
         workItems={allWorkItems}
@@ -291,6 +290,6 @@ export function WorkItems() {
         onCreate={handleAddWorkItem}
         onEdit={handleUpdateWorkItems}
       />
-    </>
+    </div>
   );
 }

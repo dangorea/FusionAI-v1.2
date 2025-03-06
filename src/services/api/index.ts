@@ -11,7 +11,6 @@ export const setAuthToken = (token: string) => {
   }
 };
 
-// Request interceptor (unchanged)
 instance.interceptors.request.use(
   (config) => {
     console.log('[axiosInstance] Request config before sending:', config);
@@ -23,10 +22,7 @@ instance.interceptors.request.use(
   },
 );
 
-// --- Refresh Token Mechanism Setup ---
-
-// Variables to manage token refresh state and queue
-let isRefreshing = false;
+let isRenewing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
   reject: (error: any) => void;
@@ -49,15 +45,14 @@ instance.interceptors.response.use(
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       console.warn(
-        '[axiosInstance] 401 error detected. Starting refresh process...',
+        '[axiosInstance] 401 error detected. Starting silent authentication...',
       );
 
-      // If a refresh is already in progress, queue this request.
-      if (isRefreshing) {
+      if (isRenewing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
-          .then((token: string) => {
+          .then((token: unknown) => {
             if (originalRequest.headers) {
               originalRequest.headers.Authorization = 'Bearer ' + token;
             }
@@ -67,36 +62,40 @@ instance.interceptors.response.use(
       }
 
       originalRequest._retry = true;
-      isRefreshing = true;
-
-      const refreshToken = localStorage.getItem('refresh_token');
-      if (!refreshToken) {
-        console.error('[axiosInstance] No refresh token available.');
-        // No refresh token; clear tokens and redirect to login.
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('id_token');
-        localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
+      isRenewing = true;
 
       try {
+        const redirectUri = 'fusionai://auth/callback';
+        const silentAuthUrl =
+          `https://${window.env.AUTH0_DOMAIN}/authorize?` +
+          `response_type=code&` +
+          `client_id=${window.env.AUTH0_CLIENT_ID}&` +
+          `audience=${window.env.AUTH0_AUDIENCE}&` +
+          `scope=${encodeURIComponent('openid profile email create:projects offline_access')}&` +
+          `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+          `prompt=none`;
+
+        const code = await window.electron.ipcRenderer.invoke(
+          'silentTokenRenew',
+          silentAuthUrl,
+        );
         const tokenUrl = `https://${window.env.AUTH0_DOMAIN}/oauth/token`;
         const body = {
-          grant_type: 'refresh_token',
+          grant_type: 'authorization_code',
           client_id: window.env.AUTH0_CLIENT_ID,
-          refresh_token: refreshToken,
+          code,
+          redirect_uri: redirectUri,
+          audience: window.env.AUTH0_AUDIENCE,
         };
-        console.log('[axiosInstance] Attempting to refresh token...');
-        // Use the global axios instance (without our interceptors) to avoid loops.
-        const response = await axios.post(tokenUrl, body, {
+        const tokenResponse = await axios.post(tokenUrl, body, {
           headers: { 'Content-Type': 'application/json' },
         });
 
-        const tokenData = response.data;
-        console.log('[axiosInstance] Token refreshed successfully:', tokenData);
-
-        // Update tokens in localStorage and axios instance.
+        const tokenData = tokenResponse.data;
+        console.log(
+          '[axiosInstance] Silent authentication succeeded:',
+          tokenData,
+        );
         localStorage.setItem('access_token', tokenData.access_token);
         if (tokenData.id_token) {
           localStorage.setItem('id_token', tokenData.id_token);
@@ -104,24 +103,24 @@ instance.interceptors.response.use(
         } else {
           setAuthToken(tokenData.access_token);
         }
-
         processQueue(null, tokenData.access_token);
         if (originalRequest.headers) {
           originalRequest.headers.Authorization =
             'Bearer ' + tokenData.access_token;
         }
         return instance(originalRequest);
-      } catch (refreshError) {
-        console.error('[axiosInstance] Token refresh failed:', refreshError);
-        processQueue(refreshError, null);
-        // Clear stored tokens and redirect to login.
+      } catch (silentError) {
+        console.error(
+          '[axiosInstance] Silent authentication failed:',
+          silentError,
+        );
+        processQueue(silentError, null);
         localStorage.removeItem('access_token');
         localStorage.removeItem('id_token');
-        localStorage.removeItem('refresh_token');
         window.location.href = '/login';
-        return Promise.reject(refreshError);
+        return Promise.reject(silentError);
       } finally {
-        isRefreshing = false;
+        isRenewing = false;
       }
     }
     return Promise.reject(error);

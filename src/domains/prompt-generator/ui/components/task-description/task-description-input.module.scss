@@ -1,0 +1,13 @@
+.w-full {
+  width: 100%;
+}
+
+.h-full {
+  height: 100%;
+}
+
+textarea:focus,
+textarea:active {
+  outline: none !important;
+  box-shadow: none !important;
+}

@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-export type Channels = 'ipc-example' | 'openExternal' | 'auth-callback';
+export type Channels =
+  | 'ipc-example'
+  | 'openExternal'
+  | 'auth-callback'
+  | 'file-changed'
+  | 'file-tree-updated';
 
 const electronHandler = {
   ipcRenderer: {
@@ -18,7 +23,6 @@ const electronHandler = {
       ipcRenderer.on('auth-callback', listener);
       return listener;
     },
-
     offAuthCallback(listener: (...args: any[]) => void) {
       ipcRenderer.removeListener('auth-callback', listener);
     },
@@ -39,6 +43,24 @@ const electronHandler = {
 };
 
 contextBridge.exposeInMainWorld('electron', electronHandler);
+
+contextBridge.exposeInMainWorld('api', {
+  selectDirectory: () => ipcRenderer.invoke('select-directory'),
+  setProjectPath: (path: string) =>
+    ipcRenderer.invoke('set-project-path', path),
+});
+
+contextBridge.exposeInMainWorld('fileAPI', {
+  getFileTree: (rootPath: string) =>
+    ipcRenderer.invoke('get-file-tree', rootPath),
+  readFileContent: (filePath: string) =>
+    ipcRenderer.invoke('read-file-content', filePath),
+  watchFile: (filePath: string) => ipcRenderer.invoke('watch-file', filePath),
+  unwatchFile: (filePath: string) =>
+    ipcRenderer.invoke('unwatch-file', filePath),
+  watchDirectory: (rootPath: string) =>
+    ipcRenderer.invoke('watch-directory', rootPath),
+});
 
 contextBridge.exposeInMainWorld('env', {
   BASE_URL: process.env.BASE_URL,

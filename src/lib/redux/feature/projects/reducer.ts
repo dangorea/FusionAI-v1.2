@@ -1,6 +1,7 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { ProjectsState } from './types';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import { fetchProjects } from './thunk';
+import type { ProjectsState } from './types';
 import { projectsAdapter } from './adapter';
 import { PROJECTS_REDUCER_NAME } from '../../reducer-constant';
 

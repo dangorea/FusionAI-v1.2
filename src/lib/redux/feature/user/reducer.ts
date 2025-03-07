@@ -1,5 +1,9 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { OrganizationManagementDataType, OrgManagementState } from './types';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
+import type {
+  OrganizationManagementDataType,
+  OrgManagementState,
+} from './types';
 import { fetchOrganizationManagements } from './thunk';
 import { userAdapter } from './adapter';
 import { USER_REDUCER_NAME } from '../../reducer-constant';

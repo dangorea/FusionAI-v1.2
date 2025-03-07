@@ -1,9 +1,10 @@
 import { dialog, ipcMain, shell } from 'electron';
+import type { FSWatcher } from 'chokidar';
+import chokidar from 'chokidar';
+import fs from 'fs';
 import { getMainWindow } from './window';
 import { openAuthWindow, silentTokenRenew } from './auth';
 import { getFileTree } from './fileTree';
-import chokidar, { FSWatcher } from 'chokidar';
-import fs from 'fs';
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -121,12 +122,12 @@ ipcMain.handle('read-file-content', async (_event, filePath: string) => {
 });
 
 ipcMain.handle('watch-file', (event, filePath: string) => {
-  const sender = event.sender;
+  const { sender } = event;
   createFileWatcher(filePath, sender);
 });
 
 ipcMain.handle('unwatch-file', (event, filePath: string) => {
-  const sender = event.sender;
+  const { sender } = event;
   removeFileWatcher(filePath, sender);
 });
 
@@ -167,7 +168,7 @@ ipcMain.handle('watch-directory', async (_event, rootPath: string) => {
         console.error('Error rebuilding file tree:', error);
       }
     };
-    
+
     directoryWatcher
       // @ts-ignore
       .on('add', sendUpdatedTree)

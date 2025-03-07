@@ -1,1 +1,1 @@
-export { default } from './FileTree';
+export { FileTree } from './FileTree';

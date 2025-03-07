@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { notification } from 'antd';
-import { readOrganizationBlocks } from '../../../../api/organizationBlocks';
+import { readOrganizationBlocks } from '../../../../api/organization-blocks';
 
 export const fetchOrganizationBlocks = createAsyncThunk(
   'orgBlocks/fetchOrganizationBlocks',

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FolderOpenOutlined } from '@ant-design/icons';
-import { Button, message, Spin } from 'antd';
+import { Button, message, notification, Spin } from 'antd';
 import styles from './DirectorySelector.module.scss';
 import { LocalStorageKeys } from '../../utils/localStorageKeys';
 
@@ -14,8 +14,6 @@ export const DirectorySelector = ({ projectId }: DirectorySelectorProps) => {
 
   useEffect(() => {
     if (projectId) {
-      console.log(`Attempting to load data for projectId: ${projectId}`);
-
       const savedPath = localStorage.getItem(
         `${projectId}-${LocalStorageKeys.PROJECT_PATHS}`,
       );
@@ -23,34 +21,15 @@ export const DirectorySelector = ({ projectId }: DirectorySelectorProps) => {
         `${projectId}-${LocalStorageKeys.PROJECT_FILE_TREES}`,
       );
 
-      console.log(
-        `Loaded Path for projectId ${projectId}:`,
-        savedPath ?? 'No path found',
-      );
-      console.log(
-        `Loaded File Tree for projectId ${projectId}:`,
-        savedFileTree ?? 'No file tree found',
-      );
-
       setDirectoryPath(savedPath ?? null);
 
       if (savedPath) {
         window.api.setProjectPath(savedPath);
       }
-
-      if (savedFileTree) {
-        try {
-          const fileTree = JSON.parse(savedFileTree);
-          console.log(`Parsed File Tree for projectId ${projectId}:`, fileTree);
-        } catch (error) {
-          console.error(
-            `Failed to parse file tree for projectId ${projectId}:`,
-            error,
-          );
-        }
-      }
     } else {
-      console.log('No projectId provided, resetting directoryPath.');
+      notification.error({
+        message: 'No projectId provided, resetting directoryPath.',
+      });
       setDirectoryPath(null);
     }
   }, [projectId]);
@@ -63,9 +42,6 @@ export const DirectorySelector = ({ projectId }: DirectorySelectorProps) => {
       if (!result.canceled) {
         const { directoryPath, fileTree } = result;
 
-        console.log('Directory selected:', directoryPath);
-        console.log('File Tree returned:', fileTree);
-
         if (projectId) {
           localStorage.setItem(
             `${projectId}-${LocalStorageKeys.PROJECT_PATHS}`,
@@ -75,19 +51,11 @@ export const DirectorySelector = ({ projectId }: DirectorySelectorProps) => {
             `${projectId}-${LocalStorageKeys.PROJECT_FILE_TREES}`,
             JSON.stringify(fileTree),
           );
-
-          console.log(
-            `Saved directoryPath for projectId ${projectId}:`,
-            directoryPath,
-          );
-          console.log(`Saved fileTree for projectId ${projectId}:`, fileTree);
         }
 
         setDirectoryPath(directoryPath);
         window.api.setProjectPath(directoryPath);
         message.success('Directory selected successfully.');
-      } else {
-        console.log('Directory selection canceled by user.');
       }
     } catch (error) {
       console.error('Error selecting directory:', error);

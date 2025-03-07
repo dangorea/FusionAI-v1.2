@@ -5,9 +5,10 @@ import {
   PlusOutlined,
 } from '@ant-design/icons';
 import styles from './main-layout.module.scss';
-import { OrganizationDropdown, ProjectsDropdown } from '../../../components';
 import UserAvatar from './user-avatar';
 import LogoutButton from './logout-button';
+import { OrganizationDropdown } from '../../../domains/organization/components';
+import { ProjectsDropdown } from '../../../domains/project/components/dropdown';
 
 const { Header, Content } = Layout;
 

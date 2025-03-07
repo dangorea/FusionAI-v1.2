@@ -1,9 +1,10 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { OrganizationBlockState } from './types';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
+import type { OrganizationBlockState } from './types';
 import { fetchOrganizationBlocks } from './thunk';
 import { organizationAdapter } from './adapter';
 import { ORGANIZATION_REDUCER_NAME } from '../../reducer-constant';
-import { OrganizationType } from '../../../../domains/organization/model/types';
+import type { OrganizationType } from '../../../../domains/organization/model/types';
 
 const initialState: OrganizationBlockState =
   organizationAdapter.getInitialState({

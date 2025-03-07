@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { notification } from 'antd';
-import { fetchOrganizationMembers } from '../../../../api/organizationManagment';
+import { fetchOrganizationMembers } from '../../../../api/organization-management';
 
 export const fetchOrganizationManagements = createAsyncThunk(
   'orgManagement/fetchOrganizationManagements',

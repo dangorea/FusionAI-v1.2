@@ -17,7 +17,6 @@ const electronHandler = {
       ipcRenderer.invoke(channel, ...args),
     onAuthCallback(callback: (code: string) => void) {
       const listener = (_event: IpcRendererEvent, code: string) => {
-        console.log(code);
         callback(code);
       };
       ipcRenderer.on('auth-callback', listener);

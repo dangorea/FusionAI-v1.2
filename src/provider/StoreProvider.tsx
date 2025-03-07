@@ -1,5 +1,7 @@
-import { lazy, ReactNode, useRef } from 'react';
-import { AppStore, makeStore } from '../lib/redux/store';
+import type { ReactNode } from 'react';
+import { lazy, useRef } from 'react';
+import type { AppStore } from '../lib/redux/store';
+import { makeStore } from '../lib/redux/store';
 
 const Provider = lazy(() =>
   import('react-redux').then((redux) => ({ default: redux.Provider })),

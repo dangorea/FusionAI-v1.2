@@ -112,16 +112,16 @@ export function getFileTree(dir: string, isRoot = true) {
           const stat = fs.statSync(fullPath);
           if (stat.isDirectory()) {
             return getFileTree(fullPath, false);
-          } else {
-            if (stat.size > MAX_FILE_SIZE) {
-              return null;
-            }
-            const ext = path.extname(item).slice(1).toLowerCase();
-            if (DISALLOWED_EXTENSIONS.has(ext)) {
-              return null;
-            }
-            return { name: item, path: fullPath };
           }
+
+          if (stat.size > MAX_FILE_SIZE) {
+            return null;
+          }
+          const ext = path.extname(item).slice(1).toLowerCase();
+          if (DISALLOWED_EXTENSIONS.has(ext)) {
+            return null;
+          }
+          return { name: item, path: fullPath };
         } catch (err) {
           console.error('Error reading item:', fullPath, err);
           return null;

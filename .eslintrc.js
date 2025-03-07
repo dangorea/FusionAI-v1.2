@@ -15,15 +15,26 @@ module.exports = {
     'import/prefer-default-export': 'warn',
     'no-underscore-dangle': 'off',
     'class-methods-use-this': 'off',
-    'react/require-default-props': [
+    'react/require-default-props': 'off',
+    'no-plusplus': 'warn',
+    '@typescript-eslint/consistent-type-imports': [
       'error',
-      { ignoreFunctionalComponents: true },
+      { prefer: 'type-imports', disallowTypeAnnotations: false },
     ],
-    'no-plusplus': ['error', { ignoreFunctionalComponents: true }],
+    '@typescript-eslint/consistent-type-exports': 'error',
+    'react/jsx-no-bind': 'off',
+    'no-restricted-syntax': 'warn',
+    'consistent-return': 'off',
+    'react-hooks/exhaustive-deps': 'warn',
+    'react/jsx-props-no-spreading': 'warn',
+    'react/no-array-index-key': 'warn',
+    'global-require': 'warn',
+    'no-new': 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
+    project: './tsconfig.json',
   },
   settings: {
     'import/resolver': {
@@ -40,4 +51,13 @@ module.exports = {
       '@typescript-eslint/parser': ['.ts', '.tsx'],
     },
   },
+  overrides: [
+    {
+      files: ['*.js'],
+      rules: {
+        '@typescript-eslint/consistent-type-exports': 'off',
+      },
+    },
+  ],
+  ignorePatterns: ['.eslintrc.js'],
 };

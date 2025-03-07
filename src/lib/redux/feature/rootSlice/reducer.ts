@@ -1,7 +1,7 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { RuleType } from '../rules/types';
-import { FileTreeNode } from '../../../../ipc';
-import { GptFileTreeNode } from '../../../../types/common';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
+import type { RuleType } from '../rules/types';
+import type { FileTreeNode, GptFileTreeNode } from '../../../../types/common';
 
 interface RootUIState {
   selectedFiles: string[];

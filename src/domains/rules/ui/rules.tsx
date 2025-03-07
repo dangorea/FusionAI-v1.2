@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { notification } from 'antd';
-import { TextBlockModal, TextBlockTable } from '../../../components';
+import { TextBlockModal, TextBlockTable } from '../components';
 import styles from './rules.module.scss';
 import { NOTIFICATION_DURATION_SHORT } from '../../../utils/notifications';
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
@@ -10,23 +10,31 @@ import {
   editRule,
 } from '../../../lib/redux/feature/rules/reducer';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
-import { RuleType } from '../../../lib/redux/feature/rules/types';
-
+import type { RuleType } from '../../../lib/redux/feature/rules/types';
 import {
   createTextBlock,
   deleteTextBlock as apiDeleteTextBlock,
   updateTextBlock,
-} from '../../../api/textBlocks';
+} from '../../../api/text-blocks';
+import { fetchRules } from '../../../lib/redux/feature/rules/thunk';
 
 export function Rules() {
   const dispatch = useAppDispatch();
   const textBlocks = useAppSelector((state) => {
-    return state.textBlocks.ids.map((id) => state.textBlocks.entities[id]);
+    return state.rules.ids.map((id) => state.rules.entities[id]);
   });
   const org = useAppSelector(selectSelectedOrganizationEntity);
 
+  console.log(org);
+
   const [selectedBlocks, setSelectedBlocks] = useState<RuleType[]>([]);
   const [isModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (org?.slug) {
+      dispatch(fetchRules(org?.slug));
+    }
+  }, [org?.slug]);
 
   const handleAddTextBlock = async (newBlock: Omit<RuleType, 'id'>) => {
     try {
@@ -65,10 +73,10 @@ export function Rules() {
   const handleDeleteTextBlock = async () => {
     try {
       if (!org?.slug) throw new Error('Organization slug not found');
-      for (const block of selectedBlocks) {
+      selectedBlocks.map(async (block) => {
         await apiDeleteTextBlock(org.slug, block.id);
         dispatch(deleteRule(block.id));
-      }
+      });
       notification.success({
         message: 'Selected Rules Deleted',
         duration: NOTIFICATION_DURATION_SHORT,

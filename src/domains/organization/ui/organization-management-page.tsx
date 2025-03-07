@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { notification } from 'antd';
 import styles from './organization-management.module.scss';
 import { NOTIFICATION_DURATION_SHORT } from '../../../utils/notifications';
@@ -8,7 +8,6 @@ import {
   deleteOrganizationManagement,
   editOrganizationManagement,
 } from '../../../lib/redux/feature/user/reducer';
-import { fetchOrganizationManagements } from '../../../lib/redux/feature/user/thunk';
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
 import { userAdapter } from '../../../lib/redux/feature/user/adapter';
@@ -32,17 +31,6 @@ export function OrganizationManagement() {
   const [selectedManagements, setSelectedManagements] = useState<
     OrganizationManagementDataType[]
   >([]);
-
-  useEffect(() => {
-    if (!org?.slug) {
-      notification.error({
-        message: 'Failed to fetch organization slug',
-        duration: NOTIFICATION_DURATION_SHORT,
-      });
-      return;
-    }
-    dispatch(fetchOrganizationManagements(org.slug));
-  }, [org?.slug, dispatch]);
 
   const handleAddOrganizationManagement = async (
     newManagement: OrganizationManagementDataType,

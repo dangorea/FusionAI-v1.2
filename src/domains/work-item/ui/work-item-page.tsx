@@ -11,7 +11,7 @@ import {
   loadWorkItemsThunk,
   updateWorkItemThunk,
 } from '../../../lib/redux/feature/work-items/thunk';
-import { setEditingWorkItem } from '../../../lib/redux/feature/work-items/reducer';
+import { setSelectedWorkItem } from '../../../lib/redux/feature/work-items/reducer';
 import { selectAllWorkItems } from '../../../lib/redux/feature/work-items/selectors';
 
 import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
@@ -150,7 +150,7 @@ export function WorkItems() {
         setModalOpen(false);
         setModalMode(null);
 
-        dispatch(setEditingWorkItem(createdWorkItem.id));
+        dispatch(setSelectedWorkItem(createdWorkItem.id));
 
         dispatch(
           loadWorkItemsThunk({
@@ -225,6 +225,7 @@ export function WorkItems() {
   };
 
   const handleRowClick = (record: WorkItemType) => {
+    dispatch(setSelectedWorkItem(record.id));
     navigate(`/prompt-generator/${record.id}`);
   };
 

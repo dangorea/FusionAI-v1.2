@@ -1,11 +1,15 @@
+// --- Begin File: FileTree.tsx modifications ---
 import React, { useEffect, useRef, useState } from 'react';
 import { Checkbox, notification, Spin, Switch, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import {
   CodeOutlined,
+  DeleteOutlined,
+  EditOutlined,
   FileOutlined,
   FileTextOutlined,
   FolderFilled,
+  PlusCircleOutlined,
 } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 
@@ -13,6 +17,8 @@ export interface FileNode {
   name: string;
   path: string;
   children?: FileNode[];
+  // NEW: optional change type for styling (added, modified, deleted)
+  changeType?: 'added' | 'modified' | 'deleted';
 }
 
 export interface FileSet {
@@ -98,6 +104,7 @@ export function FileTree({
     return false;
   };
 
+  // UPDATED: Build tree data checking each node’s changeType to set a custom icon.
   const buildAntTreeData = (
     node: FileNode,
     styleOverride?: {
@@ -109,6 +116,23 @@ export function FileTree({
     const children = node.children?.map((child) =>
       buildAntTreeData(child, styleOverride),
     );
+
+    let icon: React.ReactNode;
+    if (isLeaf && node.changeType) {
+      if (node.changeType === 'added') {
+        icon = <PlusCircleOutlined style={{ color: 'green' }} />;
+      } else if (node.changeType === 'deleted') {
+        icon = <DeleteOutlined style={{ color: 'red' }} />;
+      } else if (node.changeType === 'modified') {
+        icon = <EditOutlined style={{ color: 'orange' }} />;
+      } else {
+        icon = getFileIcon(node.path, styleOverride);
+      }
+    } else {
+      icon = isLeaf
+        ? getFileIcon(node.path, styleOverride)
+        : getFolderIcon(styleOverride);
+    }
 
     return {
       key: node.path,
@@ -122,9 +146,7 @@ export function FileTree({
             overflow: 'hidden',
           }}
         >
-          {isLeaf
-            ? getFileIcon(node.path, styleOverride)
-            : getFolderIcon(styleOverride)}
+          {icon}
           <span style={{ marginLeft: 4 }}>{node.name}</span>
         </span>
       ),
@@ -388,3 +410,5 @@ export function FileTree({
     </div>
   );
 }
+
+// --- End File: FileTree.tsx modifications ---

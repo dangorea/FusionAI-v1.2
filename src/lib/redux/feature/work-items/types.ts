@@ -34,5 +34,5 @@ export interface DeleteWorkItemParams
 export interface WorkItemsState {
   ids: EntityId[];
   entities: Record<string, WorkItemType>;
-  editingWorkItem: string | null;
+  selectedWorkItem: string | null;
 }

@@ -1,8 +1,10 @@
-import React, { ReactNode, useState } from 'react';
+import type { ReactNode } from 'react';
+import React, { useState } from 'react';
 import { Navigate } from 'react-router';
 import { Space, Spin } from 'antd';
 import { useAppSelector } from '../../../lib/redux/hook';
 import { getToken } from '../../../lib/redux/feature/auth/selectors';
+import { Trigger } from '../../../app/trigger';
 
 type Props = { children: ReactNode };
 
@@ -24,5 +26,9 @@ export function Root({ children }: Props) {
     );
   }
 
-  return token ? children : <Navigate to="/login" replace />;
+  return token ? (
+    <Trigger>{children}</Trigger>
+  ) : (
+    <Navigate to="/login" replace />
+  );
 }

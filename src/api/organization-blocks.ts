@@ -1,5 +1,5 @@
-import index, { BASE_URL } from '../services/api';
-import { OrganizationType } from '../domains/organization/model/types';
+import instance, { BASE_URL } from '../services/api';
+import type { OrganizationType } from '../domains/organization/model/types';
 
 const ORGANIZATION_BLOCKS_URL = `${BASE_URL}/orgs`;
 
@@ -8,7 +8,7 @@ export const readOrganizationBlocks = async (): Promise<OrganizationType[]> => {
     await new Promise((resolve) => {
       setTimeout(resolve, 1000);
     });
-    const response = await index.get<OrganizationType[]>(
+    const response = await instance.get<OrganizationType[]>(
       ORGANIZATION_BLOCKS_URL,
     );
     return Array.isArray(response.data) ? response.data : [];
@@ -22,7 +22,7 @@ export const createOrganizationBlock = async (
   newOrganizationBlock: Omit<OrganizationType, 'id'>,
 ): Promise<OrganizationType> => {
   try {
-    const response = await index.post<OrganizationType>(
+    const response = await instance.post<OrganizationType>(
       ORGANIZATION_BLOCKS_URL,
       newOrganizationBlock,
     );
@@ -40,7 +40,7 @@ export const updateOrganizationBlock = async (
   try {
     const url = `${ORGANIZATION_BLOCKS_URL}/${previousSlug}`;
 
-    const response = await index.patch<OrganizationType>(
+    const response = await instance.patch<OrganizationType>(
       url,
       updatedOrganizationBlock,
     );
@@ -55,7 +55,7 @@ export const updateOrganizationBlock = async (
 export const deleteOrganizationBlock = async (slug: string): Promise<void> => {
   try {
     const url = `${ORGANIZATION_BLOCKS_URL}/${slug}`;
-    await index.delete(url);
+    await instance.delete(url);
   } catch (error) {
     console.error('[API] DELETE request failed:', error);
     throw error;

@@ -4,7 +4,6 @@ import { createRoot } from 'react-dom/client';
 import { RouterProvider } from 'react-router';
 import { AuthProvider } from '../provider/AuthProvider';
 import StoreProvider from '../provider/StoreProvider';
-import { useIndexedDB } from '../database';
 import { ThemeProvider } from '../provider/theme-provider';
 
 import router from '../app/router';
@@ -15,7 +14,6 @@ import '@ant-design/v5-patch-for-react-19';
 
 export default function App() {
   const [, contextHolder] = notification.useNotification();
-  useIndexedDB();
 
   // TODO: use the following root creation mechanism till next Antd (actual: 5.24.3) next major update that will support React: 19.0.0
   unstableSetRender((node, container) => {

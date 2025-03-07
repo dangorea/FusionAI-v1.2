@@ -6,10 +6,13 @@ import styles from './main-layout.module.scss';
 import Header from './header';
 import type { WorkItemType } from '../../../domains/work-item/model/types';
 import { WorkItemsModal } from '../../../domains/work-item/components/modal';
+import { useAppDispatch } from '../../../lib/redux/hook';
+import { setSelectedWorkItem } from '../../../lib/redux/feature/work-items/reducer';
 
 const { Content } = Layout;
 
 export default function MainLayout() {
+  const dispatch = useAppDispatch();
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
   const [isModalOpen, setModalOpen] = useState<boolean>(false);
 
@@ -30,6 +33,7 @@ export default function MainLayout() {
 
   const handleBackToWorkItems = () => {
     navigate('/work-items');
+    dispatch(setSelectedWorkItem(null));
   };
 
   return (

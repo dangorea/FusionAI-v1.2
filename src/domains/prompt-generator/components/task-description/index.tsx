@@ -5,6 +5,7 @@ import { SendOutlined } from '@ant-design/icons';
 
 export interface TaskDescriptionInputProps {
   onSend?: (content: string) => void;
+  onContentChange?: (content: string) => void;
 }
 
 export interface TaskDescriptionInputRef {
@@ -15,7 +16,7 @@ export interface TaskDescriptionInputRef {
 
 export const TaskDescription = forwardRef(
   (props: TaskDescriptionInputProps, ref: Ref<TaskDescriptionInputRef>) => {
-    const { onSend } = props;
+    const { onSend, onContentChange } = props;
     const [content, setContent] = useState('');
 
     useImperativeHandle(ref, () => ({
@@ -63,7 +64,11 @@ export const TaskDescription = forwardRef(
         >
           <Input.TextArea
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={(e) => {
+              setContent(e.target.value);
+              // call the onContentChange callback when text changes
+              onContentChange?.(e.target.value);
+            }}
             placeholder="Write your task description..."
             autoSize={{ minRows: 10, maxRows: 20 }}
             style={{

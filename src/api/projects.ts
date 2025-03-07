@@ -1,5 +1,5 @@
-import index, { BASE_URL } from '../services/api';
-import { ProjectType } from '../domains/project/model/type';
+import instance, { BASE_URL } from '../services/api';
+import type { ProjectType } from '../domains/project/model/type';
 
 export const readProjects = async (orgSlug: string): Promise<ProjectType[]> => {
   try {
@@ -8,7 +8,7 @@ export const readProjects = async (orgSlug: string): Promise<ProjectType[]> => {
     }
 
     const url = `${BASE_URL}/orgs/${orgSlug}/projects`;
-    const response = await index.get(url);
+    const response = await instance.get(url);
 
     if (!response.data || !Array.isArray(response.data)) {
       throw new Error('Invalid response structure');
@@ -26,7 +26,7 @@ export const createProject = async (
 ): Promise<ProjectType> => {
   try {
     const url = `${BASE_URL}/orgs/${orgSlug}/projects`;
-    const response = await index.post<ProjectType>(url, newProject);
+    const response = await instance.post<ProjectType>(url, newProject);
     return { ...response.data };
   } catch (error) {
     console.error('[API] POST request failed:', error);
@@ -47,7 +47,7 @@ export const updateProject = async (
     }
 
     const url = `${BASE_URL}/orgs/${orgSlug}/projects/${id}`;
-    const response = await index.patch<ProjectType>(url, projectWithoutId);
+    const response = await instance.patch<ProjectType>(url, projectWithoutId);
     return response.data;
   } catch (error) {
     console.error('[API] PATCH request failed:', error);
@@ -64,7 +64,7 @@ export const deleteProject = async (
       throw new Error('Project ID is missing for delete.');
     }
     const url = `${BASE_URL}/orgs/${orgSlug}/projects/${id}`;
-    await index.delete(url);
+    await instance.delete(url);
   } catch (error) {
     console.error('[API] DELETE request failed:', error);
     throw error;

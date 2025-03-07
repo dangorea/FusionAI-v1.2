@@ -1,5 +1,5 @@
-import index, { BASE_URL } from '../services/api';
-import { WorkItemType } from '../domains/work-item/model/types';
+import instance, { BASE_URL } from '../services/api';
+import type { WorkItemType } from '../domains/work-item/model/types';
 
 const WORK_ITEMS_BASE_URL = (orgSlug: string, projectId: string) =>
   `${BASE_URL}/orgs/${orgSlug}/projects/${projectId}/work-items`;
@@ -13,7 +13,7 @@ export const createWorkItem = async (
 ): Promise<WorkItemType> => {
   try {
     const url = WORK_ITEMS_BASE_URL(orgSlug, projectId);
-    const response = await index.post<WorkItemType>(url, data);
+    const response = await instance.post<WorkItemType>(url, data);
     return response.data;
   } catch (error) {
     console.error('[API] POST request failed:', error);
@@ -39,7 +39,7 @@ export const updateWorkItem = async (
 
     const url = `${WORK_ITEMS_BASE_URL(orgSlug, projectId)}/${id}`;
 
-    const response = await index.patch<WorkItemType>(url, workItemWithoutId);
+    const response = await instance.patch<WorkItemType>(url, workItemWithoutId);
     return response.data;
   } catch (error) {
     console.error('[API] PATCH request failed:', error);
@@ -62,7 +62,7 @@ export const fetchWorkItems = async (
   try {
     const url = `${WORK_ITEMS_BASE_URL(orgSlug, projectId)}?page=${page}&limit=${limit}${searchTerm ? `&search=${searchTerm}` : ''}`;
 
-    const response = await index.get<{
+    const response = await instance.get<{
       data: WorkItemType[];
       totalCount: number;
       totalPages: number;
@@ -82,7 +82,7 @@ export const deleteWorkItem = async (
 ): Promise<void> => {
   try {
     const url = `${WORK_ITEMS_BASE_URL(orgSlug, projectId)}/${id}`;
-    return await index.delete(url);
+    return await instance.delete(url);
   } catch (error) {
     console.error('[API] DELETE request failed:', error);
     throw error;

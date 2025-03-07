@@ -3,7 +3,6 @@ import { Dropdown, Menu, Space, Typography } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import { LocalStorageKeys } from '../../../../../utils/localStorageKeys';
 import { useAppDispatch, useAppSelector } from '../../../../../lib/redux/hook';
-import { fetchOrganizationBlocks } from '../../../../../lib/redux/feature/organization/thunk';
 import {
   selectAllOrganizations,
   selectCurrentOrganizationId,
@@ -17,10 +16,6 @@ export function OrganizationDropdown() {
   const selectedOrganization = organizationBlocks.find(
     (org) => org._id === currentId,
   );
-
-  useEffect(() => {
-    dispatch(fetchOrganizationBlocks());
-  }, [dispatch]);
 
   useEffect(() => {
     if (organizationBlocks.length === 0) {

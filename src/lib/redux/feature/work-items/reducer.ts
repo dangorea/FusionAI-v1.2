@@ -11,15 +11,15 @@ import {
 import { WORK_ITEMS_REDUCER_NAME } from '../../reducer-constant';
 
 const initialState: WorkItemsState = workItemsAdapter.getInitialState({
-  editingWorkItem: null,
+  selectedWorkItem: null,
 });
 
 const workItemsSlice = createSlice({
   name: WORK_ITEMS_REDUCER_NAME,
   initialState,
   reducers: {
-    setEditingWorkItem(state, action: PayloadAction<string | null>) {
-      state.editingWorkItem = action.payload;
+    setSelectedWorkItem(state, action: PayloadAction<string | null>) {
+      state.selectedWorkItem = action.payload;
     },
     setWorkItems: workItemsAdapter.setAll,
   },
@@ -39,5 +39,5 @@ const workItemsSlice = createSlice({
   },
 });
 
-export const { setEditingWorkItem, setWorkItems } = workItemsSlice.actions;
+export const { setSelectedWorkItem, setWorkItems } = workItemsSlice.actions;
 export default workItemsSlice.reducer;

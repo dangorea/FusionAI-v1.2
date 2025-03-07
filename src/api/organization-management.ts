@@ -1,5 +1,5 @@
-import index, { BASE_URL } from '../services/api';
-import { OrganizationManagementDataType } from '../lib/redux/feature/user/types';
+import instance, { BASE_URL } from '../services/api';
+import type { OrganizationManagementDataType } from '../lib/redux/feature/user/types';
 
 const ORGANIZATION_MANAGEMENT_URL = `${BASE_URL}/orgs`;
 
@@ -8,7 +8,7 @@ export const fetchOrganizationMembers = async (
 ): Promise<OrganizationManagementDataType[]> => {
   try {
     const url = `${ORGANIZATION_MANAGEMENT_URL}/${slug}/members`;
-    const response = await index.get<OrganizationManagementDataType[]>(url);
+    const response = await instance.get<OrganizationManagementDataType[]>(url);
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('[API] GET request failed for members:', error);
@@ -22,7 +22,7 @@ export const addOrganizationMember = async (
 ): Promise<OrganizationManagementDataType> => {
   try {
     const url = `${ORGANIZATION_MANAGEMENT_URL}/${slug}/members`;
-    const response = await index.post<OrganizationManagementDataType>(
+    const response = await instance.post<OrganizationManagementDataType>(
       url,
       newMember,
     );
@@ -39,7 +39,7 @@ export const updateOrganizationMemberRole = async (
 ): Promise<OrganizationManagementDataType> => {
   try {
     const url = `${ORGANIZATION_MANAGEMENT_URL}/${slug}/members`;
-    const response = await index.patch<OrganizationManagementDataType>(
+    const response = await instance.patch<OrganizationManagementDataType>(
       url,
       updatedData,
     );
@@ -60,7 +60,7 @@ export const removeOrganizationMember = async (
 ): Promise<void> => {
   try {
     const url = `${ORGANIZATION_MANAGEMENT_URL}/${slug}/members`;
-    await index.delete(url, { data });
+    await instance.delete(url, { data });
   } catch (error) {
     console.error('[API] DELETE request failed for removing member:', error);
     throw error;

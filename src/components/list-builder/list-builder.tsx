@@ -21,6 +21,8 @@ export interface ListBuilderProps {
   loadMoreThreshold?: number;
   containerStyle?: CSSProperties;
   onOptionClick?: (option: ListOption) => void;
+  // New prop to choose between single or multiple selection
+  selectionType?: 'single' | 'multiple';
 }
 
 export function ListBuilder({
@@ -33,10 +35,14 @@ export function ListBuilder({
   loadMoreThreshold = 20,
   containerStyle,
   onOptionClick,
+  selectionType = 'single',
 }: ListBuilderProps) {
   const [displayedOptions, setDisplayedOptions] = useState<ListOption[]>(
     lazyLoad ? options.slice(0, loadMoreThreshold) : options,
   );
+
+  // State to track the selected option keys
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
 
   const observerRef = useRef<HTMLDivElement>(null);
 
@@ -78,6 +84,19 @@ export function ListBuilder({
     );
   }, [options, lazyLoad, loadMoreThreshold]);
 
+  const handleItemClick = (item: ListOption) => {
+    if (selectionType === 'multiple') {
+      setSelectedKeys((prev) =>
+        prev.includes(item.key)
+          ? prev.filter((key) => key !== item.key)
+          : [...prev, item.key],
+      );
+    } else {
+      setSelectedKeys([item.key]);
+    }
+    onOptionClick?.(item);
+  };
+
   return (
     <div style={{ ...containerStyle, overflowY: 'auto' }}>
       {headerTitle && (
@@ -97,21 +116,27 @@ export function ListBuilder({
       )}
       <List
         dataSource={lazyLoad ? displayedOptions : options}
-        renderItem={(item: ListOption) => (
-          <List.Item
-            onClick={() => onOptionClick && onOptionClick(item)}
-            style={{ cursor: 'pointer', padding: '8px 16px' }}
-          >
-            {item.icon ? (
-              <span style={{ marginRight: 8 }}>{item.icon}</span>
-            ) : (
-              globalOptionIcon && (
-                <span style={{ marginRight: 8 }}>{globalOptionIcon}</span>
-              )
-            )}
-            <span>{item.label}</span>
-          </List.Item>
-        )}
+        renderItem={(item: ListOption) => {
+          const isSelected = selectedKeys.includes(item.key);
+          const itemStyle = {
+            cursor: 'pointer',
+            padding: '8px 16px',
+            borderRadius: isSelected ? '8px' : undefined,
+            backgroundColor: isSelected ? '#e6f7ff' : undefined,
+          };
+          return (
+            <List.Item onClick={() => handleItemClick(item)} style={itemStyle}>
+              {item.icon ? (
+                <span style={{ marginRight: 8 }}>{item.icon}</span>
+              ) : (
+                globalOptionIcon && (
+                  <span style={{ marginRight: 8 }}>{globalOptionIcon}</span>
+                )
+              )}
+              <span>{item.label}</span>
+            </List.Item>
+          );
+        }}
       />
       {lazyLoad && (
         <div ref={observerRef} style={{ height: 20, margin: '10px 0' }} />

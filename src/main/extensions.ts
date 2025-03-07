@@ -1,14 +1,18 @@
-const installExtension = require('electron-devtools-installer');
+// src/main/extensions.ts
+import installExtension, {
+  REACT_DEVELOPER_TOOLS,
+  REDUX_DEVTOOLS,
+} from 'electron-devtools-installer';
 
 export async function installExtensions() {
   const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
-  const extensions = ['REACT_DEVELOPER_TOOLS'];
   try {
-    return await installExtension.default(
-      extensions.map((name: string) => installExtension[name]),
-      forceDownload,
-    );
+    await Promise.all([
+      installExtension(REACT_DEVELOPER_TOOLS, { forceDownload }),
+      installExtension(REDUX_DEVTOOLS, { forceDownload }),
+    ]);
+    console.log('Developer extensions installed successfully');
   } catch (error) {
-    console.log('Error installing extensions:', error);
+    console.error('Error installing developer extensions:', error);
   }
 }

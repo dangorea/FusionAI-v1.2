@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { notification } from 'antd';
 import styles from './organization-blocks.module.scss';
 import { NOTIFICATION_DURATION_SHORT } from '../../../utils/notifications';
@@ -7,7 +7,6 @@ import {
   deleteOrganizationBlock,
   editOrganizationBlock,
 } from '../../../lib/redux/feature/organization/reducer';
-import { fetchOrganizationBlocks } from '../../../lib/redux/feature/organization/thunk';
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import { selectAllOrganizations } from '../../../lib/redux/feature/organization/selectors';
 import {
@@ -22,10 +21,6 @@ export function Organization() {
   const dispatch = useAppDispatch();
   const organizations = useAppSelector(selectAllOrganizations);
   const [selectedBlocks, setSelectedBlocks] = useState<OrganizationType[]>([]);
-
-  useEffect(() => {
-    dispatch(fetchOrganizationBlocks());
-  }, [dispatch]);
 
   const handleAddOrganizationBlock = async (
     newBlock: Omit<OrganizationType, '_id'>,

@@ -12,12 +12,12 @@ export const {
   selectTotal: selectWorkItemTotal,
 } = workItemsAdapter.getSelectors<RootState>(selectWorkItemsState);
 
-export const selectEditingWorkItem = createSelector(
+export const selectSelectedWorkItem = createSelector(
   selectWorkItemsState,
-  (state) => state.editingWorkItem,
+  (state) => state.selectedWorkItem,
 );
 
-export const selectEditingWorkItemEntity = createSelector(
-  [selectEditingWorkItem, selectWorkItemEntities],
-  (editingId, entities) => (editingId ? entities[editingId] : undefined),
+export const selectSelectedWorkItemEntity = createSelector(
+  [selectSelectedWorkItem, selectWorkItemEntities],
+  (selectedId, entities) => (selectedId ? entities[selectedId] : undefined),
 );

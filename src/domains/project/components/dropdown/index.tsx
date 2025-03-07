@@ -6,7 +6,6 @@ import { LocalStorageKeys } from '../../../../utils/localStorageKeys';
 import { useAppDispatch, useAppSelector } from '../../../../lib/redux/hook';
 import { selectAllProjects } from '../../../../lib/redux/feature/projects/selectors';
 import { setSelectedProjectId } from '../../../../lib/redux/feature/projects/reducer';
-import { fetchProjects } from '../../../../lib/redux/feature/projects/thunk';
 import { selectSelectedOrganizationEntity } from '../../../../lib/redux/feature/organization/selectors';
 
 interface ProjectsDropdownProps {
@@ -21,10 +20,6 @@ export function ProjectsDropdown({ value, onChange }: ProjectsDropdownProps) {
   const [currentValue, setCurrentValue] = useState<string | undefined>(value);
 
   useEffect(() => {
-    if (org) {
-      dispatch(fetchProjects(org.slug));
-    }
-
     const savedProjectId = localStorage.getItem(
       LocalStorageKeys.SELECTED_PROJECT,
     );

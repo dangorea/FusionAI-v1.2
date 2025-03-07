@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { notification } from 'antd';
 import { TextBlockModal, TextBlockTable } from '../components';
 import styles from './rules.module.scss';
@@ -16,7 +16,6 @@ import {
   deleteTextBlock as apiDeleteTextBlock,
   updateTextBlock,
 } from '../../../api/text-blocks';
-import { fetchRules } from '../../../lib/redux/feature/rules/thunk';
 
 export function Rules() {
   const dispatch = useAppDispatch();
@@ -25,16 +24,8 @@ export function Rules() {
   });
   const org = useAppSelector(selectSelectedOrganizationEntity);
 
-  console.log(org);
-
   const [selectedBlocks, setSelectedBlocks] = useState<RuleType[]>([]);
   const [isModalOpen] = useState(false);
-
-  useEffect(() => {
-    if (org?.slug) {
-      dispatch(fetchRules(org?.slug));
-    }
-  }, [org?.slug]);
 
   const handleAddTextBlock = async (newBlock: Omit<RuleType, 'id'>) => {
     try {

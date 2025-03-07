@@ -1,5 +1,5 @@
-import index, { BASE_URL } from '../services/api';
-import { RuleType } from '../lib/redux/feature/rules/types';
+import instance, { BASE_URL } from '../services/api';
+import type { RuleType } from '../lib/redux/feature/rules/types';
 
 const TEXT_BLOCKS_BASE_URL = (orgSlug: string) =>
   `${BASE_URL}/orgs/${orgSlug}/text-blocks`;
@@ -11,7 +11,7 @@ export const readTextBlocks = async (orgSlug: string): Promise<RuleType[]> => {
     }
     const url = `${BASE_URL}/orgs/${orgSlug}/text-blocks`;
 
-    const response = await index.get(url);
+    const response = await instance.get(url);
 
     if (!response.data || !Array.isArray(response.data)) {
       throw new Error('Invalid response structure');
@@ -30,7 +30,7 @@ export const createTextBlock = async (
 ): Promise<RuleType> => {
   try {
     const url = TEXT_BLOCKS_BASE_URL(orgSlug);
-    const response = await index.post<RuleType>(url, newTextBlock);
+    const response = await instance.post<RuleType>(url, newTextBlock);
     return response.data;
   } catch (error) {
     console.error('[API] POST request failed:', error);
@@ -45,7 +45,7 @@ export const updateTextBlock = async (
   try {
     const { id, ...textBlockWithoutId } = updatedTextBlock;
     const url = `${TEXT_BLOCKS_BASE_URL(orgSlug)}/${id}`;
-    const response = await index.patch<RuleType>(url, textBlockWithoutId);
+    const response = await instance.patch<RuleType>(url, textBlockWithoutId);
     return response.data;
   } catch (error) {
     console.error('[API] patch request failed:', error);
@@ -59,7 +59,7 @@ export const deleteTextBlock = async (
 ): Promise<void> => {
   try {
     const url = `${TEXT_BLOCKS_BASE_URL(orgSlug)}/${id}`;
-    await index.delete(url);
+    await instance.delete(url);
   } catch (error) {
     console.error('[API] DELETE request failed:', error);
     throw error;

@@ -1,15 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Layout, notification } from 'antd';
+import { HistoryOutlined } from '@ant-design/icons';
 import { useAppSelector } from '../../../lib/redux/hook';
 import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
 import { LocalStorageKeys } from '../../../utils/localStorageKeys';
 import styles from './prompt-generator.module.scss';
-import FileTree from '../../../components/file-tree';
-import TaskDescriptionInput, {
-  TaskDescriptionInputRef,
-} from './components/task-description/task-description-input';
-
-import CodeViewer from './components/code-viewer';
+import { FileTree, ListBuilder } from '../../../components';
+import type { TaskDescriptionInputRef } from '../components';
+import { CodeViewer, TaskDescription } from '../components';
+import { selectAllRules } from '../../../lib/redux/feature/rules/selectors';
 
 const { Sider, Content } = Layout;
 
@@ -17,7 +16,7 @@ export function PromptGenerator() {
   const selectedProjectId = useAppSelector(selectSelectedProjectId);
   const [projectPath, setProjectPath] = useState<string>('');
   const taskDescRef = useRef<TaskDescriptionInputRef>(null);
-
+  const rules = useAppSelector(selectAllRules);
   const [selectedFiles, setSelectedFiles] = useState<
     { filePath: string; content: string }[]
   >([]);
@@ -27,8 +26,6 @@ export function PromptGenerator() {
   const [originalFileContent, setOriginalFileContent] = useState<string>('');
   const [comparisonFileContent, setComparisonFileContent] =
     useState<string>('');
-
-  console.log('originalFileContent', originalFileContent);
 
   const watchedFiles = useRef<Set<string>>(new Set());
 
@@ -140,7 +137,7 @@ export function PromptGenerator() {
   return (
     <Layout style={{ minHeight: '100vh', background: '#F5F7FB' }}>
       <Sider
-        width={300}
+        width={360}
         theme="light"
         style={{
           background: '#fff',
@@ -151,7 +148,6 @@ export function PromptGenerator() {
           padding: '16px 0',
         }}
       >
-        {/* FileTree and Rules */}
         <div style={{ padding: '0 16px' }}>
           <FileTree
             rootPath={projectPath}
@@ -160,20 +156,23 @@ export function PromptGenerator() {
           />
 
           <div style={{ marginTop: 16 }}>
-            <h3 style={{ marginBottom: 16 }}>Rules</h3>
-            <ul style={{ listStyleType: 'none', padding: 0, margin: 0 }}>
-              <li style={{ marginBottom: 8, cursor: 'pointer' }}>Rule 1</li>
-              {/* ... more rules ... */}
-            </ul>
-            <Button
-              type="dashed"
-              block
-              style={{ marginTop: 16 }}
-              onClick={() => console.log('Add new text prompt clicked')}
-            >
-              Add new text prompt
-            </Button>
+            <ListBuilder
+              headerTitle="Rules"
+              options={rules.map((rule) => ({
+                key: rule.id,
+                label: rule.title,
+                value: rule.id,
+              }))}
+            />
           </div>
+          <Button
+            type="dashed"
+            block
+            style={{ marginTop: 16 }}
+            onClick={() => console.log('Add new text prompt clicked')}
+          >
+            Add new text prompt
+          </Button>
         </div>
       </Sider>
 
@@ -189,7 +188,7 @@ export function PromptGenerator() {
         >
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
             {!showCodeViewer ? (
-              <TaskDescriptionInput ref={taskDescRef} onSend={handleSend} />
+              <TaskDescription ref={taskDescRef} onSend={handleSend} />
             ) : (
               <CodeViewer
                 originalCode={originalFileContent}
@@ -201,6 +200,30 @@ export function PromptGenerator() {
           </div>
         </Content>
       </Layout>
+
+      <Sider
+        collapsedWidth={250}
+        width={250}
+        theme="light"
+        style={{
+          background: '#fff',
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100%',
+          overflowY: 'auto',
+          padding: '16px 0',
+        }}
+      >
+        <div style={{ padding: '0 16px' }}>
+          <div style={{ marginTop: 16 }}>
+            <ListBuilder
+              headerTitle="History"
+              options={[]}
+              headerIcon={<HistoryOutlined />}
+            />
+          </div>
+        </div>
+      </Sider>
     </Layout>
   );
 }

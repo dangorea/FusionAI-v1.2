@@ -54,7 +54,7 @@ instance.interceptors.response.use(
         })
           .then((token: unknown) => {
             if (originalRequest.headers) {
-              originalRequest.headers.Authorization = 'Bearer ' + token;
+              originalRequest.headers.Authorization = `Bearer ${token}`;
             }
             return instance(originalRequest);
           })
@@ -105,8 +105,7 @@ instance.interceptors.response.use(
         }
         processQueue(null, tokenData.access_token);
         if (originalRequest.headers) {
-          originalRequest.headers.Authorization =
-            'Bearer ' + tokenData.access_token;
+          originalRequest.headers.Authorization = `Bearer ${tokenData.access_token}`;
         }
         return instance(originalRequest);
       } catch (silentError) {

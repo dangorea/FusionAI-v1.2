@@ -1,8 +1,9 @@
-import { createEntityAdapter, EntityId } from '@reduxjs/toolkit';
-import { OrganizationType } from './types';
+import type { EntityId } from '@reduxjs/toolkit';
+import { createEntityAdapter } from '@reduxjs/toolkit';
+import type { OrganizationType } from '../../../../domains/organization/model/types';
 
 export const organizationAdapter = createEntityAdapter<
-  OrganizationBlockDataType,
+  OrganizationType,
   EntityId
 >({
   selectId: (block) => block._id!,

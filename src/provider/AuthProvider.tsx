@@ -1,4 +1,5 @@
-import { ReactNode, useEffect } from 'react';
+import type { ReactNode } from 'react';
+import { useEffect } from 'react';
 import { useAppDispatch } from '../lib/redux/hook';
 import { setToken } from '../lib/redux/feature/auth/reducer';
 

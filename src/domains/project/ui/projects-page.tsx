@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
 import { notification } from 'antd';
-import { ProjectModal, ProjectTable } from '../../../components';
 import styles from './Projects.module.scss';
 import { NOTIFICATION_DURATION_SHORT } from '../../../utils/notifications';
 
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
 import { selectAllProjects } from '../../../lib/redux/feature/projects/selectors';
-import { ProjectType } from '../model/type';
+import type { ProjectType } from '../model/type';
 
 import {
   createProjectThunk,
   deleteProjectsThunk,
   updateProjectThunk,
 } from '../../../lib/redux/feature/projects/thunk';
+import { ProjectModal, ProjectTable } from '../components';
 
 export function Projects() {
   const dispatch = useAppDispatch();

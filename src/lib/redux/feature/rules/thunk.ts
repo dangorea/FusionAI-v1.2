@@ -1,7 +1,7 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { notification } from 'antd';
-import { RuleType } from './types';
-import { readTextBlocks } from '../../../../api/textBlocks';
+import type { RuleType } from './types';
+import { readTextBlocks } from '../../../../api/text-blocks';
 
 export const fetchRules = createAsyncThunk(
   'rules/fetchRules',

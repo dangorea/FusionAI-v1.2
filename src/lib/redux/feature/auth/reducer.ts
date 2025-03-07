@@ -1,6 +1,7 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 import { AUTH_REDUCER_NAME } from '../../reducer-constant';
-import { AuthEntity } from './types';
+import type { AuthEntity } from './types';
 
 const initialState: AuthEntity = {
   token: null,

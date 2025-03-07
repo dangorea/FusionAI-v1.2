@@ -1,16 +1,17 @@
 import React from 'react';
-import { RouterProvider } from 'react-router';
-import { useIndexedDB } from '../database';
-import StoreProvider from '../provider/StoreProvider';
-import router from '../app/router';
-import './App.module.scss';
-import { AuthProvider } from '../provider/AuthProvider';
-import 'antd/dist/reset.css';
 import { notification, unstableSetRender } from 'antd';
 import { createRoot } from 'react-dom/client';
+import { RouterProvider } from 'react-router';
+import { AuthProvider } from '../provider/AuthProvider';
+import StoreProvider from '../provider/StoreProvider';
+import { useIndexedDB } from '../database';
+import { ThemeProvider } from '../provider/theme-provider';
+
+import router from '../app/router';
+import './App.module.scss';
+import 'antd/dist/reset.css';
 
 import '@ant-design/v5-patch-for-react-19';
-import { ThemeProvider } from '../provider/theme-provider';
 
 export default function App() {
   const [, contextHolder] = notification.useNotification();
@@ -22,7 +23,9 @@ export default function App() {
     const root = (container as Element)._reactRoot;
     root.render(node);
     return async () => {
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
       root.unmount();
     };
   });

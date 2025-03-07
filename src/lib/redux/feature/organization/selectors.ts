@@ -1,5 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { RootState } from '../../store';
+import type { RootState } from '../../store';
 import { organizationAdapter } from './adapter';
 
 const selectOrganizationState = (state: RootState) => state.organization;

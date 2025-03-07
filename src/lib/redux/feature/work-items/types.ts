@@ -1,5 +1,5 @@
-import { EntityId } from '@reduxjs/toolkit';
-import { WorkItemType } from '../../../../domains/work-item/model/types';
+import type { EntityId } from '@reduxjs/toolkit';
+import type { WorkItemType } from '../../../../domains/work-item/model/types';
 
 export interface LoadWorkItemsParams {
   page?: number;

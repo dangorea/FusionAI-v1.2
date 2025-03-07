@@ -1,5 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-import { RuleState } from './types';
+import type { RuleState } from './types';
 import { fetchRules } from './thunk';
 import { rulesAdapter } from './adapter';
 import { RULES_REDUCER_NAME } from '../../reducer-constant';

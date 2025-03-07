@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Button, notification } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { WorkItemsModal, WorkItemTable } from '../../../components';
+import { useNavigate } from 'react-router';
+import { WorkItemsModal, WorkItemTable } from '../components';
 import { NOTIFICATION_DURATION_LONG } from '../../../utils/notifications';
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import {
@@ -15,8 +16,7 @@ import { selectAllWorkItems } from '../../../lib/redux/feature/work-items/select
 
 import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
-import { WorkItemType } from '../model/types';
-import { useNavigate } from 'react-router';
+import type { WorkItemType } from '../model/types';
 import styles from '../../organization/ui/organization-management.module.scss';
 
 export function WorkItems() {

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { notification } from 'antd';
-import { OrganizationBlockTable, OrganizationModal } from '../../../components';
 import styles from './organization-blocks.module.scss';
 import { NOTIFICATION_DURATION_SHORT } from '../../../utils/notifications';
 import {
@@ -15,8 +14,9 @@ import {
   createOrganizationBlock,
   deleteOrganizationBlock as apiDeleteOrganizationBlock,
   updateOrganizationBlock,
-} from '../../../api/organizationBlocks';
-import { OrganizationType } from '../model/types';
+} from '../../../api/organization-blocks';
+import type { OrganizationType } from '../model/types';
+import { OrganizationBlockTable, OrganizationModal } from '../components';
 
 export function Organization() {
   const dispatch = useAppDispatch();

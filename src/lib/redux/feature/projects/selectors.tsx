@@ -1,5 +1,5 @@
 import { createSelector } from '@reduxjs/toolkit';
-import { RootState } from '../../store';
+import type { RootState } from '../../store';
 import { projectsAdapter } from './adapter';
 
 const selectProjectsState = (state: RootState) => state.projects;

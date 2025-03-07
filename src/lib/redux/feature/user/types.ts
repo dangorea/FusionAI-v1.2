@@ -1,4 +1,4 @@
-import { EntityId } from '@reduxjs/toolkit';
+import type { EntityId } from '@reduxjs/toolkit';
 
 export interface OrganizationManagementDataType {
   userId: string;

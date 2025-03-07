@@ -1,6 +1,6 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { notification } from 'antd';
-import {
+import type {
   CreateWorkItemParams,
   DeleteWorkItemParams,
   LoadWorkItemsParams,
@@ -12,8 +12,8 @@ import {
   deleteWorkItem as deleteWorkItemApi,
   fetchWorkItems,
   updateWorkItem,
-} from '../../../../api/workItems';
-import { WorkItemType } from '../../../../domains/work-item/model/types';
+} from '../../../../api/work-items';
+import type { WorkItemType } from '../../../../domains/work-item/model/types';
 
 export const loadWorkItemsThunk = createAsyncThunk<
   LoadWorkItemsResponse,

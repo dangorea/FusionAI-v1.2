@@ -1,5 +1,6 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { WorkItemsState } from './types';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
+import type { WorkItemsState } from './types';
 import { workItemsAdapter } from './adapter';
 import {
   createWorkItemThunk,

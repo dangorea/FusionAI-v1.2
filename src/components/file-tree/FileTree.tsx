@@ -35,14 +35,14 @@ interface FileTreeProps {
   onSingleSelect?: (filePath: string) => void;
 }
 
-const FileTree: React.FC<FileTreeProps> = ({
+export function FileTree({
   rootPath,
   fileSets,
   preselectedFiles = [],
   modifiedPaths,
   onFileSelectionChange,
   onSingleSelect,
-}) => {
+}: FileTreeProps) {
   const [treeData, setTreeData] = useState<DataNode[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>(preselectedFiles);
@@ -221,7 +221,18 @@ const FileTree: React.FC<FileTreeProps> = ({
       const fileSetKeys = fileSets
         .filter((fs) => fs.visible)
         .map((fs) => fs.id);
-      setExpandedKeys(fileSetKeys);
+
+      setExpandedKeys((prevKeys) => {
+        // Preserve only those keys that are still valid in the new tree
+        const preserved = preserveExpandedKeys(prevKeys, combined);
+        // Ensure the root file set keys are always expanded
+        fileSetKeys.forEach((key) => {
+          if (!preserved.includes(key)) {
+            preserved.push(key);
+          }
+        });
+        return preserved;
+      });
     } else if (rootPath) {
       const preserve = expandedKeys.length > 0;
       loadSingleTree(preserve, expandedKeys);
@@ -241,7 +252,7 @@ const FileTree: React.FC<FileTreeProps> = ({
       await loadSingleTree(true, previousExpanded);
     }, 300);
 
-    const fileTreeUpdatedHandler = (_event: any, updatedTree: FileNode) => {
+    const fileTreeUpdatedHandler = () => {
       debouncedUpdate();
     };
 
@@ -376,6 +387,4 @@ const FileTree: React.FC<FileTreeProps> = ({
       />
     </div>
   );
-};
-
-export default FileTree;
+}

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Layout } from 'antd';
 import { Outlet, useLocation, useNavigate } from 'react-router';
-import { DrawerRenderer } from '../../../components/drawer';
+import { DrawerRenderer } from '../../../components';
 import styles from './main-layout.module.scss';
 import Header from './header';
-import { WorkItemsModal } from '../../../components';
-import { WorkItemType } from '../../../domains/work-item/model/types';
+import type { WorkItemType } from '../../../domains/work-item/model/types';
+import { WorkItemsModal } from '../../../domains/work-item/components/modal';
 
 const { Content } = Layout;
 

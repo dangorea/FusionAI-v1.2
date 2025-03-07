@@ -1,17 +1,17 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { notification } from 'antd';
 import {
+  addProject,
+  deleteProject as removeProject,
+  editProject,
+} from './reducer';
+import {
   createProject,
   deleteProject as apiDeleteProject,
   readProjects,
   updateProject,
 } from '../../../../api/projects';
-import { ProjectType } from '../../../../domains/project/model/type';
-import {
-  addProject,
-  deleteProject as removeProject,
-  editProject,
-} from './reducer';
+import type { ProjectType } from '../../../../domains/project/model/type';
 
 export const fetchProjects = createAsyncThunk(
   'projects/fetchProjects',
@@ -29,9 +29,6 @@ export const fetchProjects = createAsyncThunk(
   },
 );
 
-/**
- * Create a new project
- */
 export const createProjectThunk = createAsyncThunk(
   'projects/createProject',
   async (
@@ -64,9 +61,6 @@ export const createProjectThunk = createAsyncThunk(
   },
 );
 
-/**
- * Update an existing project
- */
 export const updateProjectThunk = createAsyncThunk(
   'projects/updateProject',
   async (
@@ -103,9 +97,6 @@ export const updateProjectThunk = createAsyncThunk(
   },
 );
 
-/**
- * Delete multiple projects (based on selected project IDs)
- */
 export const deleteProjectsThunk = createAsyncThunk(
   'projects/deleteProjects',
   async (

@@ -8,7 +8,7 @@ import styles from './main-layout.module.scss';
 import UserAvatar from './user-avatar';
 import LogoutButton from './logout-button';
 import { OrganizationDropdown } from '../../../domains/organization/components';
-import { ProjectsDropdown } from '../../../domains/project/components/dropdown';
+import { ProjectsDropdown } from '../../../domains/project/components';
 
 const { Header, Content } = Layout;
 

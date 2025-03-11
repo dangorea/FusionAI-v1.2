@@ -6,6 +6,7 @@ import {
   createWorkItemThunk,
   deleteWorkItemThunk,
   loadWorkItemsThunk,
+  updateCodeSession,
   updateWorkItemThunk,
 } from './thunk';
 import { WORK_ITEMS_REDUCER_NAME } from '../../reducer-constant';
@@ -35,6 +36,9 @@ const workItemsSlice = createSlice({
     });
     builder.addCase(deleteWorkItemThunk.fulfilled, (state, action) => {
       workItemsAdapter.removeOne(state, action.payload);
+    });
+    builder.addCase(updateCodeSession.fulfilled, (state, action) => {
+      workItemsAdapter.upsertOne(state, action.payload);
     });
   },
 });

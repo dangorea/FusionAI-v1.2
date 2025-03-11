@@ -6,6 +6,7 @@ import rulesReducer from './feature/rules/reducer';
 import workItemsReducer from './feature/work-items/reducer';
 import rootUI from './feature/rootSlice/reducer';
 import authReducer from './feature/auth/reducer';
+import codeGeneration from './feature/code-generation/reducer';
 import { axiosTokenMiddleware } from './middleware/axiosTokenMiddleware';
 
 export const makeStore = () => {
@@ -18,6 +19,7 @@ export const makeStore = () => {
       workItems: workItemsReducer,
       auth: authReducer,
       rootUI,
+      codeGeneration,
     },
     middleware: (getDefaultMiddleware) =>
       getDefaultMiddleware().concat(axiosTokenMiddleware),

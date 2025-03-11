@@ -11,9 +11,11 @@ import {
   createWorkItem as createWorkItemApi,
   deleteWorkItem as deleteWorkItemApi,
   fetchWorkItems,
+  generateCodeSession,
   updateWorkItem,
 } from '../../../../api/work-items';
 import type { WorkItemType } from '../../../../domains/work-item/model/types';
+import type { RootState } from '../../store';
 
 export const loadWorkItemsThunk = createAsyncThunk<
   LoadWorkItemsResponse,
@@ -90,6 +92,22 @@ export const deleteWorkItemThunk = createAsyncThunk<
       return id;
     } catch (error: any) {
       console.error('Error deleting work item:', error);
+      return rejectWithValue(error);
+    }
+  },
+);
+
+export const updateCodeSession = createAsyncThunk<
+  WorkItemType,
+  { orgSlug: string; projectId: string; id: string },
+  { state: RootState }
+>(
+  'workItems/updateCodeSession',
+  async ({ orgSlug, projectId, id }, { rejectWithValue }) => {
+    try {
+      return await generateCodeSession(orgSlug, projectId, id);
+    } catch (error: any) {
+      console.error('Error updating work item:', error);
       return rejectWithValue(error);
     }
   },

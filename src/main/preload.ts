@@ -1,4 +1,5 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
+import type { IpcRendererEvent } from 'electron';
+import { contextBridge, ipcRenderer } from 'electron';
 
 export type Channels =
   | 'ipc-example'
@@ -54,11 +55,17 @@ contextBridge.exposeInMainWorld('fileAPI', {
     ipcRenderer.invoke('get-file-tree', rootPath),
   readFileContent: (filePath: string) =>
     ipcRenderer.invoke('read-file-content', filePath),
+  writeFileContent: (filePath: string, content: string) =>
+    ipcRenderer.invoke('write-file-content', filePath, content),
   watchFile: (filePath: string) => ipcRenderer.invoke('watch-file', filePath),
   unwatchFile: (filePath: string) =>
     ipcRenderer.invoke('unwatch-file', filePath),
   watchDirectory: (rootPath: string) =>
     ipcRenderer.invoke('watch-directory', rootPath),
+  buildGeneratedFileTree: (mapping: any, projectPath: string) =>
+    ipcRenderer.invoke('build-generated-file-tree', mapping, projectPath),
+  mergeFileTrees: (baseTree: any, compareTree: any) =>
+    ipcRenderer.invoke('merge-file-trees', baseTree, compareTree),
 });
 
 contextBridge.exposeInMainWorld('env', {

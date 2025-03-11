@@ -4,7 +4,12 @@ import chokidar from 'chokidar';
 import fs from 'fs';
 import { getMainWindow } from './window';
 import { openAuthWindow, silentTokenRenew } from './auth';
-import { getFileTree } from './fileTree';
+import {
+  buildFileTreeFromMapping,
+  getFileTree,
+  mergeComparisonTrees,
+} from './fileTree';
+import WebContents = Electron.WebContents;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -47,10 +52,10 @@ ipcMain.handle('openExternal', async (_event, url: string) => {
 
 const fileWatchers: Record<
   string,
-  { watcher: fs.FSWatcher; senders: Electron.WebContents[] }
+  { watcher: fs.FSWatcher; senders: WebContents[] }
 > = {};
 
-function createFileWatcher(filePath: string, sender: Electron.WebContents) {
+function createFileWatcher(filePath: string, sender: WebContents) {
   if (fileWatchers[filePath]) {
     const { senders } = fileWatchers[filePath];
     if (!senders.includes(sender)) {
@@ -182,4 +187,28 @@ ipcMain.handle('watch-directory', async (_event, rootPath: string) => {
     console.error('Error watching directory:', error);
     throw error;
   }
+});
+
+ipcMain.handle(
+  'write-file-content',
+  async (_event, filePath: string, content: string) => {
+    try {
+      fs.writeFileSync(filePath, content, 'utf-8');
+      return true;
+    } catch (error) {
+      console.error('Error writing file content:', filePath, error);
+      throw error;
+    }
+  },
+);
+
+ipcMain.handle(
+  'build-generated-file-tree',
+  async (_event, mapping, projectPath) => {
+    return buildFileTreeFromMapping(mapping, projectPath);
+  },
+);
+
+ipcMain.handle('merge-file-trees', async (_event, baseTree, compareTree) => {
+  return mergeComparisonTrees(baseTree, compareTree);
 });

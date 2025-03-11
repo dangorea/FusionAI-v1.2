@@ -1,23 +1,18 @@
-// --- Begin File: FileTree.tsx modifications ---
-import React, { useEffect, useRef, useState } from 'react';
-import { Checkbox, notification, Spin, Switch, Tree } from 'antd';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { notification, Spin, Switch, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import {
   CodeOutlined,
   DeleteOutlined,
-  EditOutlined,
   FileOutlined,
   FileTextOutlined,
   FolderFilled,
-  PlusCircleOutlined,
 } from '@ant-design/icons';
-import debounce from 'lodash/debounce';
 
 export interface FileNode {
   name: string;
   path: string;
   children?: FileNode[];
-  // NEW: optional change type for styling (added, modified, deleted)
   changeType?: 'added' | 'modified' | 'deleted';
 }
 
@@ -32,361 +27,274 @@ export interface FileSet {
   };
 }
 
-interface FileTreeProps {
-  rootPath?: string;
+export interface FileTreeProps {
   fileSets?: FileSet[];
-  preselectedFiles?: string[];
-  modifiedPaths?: string[];
+  projectPath?: string;
   onFileSelectionChange?: (selected: string[]) => void;
   onSingleSelect?: (filePath: string) => void;
 }
 
+function collectChangedPathKeys(node: FileNode): string[] {
+  let keys: string[] = [];
+  if (node.children && node.children.length > 0) {
+    let descendantHasChange = false;
+    for (const child of node.children) {
+      if (!child.children || child.children.length === 0) {
+        if (child.changeType) {
+          descendantHasChange = true;
+        }
+      } else {
+        const childKeys = collectChangedPathKeys(child);
+        if (childKeys.length > 0) {
+          descendantHasChange = true;
+          keys = keys.concat(childKeys);
+        }
+      }
+    }
+    if (descendantHasChange) {
+      keys.push(node.path);
+    }
+  }
+  return keys;
+}
+
+function toAntDataNode(
+  node: FileNode,
+  showModifiedOnly: boolean,
+): DataNode | null {
+  const isLeaf = !node.children || node.children.length === 0;
+  const effectiveChange = node.changeType;
+
+  let childNodes: DataNode[] = [];
+  if (node.children && node.children.length > 0) {
+    childNodes = node.children
+      .map((child) => toAntDataNode(child, showModifiedOnly))
+      .filter(Boolean) as DataNode[];
+  }
+
+  const hasNoChange = !effectiveChange && childNodes.length === 0;
+  if (showModifiedOnly && hasNoChange) {
+    return null;
+  }
+
+  let icon: React.ReactNode = isLeaf ? <FileOutlined /> : <FolderFilled />;
+  if (isLeaf && effectiveChange === 'deleted') {
+    icon = <DeleteOutlined style={{ color: 'red' }} />;
+  } else if (isLeaf) {
+    const ext = node.name.split('.').pop()?.toLowerCase();
+    if (ext === 'js' || ext === 'jsx' || ext === 'ts' || ext === 'tsx') {
+      icon = <CodeOutlined />;
+    } else if (ext === 'md' || ext === 'json') {
+      icon = <FileTextOutlined />;
+    }
+  }
+
+  const textStyle: React.CSSProperties = { marginLeft: 4 };
+  if (isLeaf) {
+    if (effectiveChange === 'modified') {
+      textStyle.color = 'yellow';
+    } else if (effectiveChange === 'added') {
+      textStyle.color = 'green';
+    } else if (effectiveChange === 'deleted') {
+      textStyle.color = 'red';
+    }
+  }
+
+  // Build the title content.
+  const titleContent = (
+    <span
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        whiteSpace: 'nowrap',
+        textOverflow: 'ellipsis',
+        overflow: 'hidden',
+      }}
+    >
+      {icon}
+      <span style={textStyle}>{node.name}</span>
+    </span>
+  );
+
+  // For directories, wrap the title in a div with a custom class,
+  // and mark them as non-selectable.
+  return {
+    key: node.path,
+    title: !isLeaf ? (
+      <div className="directory-node">{titleContent}</div>
+    ) : (
+      titleContent
+    ),
+    isLeaf,
+    selectable: isLeaf, // Only files (leaf nodes) are selectable.
+    children: childNodes,
+  };
+}
+
 export function FileTree({
-  rootPath,
   fileSets,
-  preselectedFiles = [],
-  modifiedPaths,
+  projectPath,
   onFileSelectionChange,
   onSingleSelect,
 }: FileTreeProps) {
-  const [treeData, setTreeData] = useState<DataNode[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [checkedKeys, setCheckedKeys] = useState<React.Key[]>(preselectedFiles);
+  const [loading, setLoading] = useState(false);
+  const [renderTree, setRenderTree] = useState<FileNode | null>(null);
+
+  const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
-  const [visibleFileSetIds, setVisibleFileSetIds] = useState<string[]>(
-    fileSets ? fileSets.filter((fs) => fs.visible).map((fs) => fs.id) : [],
-  );
-  const [showModifiedOnly, setShowModifiedOnly] = useState<boolean>(false);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
-  const expandedKeysRef = useRef(expandedKeys);
+  const [showModifiedOnly, setShowModifiedOnly] = useState(true);
 
   useEffect(() => {
-    expandedKeysRef.current = expandedKeys;
-  }, [expandedKeys]);
-
-  const defaultFolderIcon = <FolderFilled />;
-  const defaultFileIcon = <FileOutlined />;
-
-  const getFileIcon = (
-    filePath: string,
-    fileStyle?: { fileIcon?: React.ReactNode },
-  ): React.ReactNode => {
-    if (fileStyle?.fileIcon) return fileStyle.fileIcon;
-    const ext = filePath.split('.').pop()?.toLowerCase();
-    switch (ext) {
-      case 'js':
-      case 'ts':
-      case 'jsx':
-      case 'tsx':
-        return <CodeOutlined />;
-      case 'json':
-      case 'md':
-        return <FileTextOutlined />;
-      default:
-        return defaultFileIcon;
-    }
-  };
-
-  const getFolderIcon = (folderStyle?: {
-    folderIcon?: React.ReactNode;
-  }): React.ReactNode => {
-    if (folderStyle?.folderIcon) return folderStyle.folderIcon;
-    return defaultFolderIcon;
-  };
-
-  const isKeyInTree = (key: React.Key, node: DataNode): boolean => {
-    if (node.key === key) return true;
-    if (node.children) {
-      for (const child of node.children) {
-        if (isKeyInTree(key, child)) return true;
-      }
-    }
-    return false;
-  };
-
-  // UPDATED: Build tree data checking each node’s changeType to set a custom icon.
-  const buildAntTreeData = (
-    node: FileNode,
-    styleOverride?: {
-      folderIcon?: React.ReactNode;
-      fileIcon?: React.ReactNode;
-    },
-  ): DataNode => {
-    const isLeaf = !node.children || node.children.length === 0;
-    const children = node.children?.map((child) =>
-      buildAntTreeData(child, styleOverride),
-    );
-
-    let icon: React.ReactNode;
-    if (isLeaf && node.changeType) {
-      if (node.changeType === 'added') {
-        icon = <PlusCircleOutlined style={{ color: 'green' }} />;
-      } else if (node.changeType === 'deleted') {
-        icon = <DeleteOutlined style={{ color: 'red' }} />;
-      } else if (node.changeType === 'modified') {
-        icon = <EditOutlined style={{ color: 'orange' }} />;
+    if (fileSets && fileSets.length > 0) {
+      if (fileSets.length === 2) {
+        window.fileAPI
+          .mergeFileTrees(fileSets[0].tree, fileSets[1].tree)
+          .then((merged: FileNode) => setRenderTree(merged))
+          .catch((err: any) => {
+            console.error('Error merging file trees:', err);
+            notification.error({
+              message: 'Error merging file trees',
+              description: String(err),
+            });
+          });
       } else {
-        icon = getFileIcon(node.path, styleOverride);
+        setRenderTree(fileSets[0].tree);
       }
-    } else {
-      icon = isLeaf
-        ? getFileIcon(node.path, styleOverride)
-        : getFolderIcon(styleOverride);
+    } else if (projectPath) {
+      setLoading(true);
+      window?.fileAPI
+        .getFileTree(projectPath)
+        .then((tree: FileNode) => setRenderTree(tree))
+        .catch((err: any) => {
+          console.error('Error loading file tree:', err);
+          notification.error({
+            message: 'Failed to load file tree',
+            description: String(err),
+          });
+          return err;
+        })
+        .finally(() => setLoading(false));
     }
+  }, [fileSets, projectPath]);
 
-    return {
-      key: node.path,
-      title: (
-        <span
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            whiteSpace: 'nowrap',
-            textOverflow: 'ellipsis',
-            overflow: 'hidden',
-          }}
-        >
-          {icon}
-          <span style={{ marginLeft: 4 }}>{node.name}</span>
-        </span>
-      ),
-      isLeaf,
-      children,
-    };
-  };
+  const autoExpandedKeys = useMemo(() => {
+    if (!renderTree) return [];
+    const keysSet = new Set<string>([renderTree.path]);
+    if (fileSets && fileSets.length === 2) {
+      const changedKeys = collectChangedPathKeys(renderTree);
+      changedKeys.forEach((key) => keysSet.add(key));
+    }
+    return Array.from(keysSet);
+  }, [renderTree, fileSets]);
 
-  const combineFileSets = (): DataNode[] => {
-    if (!fileSets) return [];
-    const visibleSets = fileSets.filter((fs) =>
-      visibleFileSetIds.includes(fs.id),
+  useEffect(() => {
+    setExpandedKeys((prev) => (prev.length === 0 ? autoExpandedKeys : prev));
+  }, [autoExpandedKeys]);
+
+  const treeData = useMemo(() => {
+    if (!renderTree) return [];
+    const dataNode = toAntDataNode(
+      renderTree,
+      fileSets && fileSets.length === 2 ? showModifiedOnly : false,
     );
-    return visibleSets.map((fs) => {
-      const data = buildAntTreeData(fs.tree, fs.style);
-      return {
-        key: fs.id,
-        title: <span style={{ fontWeight: 'bold' }}>{fs.name}</span>,
-        children: [data],
-      };
-    });
-  };
+    return dataNode ? [dataNode] : [];
+  }, [renderTree, fileSets, showModifiedOnly]);
 
-  const preserveExpandedKeys = (
-    oldKeys: React.Key[],
-    newNodes: DataNode[],
-  ): React.Key[] => {
-    return oldKeys.filter((key) =>
-      newNodes.some((node) => isKeyInTree(key, node)),
-    );
-  };
-
-  const loadSingleTree = async (
-    preserveExpansion = false,
-    oldExpandedKeys: React.Key[] = [],
-  ) => {
-    if (!rootPath) return;
-    setLoading(true);
-
-    try {
-      const tree: FileNode | null = await window.fileAPI.getFileTree(rootPath);
-      if (tree) {
-        const dataNode = buildAntTreeData(tree);
-        setTreeData([dataNode]);
-        if (preserveExpansion) {
-          setExpandedKeys(preserveExpandedKeys(oldExpandedKeys, [dataNode]));
-        } else {
-          setExpandedKeys([dataNode.key]);
-        }
-      } else {
-        setTreeData([]);
-        setExpandedKeys([]);
-      }
-    } catch (err: any) {
-      console.error('Error loading file tree:', err);
-      notification.error({
-        message: 'Error loading file tree',
-        description: err.message || String(err),
+  useEffect(() => {
+    const validKeys = new Set<string>();
+    const gatherKeys = (nodes: DataNode[]) => {
+      nodes.forEach((n) => {
+        validKeys.add(String(n.key));
+        if (n.children) gatherKeys(n.children);
       });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filterTreeByModified = (nodes: DataNode[]): DataNode[] => {
-    if (!modifiedPaths || modifiedPaths.length === 0) return nodes;
-
-    const filterNode = (node: DataNode): DataNode | null => {
-      const keyStr = String(node.key);
-      let matched = modifiedPaths.includes(keyStr);
-      let filteredChildren: DataNode[] | undefined;
-      if (node.children) {
-        filteredChildren = node.children
-          .map((child) => filterNode(child))
-          .filter(Boolean) as DataNode[];
-        if (filteredChildren.length > 0) {
-          matched = true;
-        }
-      }
-      return matched ? { ...node, children: filteredChildren } : null;
     };
+    gatherKeys(treeData);
+    setExpandedKeys((prev) => prev.filter((k) => validKeys.has(String(k))));
+    setSelectedKeys((prev) => prev.filter((k) => validKeys.has(String(k))));
+    setCheckedKeys((prev) => prev.filter((k) => validKeys.has(String(k))));
+  }, [treeData]);
 
-    return nodes.map((node) => filterNode(node)).filter(Boolean) as DataNode[];
-  };
-
-  useEffect(() => {
-    if (fileSets) {
-      let combined = combineFileSets();
-      if (showModifiedOnly) {
-        combined = filterTreeByModified(combined);
-      }
-      setTreeData(combined);
-
-      const fileSetKeys = fileSets
-        .filter((fs) => fs.visible)
-        .map((fs) => fs.id);
-
-      setExpandedKeys((prevKeys) => {
-        // Preserve only those keys that are still valid in the new tree
-        const preserved = preserveExpandedKeys(prevKeys, combined);
-        // Ensure the root file set keys are always expanded
-        fileSetKeys.forEach((key) => {
-          if (!preserved.includes(key)) {
-            preserved.push(key);
+  const handleCheck = useCallback(
+    (
+      checkedValue:
+        | React.Key[]
+        | { checked: React.Key[]; halfChecked: React.Key[] },
+    ) => {
+      const checkedArr = Array.isArray(checkedValue)
+        ? checkedValue
+        : checkedValue.checked;
+      setCheckedKeys(checkedArr);
+      const leafPaths: string[] = [];
+      const visit = (nodes: DataNode[]) => {
+        nodes.forEach((n) => {
+          if (n.isLeaf && checkedArr.includes(n.key)) {
+            leafPaths.push(String(n.key));
           }
+          if (n.children) visit(n.children);
         });
-        return preserved;
-      });
-    } else if (rootPath) {
-      const preserve = expandedKeys.length > 0;
-      loadSingleTree(preserve, expandedKeys);
-    }
-  }, [rootPath, fileSets, visibleFileSetIds, showModifiedOnly]);
+      };
+      visit(treeData);
+      onFileSelectionChange?.(leafPaths);
+    },
+    [treeData, onFileSelectionChange],
+  );
 
-  useEffect(() => {
-    if (!rootPath) return;
-    if (window.fileAPI && typeof window.fileAPI.watchDirectory === 'function') {
-      window.fileAPI.watchDirectory(rootPath);
-    } else {
-      console.warn('fileAPI is not available');
-    }
-
-    const debouncedUpdate = debounce(async () => {
-      const previousExpanded = expandedKeysRef.current;
-      await loadSingleTree(true, previousExpanded);
-    }, 300);
-
-    const fileTreeUpdatedHandler = () => {
-      debouncedUpdate();
-    };
-
-    const unsubscribe = window.electron.ipcRenderer.on(
-      'file-tree-updated',
-      fileTreeUpdatedHandler as (...args: unknown[]) => void,
-    );
-
-    return () => {
-      unsubscribe();
-      debouncedUpdate.cancel?.();
-    };
-  }, [rootPath]);
-
-  useEffect(() => {
-    if (preselectedFiles.length > 0) {
-      setCheckedKeys(preselectedFiles);
-    }
-  }, [preselectedFiles]);
-
-  useEffect(() => {
-    onFileSelectionChange?.(checkedKeys.map(String));
-  }, [checkedKeys, onFileSelectionChange]);
-
-  const findNodeByKey = (nodes: DataNode[], key: string): DataNode | null => {
-    for (const node of nodes) {
-      if (node.key === key) return node;
-      if (node.children) {
-        const found = findNodeByKey(node.children, key);
-        if (found) return found;
+  // Updated onSelect: if a directory is clicked (non-leaf), do nothing.
+  const handleSelect = useCallback(
+    (selectedArr: React.Key[], info: any) => {
+      // If the clicked node is not a leaf, clear selection and do nothing.
+      if (!info?.node?.isLeaf) {
+        setSelectedKeys([]);
+        return;
       }
-    }
-    return null;
-  };
+      setSelectedKeys(selectedArr);
+      onSingleSelect?.(selectedArr.length === 1 ? String(selectedArr[0]) : '');
+    },
+    [onSingleSelect],
+  );
 
-  const handleCheck = (
-    checked: React.Key[] | { checked: React.Key[]; halfChecked: React.Key[] },
-  ) => {
-    const checkedArr = Array.isArray(checked) ? checked : checked.checked;
-    const filePaths = checkedArr.filter((key) => {
-      const node = findNodeByKey(treeData, String(key));
-      return node?.isLeaf;
-    });
-    setCheckedKeys(filePaths);
-  };
-
-  const handleSelect = (selected: React.Key[]) => {
-    setSelectedKeys(selected);
-    if (selected.length === 1) {
-      const filePath = String(selected[0]);
-      const node = findNodeByKey(treeData, filePath);
-      if (node?.isLeaf) {
-        onSingleSelect?.(filePath);
-      }
-    } else {
-      onSingleSelect?.('');
-    }
-  };
-
-  const handleFileSetToggle = (id: string, checked: boolean) => {
-    let newVisible = [...visibleFileSetIds];
-    if (checked) {
-      if (!newVisible.includes(id)) newVisible.push(id);
-    } else {
-      newVisible = newVisible.filter((v) => v !== id);
-    }
-    setVisibleFileSetIds(newVisible);
-    notification.info({
-      message: 'File Set Visibility Changed',
-      description: `File set "${id}" is now ${checked ? 'visible' : 'hidden'}.`,
-    });
-  };
+  const handleExpand = useCallback((keys: React.Key[]) => {
+    setExpandedKeys(keys);
+  }, []);
 
   if (loading) {
     return <Spin tip="Loading file tree..." />;
   }
-
-  if (!treeData || treeData.length === 0) {
-    return <div>No tree data available.</div>;
+  if (!treeData.length) {
+    return <div>No files to show.</div>;
   }
 
   return (
-    <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: 4 }}>
+    <div style={{ maxHeight: '60vh', overflow: 'auto' }}>
       <div
         style={{
-          marginBottom: '8px',
+          marginBottom: 8,
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
         }}
       >
-        {fileSets && (
-          <div>
-            {fileSets.map((fs) => (
-              <Checkbox
-                key={fs.id}
-                checked={visibleFileSetIds.includes(fs.id)}
-                onChange={(e) => handleFileSetToggle(fs.id, e.target.checked)}
-                style={{ marginRight: '8px' }}
-              >
-                {fs.name}
-              </Checkbox>
-            ))}
-          </div>
-        )}
-        {modifiedPaths && modifiedPaths.length > 0 && (
-          <div>
-            <Switch checked={showModifiedOnly} onChange={setShowModifiedOnly} />{' '}
-            <span>Show Modified Only</span>
+        {fileSets && fileSets.length === 2 && (
+          <div style={{ display: 'flex', alignItems: 'center' }}>
+            <Switch
+              checked={showModifiedOnly}
+              onChange={(val) => setShowModifiedOnly(val)}
+            />
+            <span style={{ marginLeft: 8 }}>Show only changed files</span>
           </div>
         )}
       </div>
+
+      <style>{`
+        .directory-node {
+          cursor: default;
+        }
+        .ant-tree-node-content-wrapper.ant-tree-node-selected > .directory-node {
+          background-color: transparent !important;
+          color: inherit !important;
+        }
+      `}</style>
 
       <style>{`
         .ant-tree-switcher {
@@ -398,17 +306,14 @@ export function FileTree({
 
       <Tree
         checkable
-        checkStrictly={false}
         treeData={treeData}
-        onCheck={handleCheck}
-        onSelect={handleSelect}
         checkedKeys={checkedKeys}
         selectedKeys={selectedKeys}
         expandedKeys={expandedKeys}
-        onExpand={(keys) => setExpandedKeys(keys)}
+        onCheck={handleCheck}
+        onSelect={handleSelect}
+        onExpand={handleExpand}
       />
     </div>
   );
 }
-
-// --- End File: FileTree.tsx modifications ---

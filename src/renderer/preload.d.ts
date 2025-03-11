@@ -1,4 +1,5 @@
 import type { ElectronHandler } from '../main/preload';
+import type { FileNode } from '../main/fileTree';
 
 declare global {
   interface Element {
@@ -19,8 +20,14 @@ declare global {
       getFileTree: (rootPath: string) => Promise<any>;
       readFileContent: (filePath: string) => Promise<string>;
       watchFile: (filePath: string) => Promise<void>;
+      writeFileContent: (filePath: string, content: string) => Promise<void>;
       unwatchFile: (filePath: string) => Promise<void>;
       watchDirectory: (rootPath: string) => Promise<void>;
+      buildGeneratedFileTree: (
+        mapping: any,
+        rootPath: string,
+      ) => Promise<FileNode>;
+      mergeFileTrees: (baseTree: any, compareTree: any) => Promise<FileNode>;
     };
     env: {
       BASE_URL: string;

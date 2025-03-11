@@ -1,278 +1,389 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, Layout, notification } from 'antd';
-import { HistoryOutlined } from '@ant-design/icons';
 import debounce from 'lodash/debounce';
 import { useParams } from 'react-router';
-import { useAppSelector } from '../../../lib/redux/hook';
+import pathBrowser from 'path-browserify';
+import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
-import { LocalStorageKeys } from '../../../utils/localStorageKeys';
-import styles from './prompt-generator.module.scss';
+import { selectAllRules } from '../../../lib/redux/feature/rules/selectors';
+import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
+import type { FileNode, FileSet } from '../../../components';
 import { FileTree, ListBuilder } from '../../../components';
+import { LocalStorageKeys } from '../../../utils/localStorageKeys';
 import type { TaskDescriptionInputRef } from '../components';
 import { CodeViewer, TaskDescription } from '../components';
-import { selectAllRules } from '../../../lib/redux/feature/rules/selectors';
-import { createCodeGenerationSession } from '../../../api/code-generations';
-import { updateWorkItem } from '../../../api/work-items';
-import codeGenerationHistoryService from '../../../database/code-generation-history';
-import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
+import styles from './prompt-generator.module.scss';
+import { selectSelectedWorkItemEntity } from '../../../lib/redux/feature/work-items/selectors';
+import type { TextBlockType } from '../../work-item/model/types';
+import {
+  updateCodeSession,
+  updateWorkItemThunk,
+} from '../../../lib/redux/feature/work-items/thunk';
+import { clearCodeGeneration } from '../../../lib/redux/feature/code-generation/reducer';
+import { fetchCodeGeneration } from '../../../lib/redux/feature/code-generation/thunk';
 
 const { Sider, Content } = Layout;
 
 export function PromptGenerator() {
   const { id } = useParams();
-  const selectedProjectId = useAppSelector(selectSelectedProjectId);
+  const dispatch = useAppDispatch();
   const org = useAppSelector(selectSelectedOrganizationEntity);
-  const rules = useAppSelector(selectAllRules);
   const projectId = useAppSelector(selectSelectedProjectId);
+  const rules = useAppSelector(selectAllRules);
+  const workItem = useAppSelector(selectSelectedWorkItemEntity);
+  const codeGenState = useAppSelector((state: any) => state.codeGeneration);
   const orgSlug = org?.slug;
-  const [projectPath, setProjectPath] = useState<string>('');
-  const taskDescRef = useRef<TaskDescriptionInputRef>(null);
-  const [selectedFiles, setSelectedFiles] = useState<
-    { filePath: string; content: string }[]
-  >([]);
-  const [showCodeViewer, setShowCodeViewer] = useState<boolean>(false);
+  const [projectPath, setProjectPath] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState<Record<string, string>>(
+    {},
+  );
+  const [hasUserModified, setHasUserModified] = useState(false);
+  const [showCodeViewer, setShowCodeViewer] = useState(false);
   const [originalFileContent, setOriginalFileContent] = useState<string>('');
-  const [comparisonFileContent, setComparisonFileContent] =
-    useState<string>('');
-  const [historyOptions, setHistoryOptions] = useState<
-    { key: string; label: string; value: string }[]
-  >([]);
-  const watchedFiles = useRef<Set<string>>(new Set());
-
-  // New state to track selected rules (by their IDs)
+  const [comparisonFileContent, setComparisonFileContent] = useState<
+    string | undefined
+  >('');
   const [selectedRules, setSelectedRules] = useState<string[]>([]);
-  // New flag to track if the user has interacted with any field.
-  const [hasUserModified, setHasUserModified] = useState<boolean>(false);
+  const [baseFileSet, setBaseFileSet] = useState<FileSet | null>(null);
+  const [generatedFileSet, setGeneratedFileSet] = useState<FileSet | null>(
+    null,
+  );
+  const taskDescRef = useRef<TaskDescriptionInputRef>(null);
 
   useEffect(() => {
-    if (!selectedProjectId) return;
+    dispatch(clearCodeGeneration());
+    if (workItem?.codeGenerationId) {
+      dispatch(fetchCodeGeneration(workItem.codeGenerationId));
+    }
+  }, [workItem?.codeGenerationId, dispatch]);
+
+  useEffect(() => {
+    if (!projectId) return;
     const savedPath = localStorage.getItem(
-      `${selectedProjectId}-${LocalStorageKeys.PROJECT_PATHS}`,
+      `${projectId}-${LocalStorageKeys.PROJECT_PATHS}`,
     );
     if (savedPath) {
       setProjectPath(savedPath);
     }
-  }, [selectedProjectId]);
+  }, [projectId]);
 
-  const removeAllFileBlocks = (text: string): string => {
+  const removeAllFileBlocks = useCallback((text: string) => {
     const pattern =
       /\n\n=== File: .*? ===\n[\s\S]*?\n=== EndFile: .*? ===\n\n/g;
     return text.replace(pattern, '');
-  };
+  }, []);
 
   const handleMultipleSelect = useCallback(async (filePaths: string[]) => {
     setHasUserModified(true);
-    const files = await Promise.all(
-      filePaths.map(async (filePath) => {
-        const content = await window.fileAPI.readFileContent(filePath);
-        return { filePath, content };
+    const loaded = await Promise.all(
+      filePaths.map(async (fp) => {
+        const content = await window.fileAPI.readFileContent(fp);
+        return { fp, content };
       }),
     );
-    setSelectedFiles(files);
+    const dict: Record<string, string> = {};
+    loaded.forEach(({ fp, content }) => {
+      dict[fp] = content;
+    });
+    setSelectedFiles(dict);
   }, []);
 
-  const handleSingleSelect = useCallback(async (filePath: string) => {
-    setHasUserModified(true);
-    const content = await window.fileAPI.readFileContent(filePath);
-    console.log('Single file selected for preview:', { filePath, content });
-  }, []);
-
-  useEffect(() => {
-    if (taskDescRef.current) {
-      const currentContent = taskDescRef.current.getContent();
-      const cleanedContent = removeAllFileBlocks(currentContent);
-      taskDescRef.current.setContent(cleanedContent);
-      selectedFiles.forEach((file) => {
-        taskDescRef.current?.addExtraContent(
-          `\n\n=== File: ${file.filePath} ===\n${file.content}\n=== EndFile: ${file.filePath} ===\n\n`,
-        );
-      });
-    }
-  }, [selectedFiles]);
-
-  const updateWorkItemHandler = async () => {
-    if (!hasUserModified) {
-      return;
-    }
-
-    const taskDescription = taskDescRef.current?.getContent() || '';
-    const sourceFiles = selectedFiles.map((file) => ({
-      path: file.filePath,
-      content: file.content,
-    }));
-    const textBlocks = selectedRules
-      .map((ruleId) => {
-        const rule = rules.find((r) => r.id === ruleId);
-        if (rule) {
-          return { id: rule.id, title: rule.title, details: rule.title };
-        }
-        return null;
-      })
-      .filter(Boolean);
-
-    const payload = { taskDescription, sourceFiles, textBlocks };
-
-    try {
-      if (orgSlug && projectId) {
-        await updateWorkItem(orgSlug, projectId, {
-          id,
-          ...payload,
-        });
+  const handleSingleSelect = useCallback(
+    async (filePath: string) => {
+      if (!filePath) {
+        setOriginalFileContent('');
+        setComparisonFileContent(undefined);
+        setShowCodeViewer(false);
+        return;
       }
-    } catch (err: any) {
-      console.error('Failed to update work item:', err);
-      notification.error({
-        message: 'Work item update failed',
-        description:
-          err.message || 'An error occurred while updating the work item.',
-      });
-    }
-  };
+      setHasUserModified(true);
 
-  const debouncedUpdate = useCallback(
-    debounce(() => {
-      updateWorkItemHandler();
-    }, 900),
-    [selectedFiles, selectedRules, rules, hasUserModified],
+      const originalContent = await window.fileAPI.readFileContent(filePath);
+      setOriginalFileContent(originalContent);
+
+      if (
+        codeGenState.latestFiles &&
+        Object.keys(codeGenState.latestFiles).length > 0
+      ) {
+        let searchPath = filePath;
+        if (projectPath && filePath.startsWith(projectPath)) {
+          const projectFolder = pathBrowser.basename(projectPath);
+          const relativePath = filePath.slice(projectPath.length);
+          const cleanRelativePath = relativePath.startsWith('/')
+            ? relativePath.slice(1)
+            : relativePath;
+          searchPath = `${projectFolder}/${cleanRelativePath}`;
+        }
+
+        const generatedContent =
+          codeGenState.latestFiles[searchPath] ||
+          codeGenState.latestFiles[pathBrowser.normalize(searchPath)] ||
+          codeGenState.latestFiles[pathBrowser.basename(searchPath)];
+
+        if (generatedContent) {
+          setComparisonFileContent(generatedContent);
+        } else {
+          setComparisonFileContent(undefined);
+        }
+      } else {
+        setComparisonFileContent(undefined);
+      }
+
+      setShowCodeViewer(true);
+    },
+    [codeGenState.latestFiles, projectPath],
   );
 
-  // Trigger update when selectedFiles, selectedRules, or rules change.
   useEffect(() => {
-    debouncedUpdate();
-    return () => debouncedUpdate.cancel();
-  }, [selectedFiles, selectedRules, rules, debouncedUpdate]);
+    if (!taskDescRef.current) return;
+    const currentText = taskDescRef.current.getContent();
+    const cleaned = removeAllFileBlocks(currentText);
+    taskDescRef.current.setContent(cleaned);
+    Object.entries(selectedFiles).forEach(([fp, content]) => {
+      taskDescRef.current?.addExtraContent(
+        `\n\n=== File: ${fp} ===\n${content}\n=== EndFile: ${fp} ===\n\n`,
+      );
+    });
+  }, [selectedFiles, removeAllFileBlocks]);
+
+  const updateWorkItemDebounced = useCallback(
+    debounce(async () => {
+      if (!hasUserModified || !orgSlug || !projectId) return;
+      const sourceFiles = Object.entries(selectedFiles).map(
+        ([absPath, content]) => {
+          let relative = absPath;
+          if (projectPath && absPath.startsWith(projectPath)) {
+            const projName = projectPath.split(/[\\/]/).pop() || '';
+            const partial = absPath
+              .slice(projectPath.length)
+              .replace(/^[/\\]+/, '');
+            relative = `${projName}/${partial}`;
+          }
+          return { path: relative, content };
+        },
+      );
+      const taskDescription = taskDescRef.current?.getContent() || '';
+      const textBlocks: (null | {
+        id: string;
+        title: string;
+        details: string;
+      })[] = selectedRules
+        .map((ruleId) => {
+          const r = rules.find((x) => x.id === ruleId);
+          return r ? { id: r.id, title: r.title, details: r.title } : null;
+        })
+        .filter(Boolean);
+      try {
+        await dispatch(
+          updateWorkItemThunk({
+            orgSlug,
+            projectId,
+            workItem: {
+              id,
+              taskDescription,
+              sourceFiles,
+              textBlocks: textBlocks as TextBlockType[],
+            },
+          }),
+        );
+      } catch (err: any) {
+        console.error('Failed to update work item:', err);
+        notification.error({
+          message: 'Work item update failed',
+          description:
+            err.message || 'An error occurred while updating the work item.',
+        });
+      }
+    }, 900),
+    [
+      selectedFiles,
+      selectedRules,
+      rules,
+      hasUserModified,
+      orgSlug,
+      projectId,
+      id,
+      projectPath,
+    ],
+  );
 
   useEffect(() => {
-    const unsubscribe = window.electron.ipcRenderer.on('file-changed', ((data: {
-      filePath: string;
-      content: string;
-    }) => {
-      setHasUserModified(true);
-      setSelectedFiles((prevFiles) =>
-        prevFiles.map((file) =>
-          file.filePath === data.filePath
-            ? { ...file, content: data.content }
-            : file,
-        ),
+    updateWorkItemDebounced();
+    return () => updateWorkItemDebounced.cancel();
+  }, [updateWorkItemDebounced]);
+
+  const handleSend = useCallback(async () => {
+    setHasUserModified(true);
+    if (!orgSlug || !projectId || !id) return;
+    try {
+      await dispatch(updateCodeSession({ orgSlug, projectId, id }));
+      if (
+        workItem &&
+        workItem.codeGenerationId &&
+        workItem.sourceFiles?.length
+      ) {
+        const firstFilePath = workItem.sourceFiles[0].path;
+        const normalizedFilePath = pathBrowser.isAbsolute(firstFilePath)
+          ? pathBrowser.normalize(firstFilePath)
+          : pathBrowser.normalize(pathBrowser.join(projectPath, firstFilePath));
+
+        const original =
+          await window.fileAPI.readFileContent(normalizedFilePath);
+        setOriginalFileContent(original);
+
+        const sessionResp = await dispatch(
+          fetchCodeGeneration(workItem.codeGenerationId),
+        );
+        console.log(sessionResp);
+
+        // const lastIteration =
+        //   sessionResp.iterations[sessionResp.iterations.length - 1];
+        //
+        // let generated = lastIteration.files[normalizedFilePath];
+        // if (!generated) {
+        //   generated =
+        //     lastIteration.files[pathBrowser.basename(normalizedFilePath)] || '';
+        // }
+        // setComparisonFileContent(generated);
+
+        setShowCodeViewer(true);
+      }
+    } catch (err: any) {
+      console.error('Error generating code:', err);
+      notification.error({
+        message: 'Code Generation Error',
+        description: err.message || 'Failed to generate code',
+      });
+    }
+  }, [orgSlug, projectId, id, dispatch, workItem, projectPath]);
+
+  const handleApplyChanges = useCallback(async () => {
+    if (!projectPath) {
+      notification.error({ message: 'Project path not set!' });
+      return;
+    }
+    try {
+      const projName = projectPath.split(/[\\/]/).pop() || '';
+      Object.entries(codeGenState.latestFiles || {}).map(
+        async ([key, content]) => {
+          let absolutePath = key;
+          if (key.startsWith(projName)) {
+            const partial = key.slice(projName.length).replace(/^[/\\]+/, '');
+            absolutePath = `${projectPath}/${partial}`;
+          }
+          await window.fileAPI.writeFileContent(
+            absolutePath,
+            content as string,
+          );
+        },
       );
-      const rootFolder = projectPath ? projectPath.split(/[\\/]/).pop() : '';
-      const relativePath =
-        projectPath && data.filePath.startsWith(projectPath)
+      notification.success({ message: 'Files updated successfully.' });
+    } catch (err: any) {
+      console.error('Error applying changes:', err);
+      notification.error({ message: 'Failed to apply changes.' });
+    }
+  }, [projectPath, codeGenState.latestFiles]);
+
+  useEffect(() => {
+    const unsub = window.electron.ipcRenderer.on(
+      'file-changed',
+      (data: any) => {
+        setHasUserModified(true);
+        setSelectedFiles((prev) => ({
+          ...prev,
+          [data.filePath]: data.content,
+        }));
+        const rootFolder = projectPath.split(/[\\/]/).pop() || '';
+        const shortPath = data.filePath.startsWith(projectPath)
           ? data.filePath.slice(projectPath.length)
           : data.filePath;
-      notification.info({
-        message: `${rootFolder} File Updated`,
-        description: `File changed: ${relativePath}`,
-      });
-    }) as (...args: unknown[]) => void);
-    return () => {
-      unsubscribe();
-    };
+        notification.info({
+          message: `${rootFolder} File Updated`,
+          description: `File changed: ${shortPath}`,
+        });
+      },
+    );
+    return () => unsub();
   }, [projectPath]);
 
   useEffect(() => {
-    const newFilePaths = new Set(selectedFiles.map((file) => file.filePath));
-    newFilePaths.forEach((filePath) => {
-      if (!watchedFiles.current.has(filePath)) {
-        window.fileAPI.watchFile(filePath);
-        watchedFiles.current.add(filePath);
-      }
-    });
-    watchedFiles.current.forEach((filePath) => {
-      if (!newFilePaths.has(filePath)) {
-        window.fileAPI.unwatchFile(filePath);
-        watchedFiles.current.delete(filePath);
-      }
+    Object.keys(selectedFiles).forEach((fp) => {
+      window.fileAPI.watchFile(fp);
     });
   }, [selectedFiles]);
 
-  const handleSend = async (content: string) => {
-    setHasUserModified(true);
-    console.log('User clicked send, content:', content);
-    if (selectedFiles.length > 0) {
-      setOriginalFileContent(selectedFiles[0].content);
+  useEffect(() => {
+    if (projectPath && codeGenState.latestFiles) {
+      window.fileAPI
+        .getFileTree(projectPath)
+        .then((tree: FileNode) => {
+          setBaseFileSet({
+            id: 'base',
+            name: projectPath.split(/[\\/]/).pop() || 'Project',
+            tree,
+            visible: true,
+          });
+        })
+        .catch((err) => console.error('Error loading base file tree', err));
+
+      window.fileAPI
+        .buildGeneratedFileTree(codeGenState.latestFiles, projectPath)
+        .then((genTree: FileNode) => {
+          setGeneratedFileSet({
+            id: 'generated',
+            name: 'Suggested Changes',
+            tree: genTree,
+            visible: true,
+          });
+        })
+        .catch((err) =>
+          console.error('Error building generated file tree', err),
+        );
     }
-    try {
-      const response = await createCodeGenerationSession({ prompt: content });
-      const promptLabel = content.trim().substring(0, 50);
-      const sessionHistory = {
-        sessionId: response._id,
-        promptLabel,
-      };
-      await codeGenerationHistoryService.saveSession(sessionHistory);
-      setComparisonFileContent(
-        selectedFiles.length > 0 ? selectedFiles[0].content : '',
-      );
-      setShowCodeViewer(true);
-    } catch (error: any) {
-      console.error('Error generating code:', error);
-      notification.error({
-        message: 'Code Generation Error',
-        description: error.message || 'Failed to generate code',
-      });
-    }
-  };
+  }, [projectPath, codeGenState.latestFiles]);
 
   useEffect(() => {
-    const loadHistory = async () => {
-      const sessions = await codeGenerationHistoryService.getAllSessions();
-      const options = sessions.map((session) => ({
-        key: session.sessionId,
-        label: session.promptLabel,
-        value: session.sessionId,
-      }));
-      setHistoryOptions(options);
-    };
-
-    loadHistory();
-
-    const historyUpdateHandler = (sessions: any[]) => {
-      const options = sessions.map((session) => ({
-        key: session.sessionId,
-        label: session.promptLabel,
-        value: session.sessionId,
-      }));
-      setHistoryOptions(options);
-    };
-
-    codeGenerationHistoryService.subscribe(historyUpdateHandler);
-    return () => {
-      codeGenerationHistoryService.unsubscribe(historyUpdateHandler);
-    };
-  }, []);
-
-  const handleHistoryOptionClick = async (option: {
-    key: string;
-    label: string;
-    value: string;
-  }) => {
-    const session = await codeGenerationHistoryService.getByKey(option.key);
-    if (session) {
-      notification.info({
-        message: 'History Session',
-        description: `Session ID: ${session.sessionId}\nPrompt: ${session.promptLabel}`,
-      });
-    } else {
-      notification.info({
-        message: 'No history found for the selected option.',
-      });
+    if (projectPath && codeGenState.latestFiles && !showCodeViewer) {
+      const fileKeys = Object.keys(codeGenState.latestFiles);
+      if (fileKeys.length > 0) {
+        const fileKey = fileKeys[0];
+        const projFolderName = projectPath.split(/[\\/]/).pop() || '';
+        let absolutePath = '';
+        if (pathBrowser.isAbsolute(fileKey)) {
+          absolutePath = pathBrowser.normalize(fileKey);
+        } else {
+          let relativeKey = fileKey;
+          if (relativeKey.startsWith(projFolderName)) {
+            relativeKey = relativeKey
+              .slice(projFolderName.length)
+              .replace(/^[/\\]+/, '');
+          }
+          absolutePath = pathBrowser.normalize(
+            pathBrowser.join(projectPath, relativeKey),
+          );
+        }
+        window.fileAPI
+          .readFileContent(absolutePath)
+          .then((originalContent: string) => {
+            setOriginalFileContent(originalContent);
+            const generatedContent = codeGenState.latestFiles[fileKey] || '';
+            setComparisonFileContent(generatedContent);
+            setShowCodeViewer(true);
+          })
+          .catch((err: any) => {
+            console.error('Error auto-loading comparison file:', err);
+          });
+      }
     }
-  };
+  }, [projectPath, codeGenState.latestFiles, showCodeViewer]);
 
-  // Handler for when a rule is clicked in the ListBuilder.
-  // This toggles the rule in the selectedRules state.
-  const handleRuleOptionClick = (option: {
-    key: string;
-    label: string;
-    value: string;
-  }) => {
-    setHasUserModified(true);
-    setSelectedRules((prev) =>
-      prev.includes(option.value)
-        ? prev.filter((ruleId) => ruleId !== option.value)
-        : [...prev, option.value],
-    );
-  };
+  const fileTreeProps =
+    codeGenState.latestFiles &&
+    Object.keys(codeGenState.latestFiles).length > 0 &&
+    baseFileSet &&
+    generatedFileSet
+      ? { fileSets: [baseFileSet, generatedFileSet] }
+      : { projectPath };
 
   return (
     <Layout style={{ minHeight: '100vh', background: '#F5F7FB' }}>
@@ -290,87 +401,79 @@ export function PromptGenerator() {
       >
         <div style={{ padding: '0 16px' }}>
           <FileTree
-            rootPath={projectPath}
+            {...fileTreeProps}
             onFileSelectionChange={handleMultipleSelect}
             onSingleSelect={handleSingleSelect}
           />
-          <div style={{ marginTop: 16 }}>
-            <ListBuilder
-              headerTitle="Rules"
-              options={rules.map((rule) => ({
-                key: rule.id,
-                label: rule.title,
-                value: rule.id,
-              }))}
-              onOptionClick={handleRuleOptionClick}
-              selectionType="multiple"
-            />
-          </div>
-          <Button
-            type="dashed"
-            block
-            style={{ marginTop: 16 }}
-            onClick={() => console.log('Add new text prompt clicked')}
-          >
-            Add new text prompt
-          </Button>
+          {codeGenState.latestFiles &&
+          Object.keys(codeGenState.latestFiles).length > 0 ? (
+            <Button
+              type="primary"
+              block
+              style={{ marginTop: 16 }}
+              onClick={handleApplyChanges}
+            >
+              Apply Changes
+            </Button>
+          ) : (
+            <>
+              <div style={{ marginTop: 16 }}>
+                <ListBuilder
+                  headerTitle="Rules"
+                  options={rules.map((r) => ({
+                    key: r.id,
+                    label: r.title,
+                    value: r.id,
+                  }))}
+                  onOptionClick={(opt) => {
+                    setHasUserModified(true);
+                    setSelectedRules((prev) =>
+                      prev.includes(opt.value)
+                        ? prev.filter((currentId) => currentId !== opt.value)
+                        : [...prev, opt.value],
+                    );
+                  }}
+                  selectionType="multiple"
+                />
+              </div>
+              <Button
+                type="dashed"
+                block
+                style={{ marginTop: 16 }}
+                onClick={() => console.log('Add new text prompt clicked')}
+              >
+                Add new text prompt
+              </Button>
+            </>
+          )}
         </div>
       </Sider>
       <Layout style={{ background: '#F5F7FB' }}>
         <Content
           className={styles.content}
-          style={{
-            padding: '16px',
-            display: 'flex',
-            flexDirection: 'column',
-            overflowY: 'auto',
-          }}
+          style={{ padding: 16, display: 'flex', flexDirection: 'column' }}
         >
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-            {!showCodeViewer ? (
-              <TaskDescription
-                ref={taskDescRef}
-                onSend={handleSend}
-                onContentChange={() => {
-                  setHasUserModified(true);
-                  debouncedUpdate();
-                }}
-              />
-            ) : (
+            {showCodeViewer ? (
               <CodeViewer
                 originalCode={originalFileContent}
                 modifiedCode={comparisonFileContent}
                 code={originalFileContent}
                 language="typescript"
               />
+            ) : (
+              <TaskDescription
+                ref={taskDescRef}
+                onSend={handleSend}
+                onContentChange={() => {
+                  setHasUserModified(true);
+                  updateWorkItemDebounced();
+                }}
+              />
             )}
           </div>
         </Content>
       </Layout>
-      <Sider
-        collapsedWidth={250}
-        width={250}
-        theme="light"
-        style={{
-          background: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          overflowY: 'auto',
-          padding: '16px 0',
-        }}
-      >
-        <div style={{ padding: '0 16px' }}>
-          <div style={{ marginTop: 16 }}>
-            <ListBuilder
-              headerTitle="History"
-              options={historyOptions}
-              headerIcon={<HistoryOutlined />}
-              onOptionClick={handleHistoryOptionClick}
-            />
-          </div>
-        </div>
-      </Sider>
     </Layout>
   );
 }

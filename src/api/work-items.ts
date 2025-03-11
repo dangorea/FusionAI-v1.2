@@ -21,6 +21,21 @@ export const createWorkItem = async (
   }
 };
 
+export async function generateCodeSession(
+  orgSlug: string,
+  projectId: string,
+  id: string,
+): Promise<WorkItemType> {
+  try {
+    const url = WORK_ITEMS_BASE_URL(orgSlug, projectId);
+    const response = await instance.post<WorkItemType>(`${url}/${id}/generate`);
+    return response.data;
+  } catch (error) {
+    console.error('[API] POST request failed:', error);
+    throw error;
+  }
+}
+
 export const updateWorkItem = async (
   orgSlug: string,
   projectId: string,
@@ -33,9 +48,6 @@ export const updateWorkItem = async (
       );
     }
     const { id, ...workItemWithoutId } = updatedWorkItem;
-
-    delete workItemWithoutId.compiledMessage;
-    delete (workItemWithoutId as Partial<WorkItemType>).projectId;
 
     const url = `${WORK_ITEMS_BASE_URL(orgSlug, projectId)}/${id}`;
 

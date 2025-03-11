@@ -46,14 +46,6 @@ export default function MainLayout() {
       />
 
       <DrawerRenderer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-
-      {/*
-        We remove "height: 100%" and let the layout expand naturally.
-        We also remove any "overflow: auto" or "overflow: scroll".
-        If child components need scroll,
-        they should have an internal <div style={{overflow: 'auto'}}>
-        or a table with max-height, etc.
-      */}
       <Content className={styles.content}>
         <Outlet />
       </Content>

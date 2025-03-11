@@ -18,5 +18,5 @@ export interface WorkItemType {
   taskDescription?: string;
   sourceFiles: SourceFileType[];
   textBlocks: TextBlockType[];
-  compiledMessage?: string;
+  codeGenerationId?: string;
 }

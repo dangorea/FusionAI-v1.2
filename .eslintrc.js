@@ -30,6 +30,7 @@ module.exports = {
     'react/no-array-index-key': 'warn',
     'global-require': 'warn',
     'no-new': 'off',
+    'promise/always-return': 'off',
   },
   parserOptions: {
     ecmaVersion: 2022,

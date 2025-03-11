@@ -23,7 +23,7 @@ export interface CreateWorkItemParams
 
 export interface UpdateWorkItemParams extends Pick<WorkItemType, 'projectId'> {
   orgSlug: string;
-  workItem: Pick<WorkItemType, 'id' | 'description'>;
+  workItem: Partial<WorkItemType>;
 }
 
 export interface DeleteWorkItemParams

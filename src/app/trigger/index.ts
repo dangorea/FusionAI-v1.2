@@ -16,8 +16,6 @@ export function Trigger({ children }: Props) {
   const org = useAppSelector(selectSelectedOrganizationEntity);
   const orgSlug = org?.slug;
 
-  console.log();
-
   useEffect(() => {
     dispatch(fetchOrganizationBlocks());
   }, [dispatch]);

@@ -12,3 +12,23 @@ export interface FileTreeNode {
   type: 'file' | 'directory';
   children: FileTreeNode[];
 }
+
+export type IterationType = {
+  prompt: string;
+  files: Record<string, string>;
+  timestamp: string;
+  _id: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CodeGenerationType = {
+  _id: string;
+  iterations: IterationType[];
+  completed: boolean;
+  provider: string;
+  createdAt: string;
+  updatedAt: string;
+  __v: number;
+  id: string;
+};

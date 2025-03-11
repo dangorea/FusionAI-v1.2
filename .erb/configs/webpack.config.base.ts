@@ -9,11 +9,11 @@ import { dependencies as externals } from '../../release/app/package.json';
 
 const Dotenv = require('dotenv-webpack');
 
+// @ts-ignore
 const configuration: webpack.Configuration = {
   externals: [...Object.keys(externals || {})],
 
   stats: 'errors-only',
-
   module: {
     rules: [
       {

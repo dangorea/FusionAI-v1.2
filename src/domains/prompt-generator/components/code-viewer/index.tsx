@@ -34,7 +34,7 @@ export function CodeViewer({
     overflow: 'auto',
   };
 
-  if (originalCode && modifiedCode) {
+  if (originalCode !== undefined && modifiedCode !== undefined) {
     return (
       <div style={containerStyle}>
         <DiffViewer

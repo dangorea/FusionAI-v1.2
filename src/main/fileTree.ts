@@ -1,6 +1,14 @@
 import fs from 'fs';
 import path from 'path';
 
+// Declare the FileNode interface used in these functions.
+export interface FileNode {
+  name: string;
+  path: string;
+  children?: FileNode[];
+  changeType?: 'added' | 'modified' | 'deleted';
+}
+
 // Maximum file size in bytes (30 MB in this example)
 const MAX_FILE_SIZE = 30 * 1024 * 1024;
 
@@ -92,28 +100,27 @@ const DISALLOWED_EXTENSIONS = new Set([
  * @param dir Path of the directory
  * @param isRoot Whether this is the root folder (default true)
  */
-export function getFileTree(dir: string, isRoot = true) {
+export function getFileTree(dir: string, isRoot = true): FileNode | null {
   const baseName = path.basename(dir);
 
+  // Possibly skip certain directories
   if (!isRoot && SKIP_DIRECTORIES.has(baseName)) {
     return null;
   }
 
-  const tree: any = { name: baseName, path: dir, children: [] };
+  const tree: FileNode = { name: baseName, path: dir, children: [] };
 
   try {
     const items = fs.readdirSync(dir);
     tree.children = items
       .map((item) => {
         if (SKIP_FILES.has(item)) return null;
-
         const fullPath = path.join(dir, item);
         try {
           const stat = fs.statSync(fullPath);
           if (stat.isDirectory()) {
             return getFileTree(fullPath, false);
           }
-
           if (stat.size > MAX_FILE_SIZE) {
             return null;
           }
@@ -127,11 +134,11 @@ export function getFileTree(dir: string, isRoot = true) {
           return null;
         }
       })
-      .filter((child) => child !== null);
+      .filter(Boolean) as FileNode[];
 
-    tree.children.sort((a: any, b: any) => {
-      const aIsFolder = a.children !== undefined;
-      const bIsFolder = b.children !== undefined;
+    tree.children.sort((a, b) => {
+      const aIsFolder = !!a.children;
+      const bIsFolder = !!b.children;
       if (aIsFolder && !bIsFolder) return -1;
       if (!aIsFolder && bIsFolder) return 1;
       return a.name.localeCompare(b.name);
@@ -141,4 +148,105 @@ export function getFileTree(dir: string, isRoot = true) {
   }
 
   return tree;
+}
+
+export function buildFileTreeFromMapping(
+  mapping: Record<
+    string,
+    { content: string; changeType?: 'added' | 'modified' | 'deleted' } | string
+  >,
+  projectPath: string,
+): FileNode {
+  const rootName = path.basename(projectPath);
+  const root: FileNode = { name: rootName, path: projectPath, children: [] };
+
+  for (const filePath of Object.keys(mapping)) {
+    // If mapping[filePath] is a string, wrap it in an object.
+    let fileData = mapping[filePath];
+    if (typeof fileData === 'string') {
+      fileData = { content: fileData };
+      mapping[filePath] = fileData;
+    }
+
+    // Resolve the file path against the project path if it's not absolute.
+    let absFilePath = filePath;
+    if (!path.isAbsolute(filePath)) {
+      absFilePath = path.join(projectPath, filePath);
+    }
+
+    // If no explicit changeType is given, check if the file exists on disk.
+    if (!fileData.changeType) {
+      if (!fs.existsSync(absFilePath)) {
+        fileData.changeType = 'added';
+      } else {
+        fileData.changeType = 'modified';
+      }
+    }
+
+    // Build the tree structure using the absolute file path.
+    const rel = path.relative(projectPath, absFilePath);
+    const parts = rel.split(path.sep).filter(Boolean);
+
+    // Avoid double nesting the project folder name.
+    if (parts[0] === rootName) {
+      parts.shift();
+    }
+
+    let current = root;
+    let accumulated = projectPath;
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      accumulated = path.join(accumulated, part);
+
+      if (!current.children) {
+        current.children = [];
+      }
+      let child = current.children.find((c) => c.name === part);
+      if (!child) {
+        child = { name: part, path: accumulated, children: [] };
+        current.children.push(child);
+      }
+      if (i === parts.length - 1) {
+        child.changeType = fileData.changeType;
+      }
+      current = child;
+    }
+  }
+
+  return root;
+}
+
+export function mergeComparisonTrees(
+  base: FileNode,
+  compare: FileNode,
+): FileNode {
+  const merged = JSON.parse(JSON.stringify(base)) as FileNode;
+
+  function updateOrInsert(baseNode: FileNode, compareNode: FileNode) {
+    if (!compareNode.children) return;
+    if (!baseNode.children) {
+      baseNode.children = [];
+    }
+
+    for (const compareChild of compareNode.children) {
+      const existingChild = baseNode.children.find(
+        (c) => c.path === compareChild.path,
+      );
+      if (existingChild) {
+        existingChild.changeType = compareChild.changeType ?? 'modified';
+        updateOrInsert(existingChild, compareChild);
+      } else {
+        const newChild = JSON.parse(JSON.stringify(compareChild)) as FileNode;
+        if (!newChild.changeType) {
+          newChild.changeType = 'added';
+        }
+        baseNode.children.push(newChild);
+      }
+    }
+  }
+
+  updateOrInsert(merged, compare);
+
+  return merged;
 }

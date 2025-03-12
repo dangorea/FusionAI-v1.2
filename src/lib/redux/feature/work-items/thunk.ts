@@ -68,7 +68,6 @@ export const updateWorkItemThunk = createAsyncThunk<
   async ({ orgSlug, projectId, workItem }, { rejectWithValue }) => {
     try {
       const updatedItem = await updateWorkItem(orgSlug, projectId, workItem);
-      notification.success({ message: 'Work Item Updated Successfully' });
       return updatedItem;
     } catch (error: any) {
       console.error('Error updating work item:', error);

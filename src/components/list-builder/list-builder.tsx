@@ -21,7 +21,6 @@ export interface ListBuilderProps {
   loadMoreThreshold?: number;
   containerStyle?: CSSProperties;
   onOptionClick?: (option: ListOption) => void;
-  // New prop to choose between single or multiple selection
   selectionType?: 'single' | 'multiple';
 }
 
@@ -40,8 +39,6 @@ export function ListBuilder({
   const [displayedOptions, setDisplayedOptions] = useState<ListOption[]>(
     lazyLoad ? options.slice(0, loadMoreThreshold) : options,
   );
-
-  // State to track the selected option keys
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
 
   const observerRef = useRef<HTMLDivElement>(null);
@@ -101,12 +98,18 @@ export function ListBuilder({
     <div style={{ ...containerStyle, overflowY: 'auto' }}>
       {headerTitle && (
         <div
-          style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}
+          style={{
+            backgroundColor: '#EFF0FB',
+            marginBottom: 16,
+            padding: '8px',
+            textAlign: 'center',
+            borderTopLeftRadius: '8px',
+          }}
         >
           {headerIcon && headerIconPosition === 'left' && (
             <span style={{ marginRight: 8 }}>{headerIcon}</span>
           )}
-          <Title level={4} style={{ margin: 0 }}>
+          <Title level={4} style={{ margin: 0, display: 'inline-block' }}>
             {headerTitle}
           </Title>
           {headerIcon && headerIconPosition === 'right' && (
@@ -115,14 +118,16 @@ export function ListBuilder({
         </div>
       )}
       <List
+        grid={{ gutter: 4, column: 1 }}
         dataSource={lazyLoad ? displayedOptions : options}
+        style={{ padding: '0 10px' }}
         renderItem={(item: ListOption) => {
           const isSelected = selectedKeys.includes(item.key);
           const itemStyle = {
             cursor: 'pointer',
             padding: '8px 16px',
-            borderRadius: isSelected ? '8px' : undefined,
-            backgroundColor: isSelected ? '#e6f7ff' : undefined,
+            borderRadius: '8px',
+            backgroundColor: isSelected ? '#e6f7ff' : '#EFF0FB',
           };
           return (
             <List.Item onClick={() => handleItemClick(item)} style={itemStyle}>

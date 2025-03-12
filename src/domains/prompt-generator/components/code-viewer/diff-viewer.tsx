@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { diffLines } from 'diff';
 import Prism from 'prismjs';
 import 'prismjs/components/prism-javascript';
@@ -87,6 +87,7 @@ function DiffViewer({
 
   const diffRows = computeDiffRows();
 
+  // Base styling for code cells
   const baseCodeCellStyle: React.CSSProperties = {
     fontFamily:
       'Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", monospace',
@@ -122,6 +123,7 @@ function DiffViewer({
     verticalAlign: 'middle',
   };
 
+  // Make the grid container fill its parent's space.
   const containerStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: '50px 1fr 50px 1fr',
@@ -129,17 +131,40 @@ function DiffViewer({
     color: '#d4d4d4',
     overflow: 'auto',
     width: '100%',
+    height: '100%',
   };
+
+  // Use a ref to measure the container height.
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerHeight, setContainerHeight] = useState<number>(0);
+
+  useEffect(() => {
+    function updateHeight() {
+      if (containerRef.current) {
+        setContainerHeight(containerRef.current.clientHeight);
+      }
+    }
+
+    updateHeight();
+    window.addEventListener('resize', updateHeight);
+    return () => window.removeEventListener('resize', updateHeight);
+  }, []);
+
+  // Assume a fixed row height (adjust as needed).
+  const rowHeight = 24;
+  const extraRows = Math.max(
+    0,
+    Math.floor(containerHeight / rowHeight) - diffRows.length,
+  );
 
   let leftLineNumber = 1;
   let rightLineNumber = 1;
 
   return (
-    <div style={containerStyle}>
+    <div style={containerStyle} ref={containerRef}>
       {diffRows.map((row, index) => {
         const leftNumber = row.left !== '' ? leftLineNumber++ : '';
         const rightNumber = row.right !== '' ? rightLineNumber++ : '';
-
         const grammar = Prism.languages[language] || Prism.languages.javascript;
         const leftHTML = row.left
           ? Prism.highlight(row.left, grammar, language)
@@ -147,7 +172,6 @@ function DiffViewer({
         const rightHTML = row.right
           ? Prism.highlight(row.right, grammar, language)
           : '';
-
         return (
           <React.Fragment key={index}>
             <div style={lineNumberCellStyle}>{leftNumber || ' '}</div>
@@ -165,6 +189,18 @@ function DiffViewer({
           </React.Fragment>
         );
       })}
+      {Array.from({ length: extraRows }).map((_, i) => (
+        <React.Fragment key={`dummy-${i}`}>
+          <div style={lineNumberCellStyle}>&nbsp;</div>
+          <div style={baseCodeCellStyle}>
+            <code>&nbsp;</code>
+          </div>
+          <div style={lineNumberCellStyle}>&nbsp;</div>
+          <div style={baseCodeCellStyle}>
+            <code>&nbsp;</code>
+          </div>
+        </React.Fragment>
+      ))}
     </div>
   );
 }

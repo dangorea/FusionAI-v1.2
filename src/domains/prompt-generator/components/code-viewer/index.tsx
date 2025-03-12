@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import React from 'react';
 import DiffViewer from './diff-viewer';
+import SingleCodeViewer from './singe-code-viewer';
 
 export interface CodeViewerProps {
   code?: string;
@@ -16,24 +15,13 @@ export function CodeViewer({
   modifiedCode,
   language = 'typescript',
 }: CodeViewerProps) {
-  const [dimensions, setDimensions] = useState({
-    width: window.innerWidth,
-    height: window.innerHeight,
-  });
-
-  useEffect(() => {
-    const handleResize = () =>
-      setDimensions({ width: window.innerWidth, height: window.innerHeight });
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
   const containerStyle: React.CSSProperties = {
-    width: dimensions.width,
-    height: dimensions.height,
+    width: '100%',
+    height: '100%',
     overflow: 'auto',
   };
 
+  // If both original and modified code are provided, use the diff viewer.
   if (originalCode !== undefined && modifiedCode !== undefined) {
     return (
       <div style={containerStyle}>
@@ -46,17 +34,11 @@ export function CodeViewer({
     );
   }
 
+  // Otherwise, use SingleCodeViewer to show a single file's code.
   if (code) {
     return (
       <div style={containerStyle}>
-        <SyntaxHighlighter
-          language={language}
-          style={vscDarkPlus}
-          showLineNumbers
-          wrapLines
-        >
-          {code}
-        </SyntaxHighlighter>
+        <SingleCodeViewer code={code} language={language} />
       </div>
     );
   }

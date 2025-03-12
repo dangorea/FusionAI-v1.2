@@ -32,6 +32,9 @@ export interface FileTreeProps {
   projectPath?: string;
   onFileSelectionChange?: (selected: string[]) => void;
   onSingleSelect?: (filePath: string) => void;
+  // New props for external styling
+  className?: string;
+  style?: React.CSSProperties;
 }
 
 function collectChangedPathKeys(node: FileNode): string[] {
@@ -136,10 +139,11 @@ export function FileTree({
   projectPath,
   onFileSelectionChange,
   onSingleSelect,
+  className,
+  style,
 }: FileTreeProps) {
   const [loading, setLoading] = useState(false);
   const [renderTree, setRenderTree] = useState<FileNode | null>(null);
-
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
@@ -240,10 +244,8 @@ export function FileTree({
     [treeData, onFileSelectionChange],
   );
 
-  // Updated onSelect: if a directory is clicked (non-leaf), do nothing.
   const handleSelect = useCallback(
     (selectedArr: React.Key[], info: any) => {
-      // If the clicked node is not a leaf, clear selection and do nothing.
       if (!info?.node?.isLeaf) {
         setSelectedKeys([]);
         return;
@@ -266,7 +268,10 @@ export function FileTree({
   }
 
   return (
-    <div style={{ maxHeight: '60vh', overflow: 'auto' }}>
+    <div
+      className={`file-tree-container ${className || ''}`}
+      style={{ maxHeight: '100%', overflow: 'auto', ...style }}
+    >
       <div
         style={{
           marginBottom: 8,
@@ -276,7 +281,9 @@ export function FileTree({
         }}
       >
         {fileSets && fileSets.length === 2 && (
-          <div style={{ display: 'flex', alignItems: 'center' }}>
+          <div
+            style={{ display: 'flex', alignItems: 'center', padding: '10px' }}
+          >
             <Switch
               checked={showModifiedOnly}
               onChange={(val) => setShowModifiedOnly(val)}
@@ -287,20 +294,17 @@ export function FileTree({
       </div>
 
       <style>{`
+        .ant-tree-switcher {
+          display: flex !important;
+          align-items: center !important;
+          justify-content: center !important;
+        }
         .directory-node {
-          cursor: default;
+          cursor: default !important;
         }
         .ant-tree-node-content-wrapper.ant-tree-node-selected > .directory-node {
           background-color: transparent !important;
           color: inherit !important;
-        }
-      `}</style>
-
-      <style>{`
-        .ant-tree-switcher {
-          display: flex;
-          align-items: center;
-          justify-content: center;
         }
       `}</style>
 

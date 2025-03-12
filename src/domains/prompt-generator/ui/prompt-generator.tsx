@@ -3,6 +3,7 @@ import { Button, Layout, notification } from 'antd';
 import debounce from 'lodash/debounce';
 import { useParams } from 'react-router';
 import pathBrowser from 'path-browserify';
+import { PlusSquareFilled } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
 import { selectAllRules } from '../../../lib/redux/feature/rules/selectors';
@@ -12,7 +13,6 @@ import { FileTree, ListBuilder } from '../../../components';
 import { LocalStorageKeys } from '../../../utils/localStorageKeys';
 import type { TaskDescriptionInputRef } from '../components';
 import { CodeViewer, TaskDescription } from '../components';
-import styles from './prompt-generator.module.scss';
 import { selectSelectedWorkItemEntity } from '../../../lib/redux/feature/work-items/selectors';
 import type { TextBlockType } from '../../work-item/model/types';
 import {
@@ -21,6 +21,8 @@ import {
 } from '../../../lib/redux/feature/work-items/thunk';
 import { clearCodeGeneration } from '../../../lib/redux/feature/code-generation/reducer';
 import { fetchCodeGeneration } from '../../../lib/redux/feature/code-generation/thunk';
+
+import styles from './prompt-generator.module.scss';
 
 const { Sider, Content } = Layout;
 
@@ -32,6 +34,7 @@ export function PromptGenerator() {
   const rules = useAppSelector(selectAllRules);
   const workItem = useAppSelector(selectSelectedWorkItemEntity);
   const codeGenState = useAppSelector((state: any) => state.codeGeneration);
+
   const orgSlug = org?.slug;
   const [projectPath, setProjectPath] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<Record<string, string>>(
@@ -40,14 +43,13 @@ export function PromptGenerator() {
   const [hasUserModified, setHasUserModified] = useState(false);
   const [showCodeViewer, setShowCodeViewer] = useState(false);
   const [originalFileContent, setOriginalFileContent] = useState<string>('');
-  const [comparisonFileContent, setComparisonFileContent] = useState<
-    string | undefined
-  >('');
+  const [comparisonFileContent, setComparisonFileContent] = useState<string>();
   const [selectedRules, setSelectedRules] = useState<string[]>([]);
   const [baseFileSet, setBaseFileSet] = useState<FileSet | null>(null);
   const [generatedFileSet, setGeneratedFileSet] = useState<FileSet | null>(
     null,
   );
+
   const taskDescRef = useRef<TaskDescriptionInputRef>(null);
 
   useEffect(() => {
@@ -139,6 +141,7 @@ export function PromptGenerator() {
     const currentText = taskDescRef.current.getContent();
     const cleaned = removeAllFileBlocks(currentText);
     taskDescRef.current.setContent(cleaned);
+
     Object.entries(selectedFiles).forEach(([fp, content]) => {
       taskDescRef.current?.addExtraContent(
         `\n\n=== File: ${fp} ===\n${content}\n=== EndFile: ${fp} ===\n\n`,
@@ -149,6 +152,7 @@ export function PromptGenerator() {
   const updateWorkItemDebounced = useCallback(
     debounce(async () => {
       if (!hasUserModified || !orgSlug || !projectId) return;
+
       const sourceFiles = Object.entries(selectedFiles).map(
         ([absPath, content]) => {
           let relative = absPath;
@@ -162,17 +166,21 @@ export function PromptGenerator() {
           return { path: relative, content };
         },
       );
+
       const taskDescription = taskDescRef.current?.getContent() || '';
-      const textBlocks: (null | {
-        id: string;
-        title: string;
-        details: string;
-      })[] = selectedRules
+      const textBlocks = selectedRules
         .map((ruleId) => {
           const r = rules.find((x) => x.id === ruleId);
-          return r ? { id: r.id, title: r.title, details: r.title } : null;
+          return r
+            ? {
+                id: r.id,
+                title: r.title,
+                details: r.title,
+              }
+            : null;
         })
-        .filter(Boolean);
+        .filter(Boolean) as TextBlockType[];
+
       try {
         await dispatch(
           updateWorkItemThunk({
@@ -182,7 +190,7 @@ export function PromptGenerator() {
               id,
               taskDescription,
               sourceFiles,
-              textBlocks: textBlocks as TextBlockType[],
+              textBlocks,
             },
           }),
         );
@@ -215,8 +223,10 @@ export function PromptGenerator() {
   const handleSend = useCallback(async () => {
     setHasUserModified(true);
     if (!orgSlug || !projectId || !id) return;
+
     try {
       await dispatch(updateCodeSession({ orgSlug, projectId, id }));
+
       if (
         workItem &&
         workItem.codeGenerationId &&
@@ -231,20 +241,7 @@ export function PromptGenerator() {
           await window.fileAPI.readFileContent(normalizedFilePath);
         setOriginalFileContent(original);
 
-        const sessionResp = await dispatch(
-          fetchCodeGeneration(workItem.codeGenerationId),
-        );
-        console.log(sessionResp);
-
-        // const lastIteration =
-        //   sessionResp.iterations[sessionResp.iterations.length - 1];
-        //
-        // let generated = lastIteration.files[normalizedFilePath];
-        // if (!generated) {
-        //   generated =
-        //     lastIteration.files[pathBrowser.basename(normalizedFilePath)] || '';
-        // }
-        // setComparisonFileContent(generated);
+        await dispatch(fetchCodeGeneration(workItem.codeGenerationId));
 
         setShowCodeViewer(true);
       }
@@ -264,8 +261,10 @@ export function PromptGenerator() {
     }
     try {
       const projName = projectPath.split(/[\\/]/).pop() || '';
-      Object.entries(codeGenState.latestFiles || {}).map(
-        async ([key, content]) => {
+      const files = codeGenState.latestFiles || {};
+
+      await Promise.all(
+        Object.entries(files).map(async ([key, content]) => {
           let absolutePath = key;
           if (key.startsWith(projName)) {
             const partial = key.slice(projName.length).replace(/^[/\\]+/, '');
@@ -275,8 +274,9 @@ export function PromptGenerator() {
             absolutePath,
             content as string,
           );
-        },
+        }),
       );
+
       notification.success({ message: 'Files updated successfully.' });
     } catch (err: any) {
       console.error('Error applying changes:', err);
@@ -349,6 +349,7 @@ export function PromptGenerator() {
         const fileKey = fileKeys[0];
         const projFolderName = projectPath.split(/[\\/]/).pop() || '';
         let absolutePath = '';
+
         if (pathBrowser.isAbsolute(fileKey)) {
           absolutePath = pathBrowser.normalize(fileKey);
         } else {
@@ -362,11 +363,12 @@ export function PromptGenerator() {
             pathBrowser.join(projectPath, relativeKey),
           );
         }
+
         window.fileAPI
           .readFileContent(absolutePath)
           .then((originalContent: string) => {
             setOriginalFileContent(originalContent);
-            const generatedContent = codeGenState.latestFiles[fileKey] || '';
+            const generatedContent = codeGenState.latestFiles?.[fileKey] || '';
             setComparisonFileContent(generatedContent);
             setShowCodeViewer(true);
           })
@@ -378,46 +380,56 @@ export function PromptGenerator() {
   }, [projectPath, codeGenState.latestFiles, showCodeViewer]);
 
   const fileTreeProps =
-    codeGenState.latestFiles &&
-    Object.keys(codeGenState.latestFiles).length > 0 &&
-    baseFileSet &&
-    generatedFileSet
-      ? { fileSets: [baseFileSet, generatedFileSet] }
+    codeGenState.latestFiles && Object.keys(codeGenState.latestFiles).length > 0
+      ? baseFileSet && generatedFileSet
+        ? { fileSets: [baseFileSet, generatedFileSet] }
+        : {}
       : { projectPath };
 
   return (
-    <Layout style={{ minHeight: '100vh', background: '#F5F7FB' }}>
-      <Sider
-        width={360}
-        theme="light"
-        style={{
-          background: '#fff',
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          overflowY: 'auto',
-          padding: '16px 0',
-        }}
-      >
-        <div style={{ padding: '0 16px' }}>
-          <FileTree
-            {...fileTreeProps}
-            onFileSelectionChange={handleMultipleSelect}
-            onSingleSelect={handleSingleSelect}
-          />
-          {codeGenState.latestFiles &&
-          Object.keys(codeGenState.latestFiles).length > 0 ? (
-            <Button
-              type="primary"
-              block
-              style={{ marginTop: 16 }}
-              onClick={handleApplyChanges}
+    <Layout className={styles.promptGeneratorContainer}>
+      <Layout className={styles['ide-container']}>
+        <Sider width={360} className={styles.sider}>
+          <div className={styles.siderInner}>
+            <div
+              className={
+                codeGenState.latestFiles &&
+                Object.keys(codeGenState.latestFiles).length > 0
+                  ? styles.fileTreeContainerFlex
+                  : styles.fileTreeContainer
+              }
             >
-              Apply Changes
-            </Button>
-          ) : (
-            <>
-              <div style={{ marginTop: 16 }}>
+              <FileTree
+                {...fileTreeProps}
+                onFileSelectionChange={handleMultipleSelect}
+                onSingleSelect={handleSingleSelect}
+                style={{
+                  flex:
+                    codeGenState.latestFiles &&
+                    Object.keys(codeGenState.latestFiles).length > 0
+                      ? 1
+                      : undefined,
+                  borderBottomLeftRadius: '8px',
+                }}
+              />
+              {codeGenState.latestFiles &&
+                Object.keys(codeGenState.latestFiles).length > 0 && (
+                  <div className={styles.buttonContainer}>
+                    <Button
+                      type="primary"
+                      block
+                      className={styles.applyChangesBtn}
+                      onClick={handleApplyChanges}
+                    >
+                      Apply Changes
+                    </Button>
+                  </div>
+                )}
+            </div>
+
+            {(!codeGenState.latestFiles ||
+              Object.keys(codeGenState.latestFiles).length === 0) && (
+              <div className={styles.listBuilderContainer}>
                 <ListBuilder
                   headerTitle="Rules"
                   options={rules.map((r) => ({
@@ -435,25 +447,23 @@ export function PromptGenerator() {
                   }}
                   selectionType="multiple"
                 />
+                <div className={styles.buttonContainer}>
+                  <Button
+                    block
+                    className={styles.addPromptBtn}
+                    onClick={() => console.log('Add new text prompt clicked')}
+                  >
+                    <PlusSquareFilled />
+                    New Rule
+                  </Button>
+                </div>
               </div>
-              <Button
-                type="dashed"
-                block
-                style={{ marginTop: 16 }}
-                onClick={() => console.log('Add new text prompt clicked')}
-              >
-                Add new text prompt
-              </Button>
-            </>
-          )}
-        </div>
-      </Sider>
-      <Layout style={{ background: '#F5F7FB' }}>
-        <Content
-          className={styles.content}
-          style={{ padding: 16, display: 'flex', flexDirection: 'column' }}
-        >
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            )}
+          </div>
+        </Sider>
+
+        <Layout className={styles.mainLayout}>
+          <Content className={styles.content}>
             {showCodeViewer ? (
               <CodeViewer
                 originalCode={originalFileContent}
@@ -462,17 +472,20 @@ export function PromptGenerator() {
                 language="typescript"
               />
             ) : (
-              <TaskDescription
-                ref={taskDescRef}
-                onSend={handleSend}
-                onContentChange={() => {
-                  setHasUserModified(true);
-                  updateWorkItemDebounced();
-                }}
-              />
+              <div className={styles.taskCreationContainer}>
+                <TaskDescription
+                  ref={taskDescRef}
+                  onSend={handleSend}
+                  mode="big"
+                  onContentChange={() => {
+                    setHasUserModified(true);
+                    updateWorkItemDebounced();
+                  }}
+                />
+              </div>
             )}
-          </div>
-        </Content>
+          </Content>
+        </Layout>
       </Layout>
     </Layout>
   );

@@ -1,11 +1,17 @@
-import type { Ref } from 'react';
-import React, { forwardRef, useImperativeHandle, useState } from 'react';
+import React, {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import { Button, Input } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
 
 export interface TaskDescriptionInputProps {
   onSend?: (content: string) => void;
   onContentChange?: (content: string) => void;
+  mode?: 'big' | 'small';
 }
 
 export interface TaskDescriptionInputRef {
@@ -15,9 +21,28 @@ export interface TaskDescriptionInputRef {
 }
 
 export const TaskDescription = forwardRef(
-  (props: TaskDescriptionInputProps, ref: Ref<TaskDescriptionInputRef>) => {
-    const { onSend, onContentChange } = props;
+  (props: TaskDescriptionInputProps, ref) => {
+    const { onSend, onContentChange, mode = 'big' } = props;
     const [content, setContent] = useState('');
+    const containerRef = useRef<HTMLDivElement>(null);
+    const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
+
+    // Use ResizeObserver to update the textarea height when the container resizes.
+    useEffect(() => {
+      if (!containerRef.current) return;
+
+      const observer = new ResizeObserver((entries) => {
+        for (const entry of entries) {
+          const containerHeight = entry.contentRect.height;
+          if (textAreaRef.current) {
+            textAreaRef.current.style.height = `${containerHeight}px`;
+          }
+        }
+      });
+      observer.observe(containerRef.current);
+
+      return () => observer.disconnect();
+    }, []);
 
     useImperativeHandle(ref, () => ({
       addExtraContent: (extra: string) => {
@@ -33,21 +58,66 @@ export const TaskDescription = forwardRef(
       }
     };
 
+    if (mode === 'small') {
+      return (
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            padding: '8px 16px',
+            backgroundColor: '#EFF0FB',
+            borderRadius: '8px',
+          }}
+        >
+          <Input.TextArea
+            value={content}
+            onChange={(e) => {
+              setContent(e.target.value);
+              onContentChange?.(e.target.value);
+            }}
+            placeholder="Write your task description..."
+            // In small mode, we can keep autoSize if desired.
+            autoSize={{ minRows: 1, maxRows: 10 }}
+            style={{
+              border: 'none',
+              background: 'transparent',
+              resize: 'none',
+              outline: 'none',
+              boxShadow: 'none',
+              flexGrow: 1,
+              marginRight: '8px',
+            }}
+          />
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <Button
+              type="primary"
+              shape="circle"
+              icon={<SendOutlined />}
+              onClick={handleSend}
+            />
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div
         style={{
           display: 'flex',
           flexDirection: 'column',
-          border: '1px solid #D8DBF4',
-          borderRadius: '8px',
-          maxHeight: '90vh',
+          maxHeight: '88vh',
           height: '100%',
         }}
       >
         <div
           style={{
-            padding: '16px',
-            borderBottom: '1px solid #eee',
+            padding: '0 0 16px 0',
             fontWeight: 'bold',
             fontSize: '16px',
           }}
@@ -55,22 +125,35 @@ export const TaskDescription = forwardRef(
           Task Description
         </div>
         <div
+          ref={containerRef}
           style={{
             flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
             padding: '16px',
-            overflowY: 'auto',
+            overflow: 'hidden',
             backgroundColor: '#EFF0FB',
+            borderTopRightRadius: '8px',
+            borderTopLeftRadius: '8px',
+            border: '1px solid #D8DBF4',
+            borderBottom: 'none',
+            height: '100%',
           }}
         >
           <Input.TextArea
+            ref={(node) => {
+              if (node) {
+                // Ensure we capture the underlying DOM node
+                textAreaRef.current = node.resizableTextArea?.textArea || null;
+              }
+            }}
             value={content}
             onChange={(e) => {
               setContent(e.target.value);
-              // call the onContentChange callback when text changes
               onContentChange?.(e.target.value);
             }}
             placeholder="Write your task description..."
-            autoSize={{ minRows: 10, maxRows: 20 }}
+            autoSize={false}
             style={{
               border: 'none',
               background: 'transparent',
@@ -78,6 +161,7 @@ export const TaskDescription = forwardRef(
               outline: 'none',
               boxShadow: 'none',
               width: '100%',
+              overflow: 'auto',
             }}
           />
         </div>
@@ -86,10 +170,11 @@ export const TaskDescription = forwardRef(
             display: 'flex',
             justifyContent: 'flex-end',
             padding: '8px 16px',
-            borderTop: '1px solid #eee',
             borderBottomRightRadius: '7px',
             borderBottomLeftRadius: '7px',
             backgroundColor: '#EFF0FB',
+            border: '1px solid #D8DBF4',
+            borderTop: 'none',
           }}
         >
           <Button

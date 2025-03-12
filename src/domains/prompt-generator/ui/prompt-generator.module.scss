@@ -1,23 +1,178 @@
+.promptGeneratorContainer {
+  height: 94vh;
+  background-color: #fff;
+
+  .ide-container {
+    display: flex;
+    margin: 16px 16px 16px 21px !important;
+    border-radius: 8px;
+  }
+}
+
 .sider {
-  background-color: #ffffff;
-  overflow: auto;
-  padding: 16px;
-  width: 300px;
+  background-color: #ffffff !important;
+  border-right: none;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+
+  .ant-layout-sider-children {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+}
+
+.siderInner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  justify-content: space-between;
+}
+
+.fileTreeContainerFlex {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-top: 1px solid #D8DBF4;
+  border-left: 1px solid #D8DBF4;
+  border-bottom: 1px solid #D8DBF4;
+  padding: 4px;
+
+  .buttonContainer {
+    margin-top: auto;
+    padding: 0 0 16px 0;
+    display: flex;
+    justify-content: center;
+
+    button {
+      background: #D8DBF4;
+      color: #2A305E;
+      gap: 22px;
+      height: 40px;
+      border-radius: 8px;
+      font-weight: 700;
+      width: 200px;
+
+      svg {
+        height: 24px;
+        width: 24px;
+      }
+    }
+  }
+}
+
+.fileTreeContainer {
+  max-height: 50vh;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-top: 1px solid #D8DBF4;
+  border-left: 1px solid #D8DBF4;
+  border-bottom: 1px solid #D8DBF4;
+  padding: 4px;
+}
+
+
+.listBuilderContainer {
+  min-height: 24vw;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  border-top: 1px solid #D8DBF4;
+  border-left: 1px solid #D8DBF4;
+  border-bottom: 1px solid #D8DBF4;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  .buttonContainer {
+    padding: 2px 18px;
+
+    button {
+      background: linear-gradient(180deg, #5E6AD2 0%, #0A86CE 100%);
+      color: #EFF0FB;
+      justify-content: flex-start;
+      gap: 22px;
+      height: 45px;
+      border-radius: 8px;
+      font-size: 15px;
+
+      svg {
+        height: 24px;
+        width: 24px;
+      }
+    }
+  }
+}
+
+.applyChangesBtn {
+  margin-top: 16px;
+}
+
+.addPromptBtn {
+  margin-bottom: 16px;
+
+}
+
+.mainLayout {
+  background-color: #f5f7fb;
+  border-radius: 8px;
 }
 
 .content {
-  padding: 16px;
-  background-color: var(--app-color-itemBackground);
+  border-left: 4px solid #9AA1E3;
+  border-top: 1px solid #D8DBF4;
+  border-right: 1px solid #D8DBF4;
+  border-bottom: 1px solid #D8DBF4;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background-color: #fff;
   min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+
+  .ant-layout-content {
+    background-color: transparent;
+  }
+
+  .taskCreationContainer {
+    padding: 16px;
+    min-height: 100%;
+  }
 }
 
-/* Responsive adjustments */
+
 @media (max-width: 768px) {
+  .ide-container {
+    flex-direction: column;
+    margin: 8px !important;
+  }
+
   .sider {
     width: 100% !important;
-    padding: 8px;
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 8px;
   }
+
+  .siderInner {
+    height: auto;
+    overflow-y: visible;
+  }
+
   .content {
-    padding: 8px;
+    border-left: none;
+    margin-top: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+
+  .contentInner {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    min-height: auto;
   }
 }

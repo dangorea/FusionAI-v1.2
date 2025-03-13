@@ -3,7 +3,7 @@ import { Button, Layout, notification } from 'antd';
 import debounce from 'lodash/debounce';
 import { useParams } from 'react-router';
 import pathBrowser from 'path-browserify';
-import { PlusSquareFilled } from '@ant-design/icons';
+import { HistoryOutlined, PlusSquareFilled } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
 import { selectAllRules } from '../../../lib/redux/feature/rules/selectors';
@@ -23,6 +23,7 @@ import { clearCodeGeneration } from '../../../lib/redux/feature/code-generation/
 import { fetchCodeGeneration } from '../../../lib/redux/feature/code-generation/thunk';
 
 import styles from './prompt-generator.module.scss';
+import codeGenerationHistoryService from '../../../database/code-generation-history';
 
 const { Sider, Content } = Layout;
 
@@ -49,6 +50,9 @@ export function PromptGenerator() {
   const [generatedFileSet, setGeneratedFileSet] = useState<FileSet | null>(
     null,
   );
+  const [historyOptions, setHistoryOptions] = useState<
+    { key: string; label: string; value: string }[]
+  >([]);
 
   const taskDescRef = useRef<TaskDescriptionInputRef>(null);
 
@@ -284,6 +288,24 @@ export function PromptGenerator() {
     }
   }, [projectPath, codeGenState.latestFiles]);
 
+  const handleHistoryOptionClick = async (option: {
+    key: string;
+    label: string;
+    value: string;
+  }) => {
+    const session = await codeGenerationHistoryService.getByKey(option.key);
+    if (session) {
+      notification.info({
+        message: 'History Session',
+        description: `Session ID: ${session.sessionId}\nPrompt: ${session.promptLabel}`,
+      });
+    } else {
+      notification.info({
+        message: 'No history found for the selected option.',
+      });
+    }
+  };
+
   useEffect(() => {
     const unsub = window.electron.ipcRenderer.on(
       'file-changed',
@@ -399,19 +421,22 @@ export function PromptGenerator() {
                   : styles.fileTreeContainer
               }
             >
-              <FileTree
-                {...fileTreeProps}
-                onFileSelectionChange={handleMultipleSelect}
-                onSingleSelect={handleSingleSelect}
-                style={{
-                  flex:
-                    codeGenState.latestFiles &&
-                    Object.keys(codeGenState.latestFiles).length > 0
-                      ? 1
-                      : undefined,
-                  borderBottomLeftRadius: '8px',
-                }}
-              />
+              <div style={{ maxHeight: '83vh' }}>
+                <FileTree
+                  {...fileTreeProps}
+                  onFileSelectionChange={handleMultipleSelect}
+                  onSingleSelect={handleSingleSelect}
+                  style={{
+                    flex:
+                      codeGenState.latestFiles &&
+                      Object.keys(codeGenState.latestFiles).length > 0
+                        ? 1
+                        : undefined,
+                    borderBottomLeftRadius: '8px',
+                  }}
+                />
+              </div>
+
               {codeGenState.latestFiles &&
                 Object.keys(codeGenState.latestFiles).length > 0 && (
                   <div className={styles.buttonContainer}>
@@ -470,6 +495,18 @@ export function PromptGenerator() {
                 modifiedCode={comparisonFileContent}
                 code={originalFileContent}
                 language="typescript"
+                singleViewerStyleOverrides={{
+                  container: {
+                    borderBottomRightRadius: '8px',
+                    borderTopRightRadius: '8px',
+                  },
+                }}
+                diffViewerStyleOverrides={{
+                  container: {
+                    borderBottomRightRadius: '8px',
+                    borderTopRightRadius: '8px',
+                  },
+                }}
               />
             ) : (
               <div className={styles.taskCreationContainer}>
@@ -486,6 +523,17 @@ export function PromptGenerator() {
             )}
           </Content>
         </Layout>
+
+        <div style={{ padding: '0 16px' }}>
+          <div style={{ marginTop: 16 }}>
+            <ListBuilder
+              headerTitle="History"
+              options={historyOptions}
+              headerIcon={<HistoryOutlined />}
+              onOptionClick={handleHistoryOptionClick}
+            />
+          </div>
+        </div>
       </Layout>
     </Layout>
   );

@@ -49,9 +49,7 @@ export class IndexedDBService<T extends Record<string, unknown>> {
     const db = await this.getDB();
     const tx = db.transaction(this.storeName, 'readwrite');
     const store = tx.objectStore(this.storeName);
-    // Use the key value from the item.
     const key = item[this.keyPath as keyof T];
-    // Encrypt without including the key field.
     const encryptedItem = await this.encrypt(item);
     const itemToStore: EncryptedItem = {
       [this.keyPath]: key,
@@ -120,12 +118,10 @@ export class IndexedDBService<T extends Record<string, unknown>> {
     return openDB(this.dbName, this.dbVersion, {
       upgrade: (db) => {
         if (!db.objectStoreNames.contains(this.storeName)) {
-          // Create the store with the provided keyPath.
           const store = db.createObjectStore(this.storeName, {
             keyPath: this.keyPath,
             autoIncrement: this.autoIncrement,
           });
-          // Create an explicit index on the keyPath for fast lookups.
           store.createIndex(`${this.keyPath}_index`, this.keyPath, {
             unique: true,
           });
@@ -165,10 +161,8 @@ export class IndexedDBService<T extends Record<string, unknown>> {
     }
   }
 
-  // Remove the key field from the data before encrypting.
   protected async encrypt(data: T): Promise<string> {
     await this.ensureEncryptionKey();
-    // Create a copy without the key field.
     const { [this.keyPath]: _, ...dataWithoutKey } = data;
     const stringData = JSON.stringify(dataWithoutKey);
     const encryptedData = CryptoJS.AES.encrypt(stringData, this.encryptionKey!);
@@ -197,7 +191,6 @@ export class IndexedDBService<T extends Record<string, unknown>> {
 
   protected async decryptItem(data: EncryptedItem): Promise<T> {
     const decryptedValue = await this.decrypt(data.value);
-    // Combine the outer key with the decrypted data.
     return {
       ...decryptedValue,
       [this.keyPath]: data[this.keyPath],

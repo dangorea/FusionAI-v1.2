@@ -1,14 +1,9 @@
-/* File: /src/app/layout/main/main-layout.module.scss */
-
-/* Make sure no scroll is forced here */
 .mainLayout {
   height: 100%;
   display: flex;
 }
 
-/* Header styling – avoid forcing overflow. */
 .header {
-  /* Keep your custom header styles, but no height: 100%. */
   display: flex;
   padding: 0 10px;
   background-color: var(--app-color-itemBackground);
@@ -27,18 +22,12 @@
   }
 }
 
-/* Content styling – also no forced height or overflow. */
 .content {
-  /* If you do want it to expand, just let it flex or block.
-     No overflow here, so we don't scroll in the main content. */
   flex: 1;
   width: 100%;
-  /* remove overflow: auto; if you had that somewhere */
 }
 
-/* Example usage: if you have a special .scrollable class
-   for specific components, do it separately: */
 .scrollable {
   overflow: auto;
-  max-height: 600px; /* or some height limit */
+  max-height: 600px;
 }

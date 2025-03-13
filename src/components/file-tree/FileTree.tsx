@@ -32,7 +32,6 @@ export interface FileTreeProps {
   projectPath?: string;
   onFileSelectionChange?: (selected: string[]) => void;
   onSingleSelect?: (filePath: string) => void;
-  // New props for external styling
   className?: string;
   style?: React.CSSProperties;
 }
@@ -103,7 +102,6 @@ function toAntDataNode(
     }
   }
 
-  // Build the title content.
   const titleContent = (
     <span
       style={{
@@ -119,8 +117,6 @@ function toAntDataNode(
     </span>
   );
 
-  // For directories, wrap the title in a div with a custom class,
-  // and mark them as non-selectable.
   return {
     key: node.path,
     title: !isLeaf ? (
@@ -129,7 +125,7 @@ function toAntDataNode(
       titleContent
     ),
     isLeaf,
-    selectable: isLeaf, // Only files (leaf nodes) are selectable.
+    selectable: isLeaf,
     children: childNodes,
   };
 }
@@ -270,54 +266,60 @@ export function FileTree({
   return (
     <div
       className={`file-tree-container ${className || ''}`}
-      style={{ maxHeight: '100%', overflow: 'auto', ...style }}
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        height: '100%',
+        ...style,
+      }}
     >
-      <div
-        style={{
-          marginBottom: 8,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}
-      >
-        {fileSets && fileSets.length === 2 && (
-          <div
-            style={{ display: 'flex', alignItems: 'center', padding: '10px' }}
-          >
-            <Switch
-              checked={showModifiedOnly}
-              onChange={(val) => setShowModifiedOnly(val)}
-            />
-            <span style={{ marginLeft: 8 }}>Show only changed files</span>
-          </div>
-        )}
+      {fileSets && fileSets.length === 2 && (
+        <div
+          style={{
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            background: '#fff',
+            padding: '10px',
+            display: 'flex',
+            alignItems: 'center',
+          }}
+        >
+          <Switch
+            checked={showModifiedOnly}
+            onChange={(val) => setShowModifiedOnly(val)}
+          />
+          <span style={{ marginLeft: 8 }}>Show only changed files</span>
+        </div>
+      )}
+
+      <div style={{ flex: 1, overflow: 'auto' }}>
+        <style>{`
+          .ant-tree-switcher {
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+          }
+          .directory-node {
+            cursor: default !important;
+          }
+          .ant-tree-node-content-wrapper.ant-tree-node-selected > .directory-node {
+            background-color: transparent !important;
+            color: inherit !important;
+          }
+        `}</style>
+
+        <Tree
+          checkable
+          treeData={treeData}
+          checkedKeys={checkedKeys}
+          selectedKeys={selectedKeys}
+          expandedKeys={expandedKeys}
+          onCheck={handleCheck}
+          onSelect={handleSelect}
+          onExpand={handleExpand}
+        />
       </div>
-
-      <style>{`
-        .ant-tree-switcher {
-          display: flex !important;
-          align-items: center !important;
-          justify-content: center !important;
-        }
-        .directory-node {
-          cursor: default !important;
-        }
-        .ant-tree-node-content-wrapper.ant-tree-node-selected > .directory-node {
-          background-color: transparent !important;
-          color: inherit !important;
-        }
-      `}</style>
-
-      <Tree
-        checkable
-        treeData={treeData}
-        checkedKeys={checkedKeys}
-        selectedKeys={selectedKeys}
-        expandedKeys={expandedKeys}
-        onCheck={handleCheck}
-        onSelect={handleSelect}
-        onExpand={handleExpand}
-      />
     </div>
   );
 }

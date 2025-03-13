@@ -72,6 +72,25 @@
   border-left: 1px solid #D8DBF4;
   border-bottom: 1px solid #D8DBF4;
   padding: 4px;
+
+  .buttonContainer {
+    padding: 2px 18px;
+
+    button {
+      background: linear-gradient(180deg, #5E6AD2 0%, #0A86CE 100%);
+      color: #EFF0FB;
+      justify-content: flex-start;
+      gap: 22px;
+      height: 45px;
+      border-radius: 8px;
+      font-size: 15px;
+
+      svg {
+        height: 24px;
+        width: 24px;
+      }
+    }
+  }
 }
 
 

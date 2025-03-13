@@ -21,7 +21,6 @@ export function CodeViewer({
   diffViewerStyleOverrides,
   singleViewerStyleOverrides,
 }: CodeViewerProps) {
-  // Make sure we allow horizontal (and vertical) scrolling if code is too wide.
   const containerStyle: React.CSSProperties = {
     width: '100%',
     height: '100%',

@@ -41,7 +41,6 @@ function DiffViewer({
     lineHeight: '1.5',
     padding: '2px 4px',
     whiteSpace: 'pre',
-    // Removed overflow: 'hidden' so horizontal scrolling can work properly
   };
 
   const baseCodeCellStyle: React.CSSProperties = {
@@ -146,7 +145,6 @@ function DiffViewer({
     rightType: 'unchanged' | 'added' | 'empty';
   }[] = [];
 
-  // Build row data from diff results
   for (let i = 0; i < diffParts.length; i++) {
     const part = diffParts[i];
     if (!part.added && !part.removed) {

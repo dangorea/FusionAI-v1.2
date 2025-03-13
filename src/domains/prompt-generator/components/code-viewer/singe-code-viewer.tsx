@@ -30,7 +30,6 @@ function SingleCodeViewer({
     lineHeight: '1.5',
     padding: '2px 4px',
     whiteSpace: 'pre',
-    // Removed overflow: 'hidden' to allow horizontal scrolling
     margin: 0,
   };
   const baseCodeCellStyle: React.CSSProperties = {

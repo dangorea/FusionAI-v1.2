@@ -1,7 +1,7 @@
 import { Avatar, message, Space, Tooltip, Typography } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
 import { jwtDecode } from 'jwt-decode';
-import type { User } from '@auth0/auth0-react';
+import type { User } from '../../../types/common';
 
 const { Text } = Typography;
 

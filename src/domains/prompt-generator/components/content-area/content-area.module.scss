@@ -1,0 +1,41 @@
+.mainLayout {
+  background-color: #f5f7fb;
+  border-radius: 8px;
+}
+
+.content {
+  border-left: 4px solid #9aa1e3;
+  border-top: 1px solid #d8dbf4;
+  border-right: 1px solid #d8dbf4;
+  border-bottom: 1px solid #d8dbf4;
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px;
+  background-color: #fff;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.content .ant-layout-content {
+  background-color: transparent;
+}
+
+.taskCreationContainer {
+  padding: 16px;
+  min-height: 100%;
+}
+
+@media (max-width: 768px) {
+  .content {
+    border-left: none;
+    margin-top: 8px;
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+  }
+  .contentInner {
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+    min-height: auto;
+  }
+}

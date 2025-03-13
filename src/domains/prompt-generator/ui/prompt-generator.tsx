@@ -1,31 +1,31 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Button, Layout, notification } from 'antd';
+import { Layout, notification } from 'antd';
 import debounce from 'lodash/debounce';
 import { useParams } from 'react-router';
 import pathBrowser from 'path-browserify';
-import { HistoryOutlined, PlusSquareFilled } from '@ant-design/icons';
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
 import { selectAllRules } from '../../../lib/redux/feature/rules/selectors';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
-import type { FileNode, FileSet } from '../../../components';
-import { FileTree, ListBuilder } from '../../../components';
-import { LocalStorageKeys } from '../../../utils/localStorageKeys';
-import type { TaskDescriptionInputRef } from '../components';
-import { CodeViewer, TaskDescription } from '../components';
 import { selectSelectedWorkItemEntity } from '../../../lib/redux/feature/work-items/selectors';
-import type { TextBlockType } from '../../work-item/model/types';
 import {
   updateCodeSession,
   updateWorkItemThunk,
 } from '../../../lib/redux/feature/work-items/thunk';
 import { clearCodeGeneration } from '../../../lib/redux/feature/code-generation/reducer';
 import { fetchCodeGeneration } from '../../../lib/redux/feature/code-generation/thunk';
-
-import styles from './prompt-generator.module.scss';
 import codeGenerationHistoryService from '../../../database/code-generation-history';
-
-const { Sider, Content } = Layout;
+import { LocalStorageKeys } from '../../../utils/localStorageKeys';
+import type { FileNode, FileSet } from '../../../components';
+import type { TextBlockType } from '../../work-item/model/types';
+import styles from './prompt-generator.module.scss';
+import {
+  ContentArea,
+  HistoryPanel,
+  Sidebar,
+  TaskDescriptionFooter,
+  TaskDescriptionHeader,
+} from '../components';
 
 export function PromptGenerator() {
   const { id } = useParams();
@@ -35,8 +35,8 @@ export function PromptGenerator() {
   const rules = useAppSelector(selectAllRules);
   const workItem = useAppSelector(selectSelectedWorkItemEntity);
   const codeGenState = useAppSelector((state: any) => state.codeGeneration);
-
   const orgSlug = org?.slug;
+
   const [projectPath, setProjectPath] = useState('');
   const [selectedFiles, setSelectedFiles] = useState<Record<string, string>>(
     {},
@@ -54,7 +54,9 @@ export function PromptGenerator() {
     { key: string; label: string; value: string }[]
   >([]);
 
-  const taskDescRef = useRef<TaskDescriptionInputRef>(null);
+  const bigTaskDescRef = useRef<any>(null);
+  const smallTaskDescRef = useRef<any>(null);
+  const previewTaskDescRef = useRef<any>(null);
 
   useEffect(() => {
     dispatch(clearCodeGeneration());
@@ -126,37 +128,55 @@ export function PromptGenerator() {
           codeGenState.latestFiles[pathBrowser.normalize(searchPath)] ||
           codeGenState.latestFiles[pathBrowser.basename(searchPath)];
 
-        if (generatedContent) {
-          setComparisonFileContent(generatedContent);
-        } else {
-          setComparisonFileContent(undefined);
-        }
+        setComparisonFileContent(generatedContent || undefined);
       } else {
         setComparisonFileContent(undefined);
       }
-
       setShowCodeViewer(true);
     },
     [codeGenState.latestFiles, projectPath],
   );
 
   useEffect(() => {
-    if (!taskDescRef.current) return;
-    const currentText = taskDescRef.current.getContent();
+    if (!bigTaskDescRef.current) return;
+    const currentText = bigTaskDescRef.current.getContent();
     const cleaned = removeAllFileBlocks(currentText);
-    taskDescRef.current.setContent(cleaned);
-
+    bigTaskDescRef.current.setContent(cleaned);
     Object.entries(selectedFiles).forEach(([fp, content]) => {
-      taskDescRef.current?.addExtraContent(
+      bigTaskDescRef.current?.addExtraContent(
         `\n\n=== File: ${fp} ===\n${content}\n=== EndFile: ${fp} ===\n\n`,
       );
     });
   }, [selectedFiles, removeAllFileBlocks]);
 
+  useEffect(() => {
+    if (
+      codeGenState.result &&
+      codeGenState.result.iterations &&
+      codeGenState.result.iterations.length > 0 &&
+      previewTaskDescRef.current
+    ) {
+      const { iterations } = codeGenState.result;
+      const lastIteration = iterations[iterations.length - 1];
+      const promptText = lastIteration.prompt || '';
+      const additionalMarker = '# Additional information';
+      const endMarker = '---';
+      const startIdx = promptText.indexOf(additionalMarker);
+      if (startIdx !== -1) {
+        const infoStart = startIdx + additionalMarker.length;
+        const endIdx = promptText.indexOf(endMarker, infoStart);
+        const additionalInfo =
+          endIdx !== -1
+            ? promptText.substring(infoStart, endIdx).trim()
+            : promptText.substring(infoStart).trim();
+        previewTaskDescRef.current.setContent(additionalInfo);
+      }
+    }
+  }, [codeGenState.result]);
+
   const updateWorkItemDebounced = useCallback(
     debounce(async () => {
       if (!hasUserModified || !orgSlug || !projectId) return;
-
       const sourceFiles = Object.entries(selectedFiles).map(
         ([absPath, content]) => {
           let relative = absPath;
@@ -170,8 +190,10 @@ export function PromptGenerator() {
           return { path: relative, content };
         },
       );
-
-      const taskDescription = taskDescRef.current?.getContent() || '';
+      const taskDescription =
+        bigTaskDescRef.current?.getContent() ||
+        smallTaskDescRef.current?.getContent() ||
+        '';
       const textBlocks = selectedRules
         .map((ruleId) => {
           const r = rules.find((x) => x.id === ruleId);
@@ -184,18 +206,12 @@ export function PromptGenerator() {
             : null;
         })
         .filter(Boolean) as TextBlockType[];
-
       try {
         await dispatch(
           updateWorkItemThunk({
             orgSlug,
             projectId,
-            workItem: {
-              id,
-              taskDescription,
-              sourceFiles,
-              textBlocks,
-            },
+            workItem: { id, taskDescription, sourceFiles, textBlocks },
           }),
         );
       } catch (err: any) {
@@ -220,17 +236,17 @@ export function PromptGenerator() {
   );
 
   useEffect(() => {
-    updateWorkItemDebounced();
+    if (hasUserModified) {
+      updateWorkItemDebounced();
+    }
     return () => updateWorkItemDebounced.cancel();
-  }, [updateWorkItemDebounced]);
+  }, [updateWorkItemDebounced, hasUserModified]);
 
   const handleSend = useCallback(async () => {
     setHasUserModified(true);
     if (!orgSlug || !projectId || !id) return;
-
     try {
       await dispatch(updateCodeSession({ orgSlug, projectId, id }));
-
       if (
         workItem &&
         workItem.codeGenerationId &&
@@ -240,13 +256,10 @@ export function PromptGenerator() {
         const normalizedFilePath = pathBrowser.isAbsolute(firstFilePath)
           ? pathBrowser.normalize(firstFilePath)
           : pathBrowser.normalize(pathBrowser.join(projectPath, firstFilePath));
-
         const original =
           await window.fileAPI.readFileContent(normalizedFilePath);
         setOriginalFileContent(original);
-
         await dispatch(fetchCodeGeneration(workItem.codeGenerationId));
-
         setShowCodeViewer(true);
       }
     } catch (err: any) {
@@ -266,7 +279,6 @@ export function PromptGenerator() {
     try {
       const projName = projectPath.split(/[\\/]/).pop() || '';
       const files = codeGenState.latestFiles || {};
-
       await Promise.all(
         Object.entries(files).map(async ([key, content]) => {
           let absolutePath = key;
@@ -280,7 +292,6 @@ export function PromptGenerator() {
           );
         }),
       );
-
       notification.success({ message: 'Files updated successfully.' });
     } catch (err: any) {
       console.error('Error applying changes:', err);
@@ -394,147 +405,73 @@ export function PromptGenerator() {
             setComparisonFileContent(generatedContent);
             setShowCodeViewer(true);
           })
-          .catch((err: any) => {
-            console.error('Error auto-loading comparison file:', err);
-          });
+          .catch((err: any) =>
+            console.error('Error auto-loading comparison file:', err),
+          );
       }
     }
   }, [projectPath, codeGenState.latestFiles, showCodeViewer]);
 
-  const fileTreeProps =
-    codeGenState.latestFiles && Object.keys(codeGenState.latestFiles).length > 0
-      ? baseFileSet && generatedFileSet
-        ? { fileSets: [baseFileSet, generatedFileSet] }
-        : {}
-      : { projectPath };
+  let fileTreeProps;
+
+  if (
+    codeGenState.latestFiles &&
+    Object.keys(codeGenState.latestFiles).length > 0
+  ) {
+    if (baseFileSet && generatedFileSet) {
+      fileTreeProps = { fileSets: [baseFileSet, generatedFileSet] };
+    } else {
+      fileTreeProps = {};
+    }
+  } else {
+    fileTreeProps = { projectPath };
+  }
+
+  const codeGenExists =
+    codeGenState.latestFiles &&
+    Object.keys(codeGenState.latestFiles).length > 0;
 
   return (
     <Layout className={styles.promptGeneratorContainer}>
-      <Layout className={styles['ide-container']}>
-        <Sider width={360} className={styles.sider}>
-          <div className={styles.siderInner}>
-            <div
-              className={
-                codeGenState.latestFiles &&
-                Object.keys(codeGenState.latestFiles).length > 0
-                  ? styles.fileTreeContainerFlex
-                  : styles.fileTreeContainer
-              }
-            >
-              <div style={{ maxHeight: '83vh' }}>
-                <FileTree
-                  {...fileTreeProps}
-                  onFileSelectionChange={handleMultipleSelect}
-                  onSingleSelect={handleSingleSelect}
-                  style={{
-                    flex:
-                      codeGenState.latestFiles &&
-                      Object.keys(codeGenState.latestFiles).length > 0
-                        ? 1
-                        : undefined,
-                    borderBottomLeftRadius: '8px',
-                  }}
-                />
-              </div>
+      <Layout className={styles['ide-layout']}>
+        <TaskDescriptionHeader
+          ref={previewTaskDescRef}
+          codeGenExists={codeGenExists}
+        />
 
-              {codeGenState.latestFiles &&
-                Object.keys(codeGenState.latestFiles).length > 0 && (
-                  <div className={styles.buttonContainer}>
-                    <Button
-                      type="primary"
-                      block
-                      className={styles.applyChangesBtn}
-                      onClick={handleApplyChanges}
-                    >
-                      Apply Changes
-                    </Button>
-                  </div>
-                )}
-            </div>
+        <Layout className={styles['ide-container']}>
+          <Sidebar
+            fileTreeProps={fileTreeProps}
+            codeGenExists={codeGenExists}
+            handleMultipleSelect={handleMultipleSelect}
+            handleSingleSelect={handleSingleSelect}
+            handleApplyChanges={handleApplyChanges}
+            rules={rules}
+            setSelectedRules={setSelectedRules}
+          />
 
-            {(!codeGenState.latestFiles ||
-              Object.keys(codeGenState.latestFiles).length === 0) && (
-              <div className={styles.listBuilderContainer}>
-                <ListBuilder
-                  headerTitle="Rules"
-                  options={rules.map((r) => ({
-                    key: r.id,
-                    label: r.title,
-                    value: r.id,
-                  }))}
-                  onOptionClick={(opt) => {
-                    setHasUserModified(true);
-                    setSelectedRules((prev) =>
-                      prev.includes(opt.value)
-                        ? prev.filter((currentId) => currentId !== opt.value)
-                        : [...prev, opt.value],
-                    );
-                  }}
-                  selectionType="multiple"
-                />
-                <div className={styles.buttonContainer}>
-                  <Button
-                    block
-                    className={styles.addPromptBtn}
-                    onClick={() => console.log('Add new text prompt clicked')}
-                  >
-                    <PlusSquareFilled />
-                    New Rule
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </Sider>
-
-        <Layout className={styles.mainLayout}>
-          <Content className={styles.content}>
-            {showCodeViewer ? (
-              <CodeViewer
-                originalCode={originalFileContent}
-                modifiedCode={comparisonFileContent}
-                code={originalFileContent}
-                language="typescript"
-                singleViewerStyleOverrides={{
-                  container: {
-                    borderBottomRightRadius: '8px',
-                    borderTopRightRadius: '8px',
-                  },
-                }}
-                diffViewerStyleOverrides={{
-                  container: {
-                    borderBottomRightRadius: '8px',
-                    borderTopRightRadius: '8px',
-                  },
-                }}
-              />
-            ) : (
-              <div className={styles.taskCreationContainer}>
-                <TaskDescription
-                  ref={taskDescRef}
-                  onSend={handleSend}
-                  mode="big"
-                  onContentChange={() => {
-                    setHasUserModified(true);
-                    updateWorkItemDebounced();
-                  }}
-                />
-              </div>
-            )}
-          </Content>
+          <ContentArea
+            showCodeViewer={showCodeViewer}
+            originalFileContent={originalFileContent}
+            comparisonFileContent={comparisonFileContent}
+            bigTaskDescRef={bigTaskDescRef}
+            handleSend={handleSend}
+            updateWorkItemDebounced={updateWorkItemDebounced}
+          />
         </Layout>
 
-        <div style={{ padding: '0 16px' }}>
-          <div style={{ marginTop: 16 }}>
-            <ListBuilder
-              headerTitle="History"
-              options={historyOptions}
-              headerIcon={<HistoryOutlined />}
-              onOptionClick={handleHistoryOptionClick}
-            />
-          </div>
-        </div>
+        <TaskDescriptionFooter
+          ref={smallTaskDescRef}
+          codeGenExists={codeGenExists}
+          handleSend={handleSend}
+          updateWorkItemDebounced={updateWorkItemDebounced}
+        />
       </Layout>
+
+      <HistoryPanel
+        historyOptions={historyOptions}
+        handleHistoryOptionClick={handleHistoryOptionClick}
+      />
     </Layout>
   );
 }

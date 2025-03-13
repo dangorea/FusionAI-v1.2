@@ -5,7 +5,7 @@ import { DrawerRenderer } from '../../../components';
 import styles from './main-layout.module.scss';
 import Header from './header';
 import type { WorkItemType } from '../../../domains/work-item/model/types';
-import { WorkItemsModal } from '../../../domains/work-item/components/modal';
+import { WorkItemsModal } from '../../../domains/work-item/components';
 import { useAppDispatch } from '../../../lib/redux/hook';
 import { setSelectedWorkItem } from '../../../lib/redux/feature/work-items/reducer';
 

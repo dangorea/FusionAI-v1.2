@@ -1,0 +1,124 @@
+.sider {
+  background-color: #ffffff !important;
+  border-right: none;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.siderInner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow-y: auto;
+  justify-content: space-between;
+}
+
+.fileTreeContainerFlex {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  border: 1px solid #d8dbf4;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  padding: 4px;
+}
+
+.fileTreeContainerFlex .buttonContainer {
+  margin-top: auto;
+  padding: 0 0 16px 0;
+  display: flex;
+  justify-content: center;
+}
+
+.fileTreeContainerFlex .buttonContainer button {
+  background: #d8dbf4;
+  color: #2a305e;
+  gap: 22px;
+  height: 40px;
+  border-radius: 8px;
+  font-weight: 700;
+  width: 200px;
+}
+
+.fileTreeContainerFlex .buttonContainer button svg {
+  height: 24px;
+  width: 24px;
+}
+
+.fileTreeContainer {
+  max-height: 50vh;
+  border: 1px solid #d8dbf4;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  padding: 4px;
+}
+
+.fileTreeContainer .buttonContainer {
+  padding: 2px 18px;
+}
+
+.fileTreeContainer .buttonContainer button {
+  background: linear-gradient(180deg, #5e6ad2 0%, #0a86ce 100%);
+  color: #eff0fb;
+  justify-content: flex-start;
+  gap: 22px;
+  height: 45px;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.fileTreeContainer .buttonContainer button svg {
+  height: 24px;
+  width: 24px;
+}
+
+.listBuilderContainer {
+  min-height: 24vh;
+  border: 1px solid #d8dbf4;
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.listBuilderContainer .buttonContainer {
+  padding: 2px 18px;
+}
+
+.listBuilderContainer .buttonContainer button {
+  background: linear-gradient(180deg, #5e6ad2 0%, #0a86ce 100%);
+  color: #eff0fb;
+  justify-content: flex-start;
+  gap: 22px;
+  height: 45px;
+  border-radius: 8px;
+  font-size: 15px;
+}
+
+.listBuilderContainer .buttonContainer button svg {
+  height: 24px;
+  width: 24px;
+}
+
+.applyChangesBtn {
+  margin-top: 16px;
+}
+
+.addPromptBtn {
+  margin-bottom: 16px;
+}
+
+@media (max-width: 768px) {
+  .sider {
+    width: 100% !important;
+    border-bottom-left-radius: 0;
+    border-top-left-radius: 8px;
+  }
+
+  .siderInner {
+    height: auto;
+    overflow-y: visible;
+  }
+}

@@ -1,0 +1,16 @@
+.reservedTaskDescTop,
+.reservedTaskDescBottom {
+  margin-left: 362px;
+  width: calc(100% - 362px);
+  box-sizing: border-box;
+  display: flex;
+  justify-content: flex-start;
+}
+
+@media (max-width: 768px) {
+  .reservedTaskDescTop,
+  .reservedTaskDescBottom {
+    margin-left: 0;
+    width: 100%;
+  }
+}

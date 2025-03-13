@@ -5,112 +5,65 @@ import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/themes/prism-tomorrow.css';
 
+export interface DiffViewerStyleOverrides {
+  container?: React.CSSProperties;
+  lineNumber?: React.CSSProperties;
+  baseCodeCell?: React.CSSProperties;
+  addedCodeCell?: React.CSSProperties;
+  removedCodeCell?: React.CSSProperties;
+  unchangedCodeCell?: React.CSSProperties;
+}
+
 interface DiffViewerProps {
   originalCode: string;
   modifiedCode: string;
   language?: string;
-}
-
-interface DiffRow {
-  left: string;
-  right: string;
-  leftType: 'unchanged' | 'removed';
-  rightType: 'unchanged' | 'added';
+  styleOverrides?: DiffViewerStyleOverrides;
 }
 
 function DiffViewer({
   originalCode,
   modifiedCode,
   language = 'typescript',
+  styleOverrides = {},
 }: DiffViewerProps) {
-  const computeDiffRows = (): DiffRow[] => {
-    const diffParts = diffLines(originalCode, modifiedCode);
-    const rows: DiffRow[] = [];
-
-    for (let i = 0; i < diffParts.length; i++) {
-      const part = diffParts[i];
-      if (!part.added && !part.removed) {
-        const lines = part.value.split('\n');
-        const filteredLines =
-          lines[lines.length - 1] === '' ? lines.slice(0, -1) : lines;
-        filteredLines.forEach((line) => {
-          rows.push({
-            left: line,
-            right: line,
-            leftType: 'unchanged',
-            rightType: 'unchanged',
-          });
-        });
-      } else if (
-        part.removed &&
-        i + 1 < diffParts.length &&
-        diffParts[i + 1].added
-      ) {
-        const removedLines = part.value.split('\n').filter((l) => l !== '');
-        const addedLines = diffParts[i + 1].value
-          .split('\n')
-          .filter((l) => l !== '');
-        const maxLen = Math.max(removedLines.length, addedLines.length);
-        for (let j = 0; j < maxLen; j++) {
-          rows.push({
-            left: removedLines[j] || '',
-            right: addedLines[j] || '',
-            leftType: 'removed',
-            rightType: 'added',
-          });
-        }
-        i++;
-      } else if (part.removed) {
-        const lines = part.value.split('\n').filter((l) => l !== '');
-        lines.forEach((line) => {
-          rows.push({
-            left: line,
-            right: '',
-            leftType: 'removed',
-            rightType: 'added',
-          });
-        });
-      } else if (part.added) {
-        const lines = part.value.split('\n').filter((l) => l !== '');
-        lines.forEach((line) => {
-          rows.push({
-            left: '',
-            right: line,
-            leftType: 'removed',
-            rightType: 'added',
-          });
-        });
-      }
-    }
-    return rows;
+  const highlightCode = (code: string) => {
+    const grammar = Prism.languages[language] || Prism.languages.javascript;
+    return Prism.highlight(code, grammar, language);
   };
+  const isNewFile = !originalCode.trim();
+  const diffParts = diffLines(originalCode, modifiedCode);
 
-  const diffRows = computeDiffRows();
-
-  // Base styling for code cells
-  const baseCodeCellStyle: React.CSSProperties = {
+  const defaultBaseCodeCellStyle: React.CSSProperties = {
     fontFamily:
       'Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", monospace',
     fontSize: '13px',
     lineHeight: '1.5',
     padding: '2px 4px',
     whiteSpace: 'pre',
-    overflow: 'hidden',
+    // Removed overflow: 'hidden' so horizontal scrolling can work properly
   };
 
-  const getCodeCellStyle = (
-    type: 'unchanged' | 'removed' | 'added',
-  ): React.CSSProperties => {
-    let background = 'transparent';
-    if (type === 'removed') {
-      background = '#3f2d2d';
-    } else if (type === 'added') {
-      background = '#294436';
-    }
-    return { ...baseCodeCellStyle, backgroundColor: background };
+  const baseCodeCellStyle: React.CSSProperties = {
+    ...defaultBaseCodeCellStyle,
+    ...styleOverrides.baseCodeCell,
   };
 
-  const lineNumberCellStyle: React.CSSProperties = {
+  const defaultContainerStyle: React.CSSProperties = {
+    display: 'grid',
+    gridTemplateColumns: isNewFile ? '50px 1fr' : '50px 1fr 50px 1fr',
+    background: '#1e1e1e',
+    color: '#d4d4d4',
+    overflow: 'auto',
+    width: '100%',
+    height: '100%',
+  };
+  const containerStyle: React.CSSProperties = {
+    ...defaultContainerStyle,
+    ...styleOverrides.container,
+  };
+
+  const defaultLineNumberCellStyle: React.CSSProperties = {
     width: '50px',
     textAlign: 'right',
     paddingRight: '8px',
@@ -122,19 +75,29 @@ function DiffViewer({
     lineHeight: '1.5',
     verticalAlign: 'middle',
   };
-
-  // Make the grid container fill its parent's space.
-  const containerStyle: React.CSSProperties = {
-    display: 'grid',
-    gridTemplateColumns: '50px 1fr 50px 1fr',
-    background: '#1e1e1e',
-    color: '#d4d4d4',
-    overflow: 'auto',
-    width: '100%',
-    height: '100%',
+  const lineNumberCellStyle: React.CSSProperties = {
+    ...defaultLineNumberCellStyle,
+    ...styleOverrides.lineNumber,
   };
 
-  // Use a ref to measure the container height.
+  const getAddedStyle = (): React.CSSProperties => ({
+    ...baseCodeCellStyle,
+    backgroundColor: '#294436',
+    ...styleOverrides.addedCodeCell,
+  });
+
+  const getRemovedStyle = (): React.CSSProperties => ({
+    ...baseCodeCellStyle,
+    backgroundColor: '#3f2d2d',
+    ...styleOverrides.removedCodeCell,
+  });
+
+  const getUnchangedStyle = (): React.CSSProperties => ({
+    ...baseCodeCellStyle,
+    backgroundColor: 'transparent',
+    ...styleOverrides.unchangedCodeCell,
+  });
+
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState<number>(0);
 
@@ -150,40 +113,143 @@ function DiffViewer({
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
 
-  // Assume a fixed row height (adjust as needed).
-  const rowHeight = 24;
-  const extraRows = Math.max(
-    0,
-    Math.floor(containerHeight / rowHeight) - diffRows.length,
-  );
+  if (isNewFile) {
+    const lines = modifiedCode.split('\n');
+    if (lines[lines.length - 1] === '') {
+      lines.pop();
+    }
+    return (
+      <div style={containerStyle} ref={containerRef}>
+        {lines.map((line, index) => (
+          <React.Fragment key={index}>
+            <div style={lineNumberCellStyle}>{index + 1}</div>
+            <div style={getAddedStyle()}>
+              <code
+                dangerouslySetInnerHTML={{
+                  __html: highlightCode(line) || '&nbsp;',
+                }}
+              />
+            </div>
+          </React.Fragment>
+        ))}
+      </div>
+    );
+  }
 
   let leftLineNumber = 1;
   let rightLineNumber = 1;
 
+  const rows: {
+    left: string;
+    right: string;
+    leftType: 'unchanged' | 'removed' | 'empty';
+    rightType: 'unchanged' | 'added' | 'empty';
+  }[] = [];
+
+  // Build row data from diff results
+  for (let i = 0; i < diffParts.length; i++) {
+    const part = diffParts[i];
+    if (!part.added && !part.removed) {
+      const lines = part.value.split('\n').filter((l) => l !== '');
+      lines.forEach((line) => {
+        rows.push({
+          left: line,
+          right: line,
+          leftType: 'unchanged',
+          rightType: 'unchanged',
+        });
+      });
+    } else if (
+      part.removed &&
+      i + 1 < diffParts.length &&
+      diffParts[i + 1].added
+    ) {
+      const removedLines = part.value.split('\n').filter((l) => l !== '');
+      const addedLines = diffParts[i + 1].value
+        .split('\n')
+        .filter((l) => l !== '');
+      const maxLen = Math.max(removedLines.length, addedLines.length);
+      for (let j = 0; j < maxLen; j++) {
+        rows.push({
+          left: removedLines[j] || '',
+          right: addedLines[j] || '',
+          leftType: removedLines[j] ? 'removed' : 'empty',
+          rightType: addedLines[j] ? 'added' : 'empty',
+        });
+      }
+      i++;
+    } else if (part.removed) {
+      const lines = part.value.split('\n').filter((l) => l !== '');
+      lines.forEach((line) => {
+        rows.push({
+          left: line,
+          right: '',
+          leftType: 'removed',
+          rightType: 'empty',
+        });
+      });
+    } else if (part.added) {
+      const lines = part.value.split('\n').filter((l) => l !== '');
+      lines.forEach((line) => {
+        rows.push({
+          left: '',
+          right: line,
+          leftType: 'empty',
+          rightType: 'added',
+        });
+      });
+    }
+  }
+
+  const getLeftCellStyle = (type: 'unchanged' | 'removed' | 'empty') => {
+    switch (type) {
+      case 'removed':
+        return getRemovedStyle();
+      case 'unchanged':
+        return getUnchangedStyle();
+      default:
+        return getUnchangedStyle();
+    }
+  };
+
+  const getRightCellStyle = (type: 'unchanged' | 'added' | 'empty') => {
+    switch (type) {
+      case 'added':
+        return getAddedStyle();
+      case 'unchanged':
+        return getUnchangedStyle();
+      default:
+        return getUnchangedStyle();
+    }
+  };
+
+  const rowHeight = 24;
+  const extraRows = Math.max(
+    0,
+    Math.floor(containerHeight / rowHeight) - rows.length,
+  );
+
   return (
     <div style={containerStyle} ref={containerRef}>
-      {diffRows.map((row, index) => {
+      {rows.map((row, index) => {
         const leftNumber = row.left !== '' ? leftLineNumber++ : '';
         const rightNumber = row.right !== '' ? rightLineNumber++ : '';
-        const grammar = Prism.languages[language] || Prism.languages.javascript;
-        const leftHTML = row.left
-          ? Prism.highlight(row.left, grammar, language)
-          : '';
-        const rightHTML = row.right
-          ? Prism.highlight(row.right, grammar, language)
-          : '';
         return (
           <React.Fragment key={index}>
             <div style={lineNumberCellStyle}>{leftNumber || ' '}</div>
-            <div style={getCodeCellStyle(row.leftType)}>
+            <div style={getLeftCellStyle(row.leftType)}>
               <code
-                dangerouslySetInnerHTML={{ __html: leftHTML || '&nbsp;' }}
+                dangerouslySetInnerHTML={{
+                  __html: row.left ? highlightCode(row.left) : '&nbsp;',
+                }}
               />
             </div>
             <div style={lineNumberCellStyle}>{rightNumber || ' '}</div>
-            <div style={getCodeCellStyle(row.rightType)}>
+            <div style={getRightCellStyle(row.rightType)}>
               <code
-                dangerouslySetInnerHTML={{ __html: rightHTML || '&nbsp;' }}
+                dangerouslySetInnerHTML={{
+                  __html: row.right ? highlightCode(row.right) : '&nbsp;',
+                }}
               />
             </div>
           </React.Fragment>

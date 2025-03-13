@@ -27,7 +27,6 @@ export const TaskDescription = forwardRef(
     const containerRef = useRef<HTMLDivElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
-    // Use ResizeObserver to update the textarea height when the container resizes.
     useEffect(() => {
       if (!containerRef.current) return;
 
@@ -76,7 +75,6 @@ export const TaskDescription = forwardRef(
               onContentChange?.(e.target.value);
             }}
             placeholder="Write your task description..."
-            // In small mode, we can keep autoSize if desired.
             autoSize={{ minRows: 1, maxRows: 10 }}
             style={{
               border: 'none',
@@ -143,7 +141,6 @@ export const TaskDescription = forwardRef(
           <Input.TextArea
             ref={(node) => {
               if (node) {
-                // Ensure we capture the underlying DOM node
                 textAreaRef.current = node.resizableTextArea?.textArea || null;
               }
             }}

@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 
-// Declare the FileNode interface used in these functions.
 export interface FileNode {
   name: string;
   path: string;
@@ -103,7 +102,6 @@ const DISALLOWED_EXTENSIONS = new Set([
 export function getFileTree(dir: string, isRoot = true): FileNode | null {
   const baseName = path.basename(dir);
 
-  // Possibly skip certain directories
   if (!isRoot && SKIP_DIRECTORIES.has(baseName)) {
     return null;
   }
@@ -161,20 +159,17 @@ export function buildFileTreeFromMapping(
   const root: FileNode = { name: rootName, path: projectPath, children: [] };
 
   for (const filePath of Object.keys(mapping)) {
-    // If mapping[filePath] is a string, wrap it in an object.
     let fileData = mapping[filePath];
     if (typeof fileData === 'string') {
       fileData = { content: fileData };
       mapping[filePath] = fileData;
     }
 
-    // Resolve the file path against the project path if it's not absolute.
     let absFilePath = filePath;
     if (!path.isAbsolute(filePath)) {
       absFilePath = path.join(projectPath, filePath);
     }
 
-    // If no explicit changeType is given, check if the file exists on disk.
     if (!fileData.changeType) {
       if (!fs.existsSync(absFilePath)) {
         fileData.changeType = 'added';
@@ -183,11 +178,9 @@ export function buildFileTreeFromMapping(
       }
     }
 
-    // Build the tree structure using the absolute file path.
     const rel = path.relative(projectPath, absFilePath);
     const parts = rel.split(path.sep).filter(Boolean);
 
-    // Avoid double nesting the project folder name.
     if (parts[0] === rootName) {
       parts.shift();
     }

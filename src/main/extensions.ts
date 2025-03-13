@@ -1,4 +1,3 @@
-// src/main/extensions.ts
 import installExtension, {
   REACT_DEVELOPER_TOOLS,
   REDUX_DEVTOOLS,

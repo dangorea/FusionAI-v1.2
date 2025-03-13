@@ -4,32 +4,41 @@ import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-typescript';
 import 'prismjs/themes/prism-tomorrow.css';
 
+export interface SingleViewerStyleOverrides {
+  container?: React.CSSProperties;
+  lineNumber?: React.CSSProperties;
+  baseCodeCell?: React.CSSProperties;
+}
+
 export interface SingleCodeViewerProps {
   code: string;
   language?: string;
+  styleOverrides?: SingleViewerStyleOverrides;
 }
 
-export function SingleCodeViewer({
+function SingleCodeViewer({
   code,
   language = 'typescript',
+  styleOverrides = {},
 }: SingleCodeViewerProps) {
-  // Split the code into lines using a regex that handles both Windows and Unix line endings.
   const lines = code.split(/\r?\n/);
 
-  // Base styling for the code cell, mimicking DiffViewer's look.
-  const baseCodeCellStyle: React.CSSProperties = {
+  const defaultBaseCodeCellStyle: React.CSSProperties = {
     fontFamily:
       'Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", monospace',
     fontSize: '13px',
     lineHeight: '1.5',
     padding: '2px 4px',
     whiteSpace: 'pre',
-    overflow: 'hidden',
+    // Removed overflow: 'hidden' to allow horizontal scrolling
     margin: 0,
   };
+  const baseCodeCellStyle: React.CSSProperties = {
+    ...defaultBaseCodeCellStyle,
+    ...styleOverrides.baseCodeCell,
+  };
 
-  // Style for the line numbers column.
-  const lineNumberCellStyle: React.CSSProperties = {
+  const defaultLineNumberCellStyle: React.CSSProperties = {
     width: '50px',
     textAlign: 'right',
     paddingRight: '8px',
@@ -42,15 +51,12 @@ export function SingleCodeViewer({
     verticalAlign: 'middle',
     margin: 0,
   };
-
-  // Code cell style (inherits from base style).
-  const codeCellStyle: React.CSSProperties = {
-    ...baseCodeCellStyle,
-    backgroundColor: 'transparent',
+  const lineNumberCellStyle: React.CSSProperties = {
+    ...defaultLineNumberCellStyle,
+    ...styleOverrides.lineNumber,
   };
 
-  // Container style: grid with two columns.
-  const containerStyle: React.CSSProperties = {
+  const defaultContainerStyle: React.CSSProperties = {
     display: 'grid',
     gridTemplateColumns: '50px 1fr',
     background: '#1e1e1e',
@@ -59,8 +65,11 @@ export function SingleCodeViewer({
     width: '100%',
     height: '100%',
   };
+  const containerStyle: React.CSSProperties = {
+    ...defaultContainerStyle,
+    ...styleOverrides.container,
+  };
 
-  // Use a ref to measure the container height.
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerHeight, setContainerHeight] = useState<number>(0);
 
@@ -76,25 +85,28 @@ export function SingleCodeViewer({
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
 
-  // Assume a fixed row height (adjust if needed)
   const rowHeight = 24;
   const extraRows = Math.max(
     0,
     Math.floor(containerHeight / rowHeight) - lines.length,
   );
 
+  const highlight = (text: string) => {
+    const grammar = Prism.languages[language] || Prism.languages.javascript;
+    return Prism.highlight(text, grammar, language);
+  };
+
   let lineNumber = 1;
 
   return (
     <div style={containerStyle} ref={containerRef}>
       {lines.map((line, index) => {
-        const grammar = Prism.languages[language] || Prism.languages.javascript;
-        const highlighted = Prism.highlight(line, grammar, language);
+        const highlighted = highlight(line);
         const currentNumber = lineNumber++;
         return (
           <React.Fragment key={index}>
             <div style={lineNumberCellStyle}>{currentNumber}</div>
-            <div style={codeCellStyle}>
+            <div style={baseCodeCellStyle}>
               <code
                 dangerouslySetInnerHTML={{ __html: highlighted || '&nbsp;' }}
               />

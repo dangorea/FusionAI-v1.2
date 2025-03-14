@@ -42,3 +42,33 @@ export async function getCodeGenerationSession(
     throw new Error('Failed to retrieve code generation session from API');
   }
 }
+
+/**
+ * Retrieves a specific code generation session by ID
+ * @param id The unique identifier of the code generation session
+ * @param data Object containing the prompt for adding a new iteration
+ * @returns The code generation session data
+ * @throws Error if the API request fails
+ */
+export async function addIterationAPI(
+  id: string,
+  data: {
+    correction: string;
+    startFromIterationId: string;
+  },
+): Promise<CodeGenerationType> {
+  try {
+    const response = await instance.post(
+      `/code-generation/${id}/iterations`,
+      data,
+    );
+    return response.data;
+  } catch (error: any) {
+    console.error('Error in get code generation session request:', error);
+
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error('Failed to retrieve code generation session from API');
+  }
+}

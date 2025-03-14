@@ -6,6 +6,7 @@ import { fetchCodeGeneration } from './thunk';
 const initialState: CodeGenerationState = {
   result: null,
   latestFiles: null,
+  selectedIterationId: null,
   loading: false,
   error: null,
 };
@@ -19,6 +20,10 @@ const codeGenerationSlice = createSlice({
       state.latestFiles = null;
       state.error = null;
       state.loading = false;
+      state.selectedIterationId = null;
+    },
+    updateSelectedIteration(state, action: PayloadAction<string>) {
+      state.selectedIterationId = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -38,6 +43,12 @@ const codeGenerationSlice = createSlice({
         state.loading = false;
         state.result = action.payload.result;
         state.latestFiles = action.payload.latestFiles;
+        if (action.payload.result.iterations.length > 0) {
+          state.selectedIterationId =
+            action.payload.result.iterations[
+              action.payload.result.iterations.length - 1
+            ]._id;
+        }
       },
     );
     builder.addCase(fetchCodeGeneration.rejected, (state, action) => {
@@ -47,5 +58,6 @@ const codeGenerationSlice = createSlice({
   },
 });
 
-export const { clearCodeGeneration } = codeGenerationSlice.actions;
+export const { clearCodeGeneration, updateSelectedIteration } =
+  codeGenerationSlice.actions;
 export default codeGenerationSlice.reducer;

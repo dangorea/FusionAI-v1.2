@@ -12,9 +12,14 @@ import {
   updateCodeSession,
   updateWorkItemThunk,
 } from '../../../lib/redux/feature/work-items/thunk';
-import { clearCodeGeneration } from '../../../lib/redux/feature/code-generation/reducer';
-import { fetchCodeGeneration } from '../../../lib/redux/feature/code-generation/thunk';
-import codeGenerationHistoryService from '../../../database/code-generation-history';
+import {
+  clearCodeGeneration,
+  updateSelectedIteration,
+} from '../../../lib/redux/feature/code-generation/reducer';
+import {
+  addIterationThunk,
+  fetchCodeGeneration,
+} from '../../../lib/redux/feature/code-generation/thunk';
 import { LocalStorageKeys } from '../../../utils/localStorageKeys';
 import type { FileNode, FileSet } from '../../../components';
 import type { TextBlockType } from '../../work-item/model/types';
@@ -22,10 +27,16 @@ import styles from './prompt-generator.module.scss';
 import {
   ContentArea,
   HistoryPanel,
+  Loading,
   Sidebar,
   TaskDescriptionFooter,
   TaskDescriptionHeader,
 } from '../components';
+import type { IterationOption } from '../../../utils/iteration';
+import {
+  buildIterationsHistory,
+  extractIterationLabel,
+} from '../../../utils/iteration';
 
 export function PromptGenerator() {
   const { id } = useParams();
@@ -34,15 +45,15 @@ export function PromptGenerator() {
   const projectId = useAppSelector(selectSelectedProjectId);
   const rules = useAppSelector(selectAllRules);
   const workItem = useAppSelector(selectSelectedWorkItemEntity);
-  const codeGenState = useAppSelector((state: any) => state.codeGeneration);
+  const codeGenState = useAppSelector((state) => state.codeGeneration);
   const orgSlug = org?.slug;
-
-  const [projectPath, setProjectPath] = useState('');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [projectPath, setProjectPath] = useState<string>('');
   const [selectedFiles, setSelectedFiles] = useState<Record<string, string>>(
     {},
   );
-  const [hasUserModified, setHasUserModified] = useState(false);
-  const [showCodeViewer, setShowCodeViewer] = useState(false);
+  const [hasUserModified, setHasUserModified] = useState<boolean>(false);
+  const [showCodeViewer, setShowCodeViewer] = useState<boolean>(false);
   const [originalFileContent, setOriginalFileContent] = useState<string>('');
   const [comparisonFileContent, setComparisonFileContent] = useState<string>();
   const [selectedRules, setSelectedRules] = useState<string[]>([]);
@@ -50,14 +61,15 @@ export function PromptGenerator() {
   const [generatedFileSet, setGeneratedFileSet] = useState<FileSet | null>(
     null,
   );
-  const [historyOptions, setHistoryOptions] = useState<
-    { key: string; label: string; value: string }[]
-  >([]);
+  const [historyOptions, setHistoryOptions] = useState<IterationOption[]>([]);
+
+  console.log(originalFileContent);
 
   const bigTaskDescRef = useRef<any>(null);
   const smallTaskDescRef = useRef<any>(null);
   const previewTaskDescRef = useRef<any>(null);
 
+  // On mount, clear previous session and load the current code generation session.
   useEffect(() => {
     dispatch(clearCodeGeneration());
     if (workItem?.codeGenerationId) {
@@ -157,22 +169,89 @@ export function PromptGenerator() {
       previewTaskDescRef.current
     ) {
       const { iterations } = codeGenState.result;
-      const lastIteration = iterations[iterations.length - 1];
-      const promptText = lastIteration.prompt || '';
-      const additionalMarker = '# Additional information';
-      const endMarker = '---';
-      const startIdx = promptText.indexOf(additionalMarker);
-      if (startIdx !== -1) {
-        const infoStart = startIdx + additionalMarker.length;
-        const endIdx = promptText.indexOf(endMarker, infoStart);
-        const additionalInfo =
-          endIdx !== -1
-            ? promptText.substring(infoStart, endIdx).trim()
-            : promptText.substring(infoStart).trim();
+      const selectedIteration = iterations.find(
+        (iteration) => iteration._id === codeGenState.selectedIterationId,
+      );
+      if (selectedIteration) {
+        const promptText = selectedIteration.prompt || '';
+        const additionalInfo = extractIterationLabel(promptText, 98);
         previewTaskDescRef.current.setContent(additionalInfo);
       }
     }
+  }, [codeGenState.result, codeGenState.selectedIterationId]);
+
+  useEffect(() => {
+    if (codeGenState.result && codeGenState.result.iterations) {
+      const options = buildIterationsHistory(
+        codeGenState.result.iterations,
+        17,
+      );
+      setHistoryOptions(options);
+    }
   }, [codeGenState.result]);
+
+  useEffect(() => {
+    if (
+      projectPath &&
+      codeGenState.result &&
+      codeGenState.result.iterations &&
+      codeGenState.selectedIterationId
+    ) {
+      const selectedIteration = codeGenState.result.iterations.find(
+        (iteration) => iteration._id === codeGenState.selectedIterationId,
+      );
+      if (selectedIteration) {
+        const iterationFiles = selectedIteration.files;
+        window.fileAPI
+          .buildGeneratedFileTree(iterationFiles, projectPath)
+          .then((genTree: FileNode) => {
+            setGeneratedFileSet({
+              id: 'generated',
+              name: 'Suggested Changes',
+              tree: genTree,
+              visible: true,
+            });
+          })
+          .catch((err) =>
+            console.error(
+              'Error building generated file tree for selected iteration:',
+              err,
+            ),
+          );
+        const fileKeys = Object.keys(iterationFiles);
+        if (fileKeys.length > 0) {
+          const fileKey = fileKeys[0];
+          setComparisonFileContent(iterationFiles[fileKey]);
+          let absolutePath = '';
+          if (pathBrowser.isAbsolute(fileKey)) {
+            absolutePath = pathBrowser.normalize(fileKey);
+          } else {
+            let relativeKey = fileKey;
+            const projFolderName = projectPath.split(/[\\/]/).pop() || '';
+            if (relativeKey.startsWith(projFolderName)) {
+              relativeKey = relativeKey
+                .slice(projFolderName.length)
+                .replace(/^[/\\]+/, '');
+            }
+            absolutePath = pathBrowser.normalize(
+              pathBrowser.join(projectPath, relativeKey),
+            );
+          }
+          window.fileAPI
+            .readFileContent(absolutePath)
+            .then((originalContent: string) => {
+              setOriginalFileContent(originalContent);
+            })
+            .catch((err: any) =>
+              console.error(
+                'Error reading original file for selected iteration:',
+                err,
+              ),
+            );
+        }
+      }
+    }
+  }, [projectPath, codeGenState.selectedIterationId, codeGenState.result]);
 
   const updateWorkItemDebounced = useCallback(
     debounce(async () => {
@@ -245,31 +324,62 @@ export function PromptGenerator() {
   const handleSend = useCallback(async () => {
     setHasUserModified(true);
     if (!orgSlug || !projectId || !id) return;
+    setIsLoading(true);
     try {
-      await dispatch(updateCodeSession({ orgSlug, projectId, id }));
-      if (
-        workItem &&
-        workItem.codeGenerationId &&
-        workItem.sourceFiles?.length
-      ) {
-        const firstFilePath = workItem.sourceFiles[0].path;
-        const normalizedFilePath = pathBrowser.isAbsolute(firstFilePath)
-          ? pathBrowser.normalize(firstFilePath)
-          : pathBrowser.normalize(pathBrowser.join(projectPath, firstFilePath));
-        const original =
-          await window.fileAPI.readFileContent(normalizedFilePath);
-        setOriginalFileContent(original);
-        await dispatch(fetchCodeGeneration(workItem.codeGenerationId));
-        setShowCodeViewer(true);
+      if (codeGenState.result) {
+        const correction = smallTaskDescRef.current?.getContent() || '';
+
+        if (codeGenState.selectedIterationId && workItem?.codeGenerationId) {
+          await dispatch(
+            addIterationThunk({
+              id: workItem.codeGenerationId,
+              correction,
+              startFromIterationId: codeGenState.selectedIterationId,
+            }),
+          );
+          await dispatch(fetchCodeGeneration(workItem.codeGenerationId));
+          setShowCodeViewer(true);
+        }
+      } else {
+        await dispatch(updateCodeSession({ orgSlug, projectId, id }));
+        if (
+          workItem &&
+          workItem.codeGenerationId &&
+          workItem.sourceFiles?.length
+        ) {
+          const firstFilePath = workItem.sourceFiles[0].path;
+          const normalizedFilePath = pathBrowser.isAbsolute(firstFilePath)
+            ? pathBrowser.normalize(firstFilePath)
+            : pathBrowser.normalize(
+                pathBrowser.join(projectPath, firstFilePath),
+              );
+          const original =
+            await window.fileAPI.readFileContent(normalizedFilePath);
+          setOriginalFileContent(original);
+          await dispatch(fetchCodeGeneration(workItem.codeGenerationId));
+          setShowCodeViewer(true);
+        }
       }
+      smallTaskDescRef.current?.setContent('');
     } catch (err: any) {
       console.error('Error generating code:', err);
       notification.error({
         message: 'Code Generation Error',
         description: err.message || 'Failed to generate code',
       });
+    } finally {
+      setIsLoading(false);
     }
-  }, [orgSlug, projectId, id, dispatch, workItem, projectPath]);
+  }, [
+    orgSlug,
+    projectId,
+    id,
+    dispatch,
+    workItem,
+    projectPath,
+    codeGenState.result,
+    codeGenState.selectedIterationId,
+  ]);
 
   const handleApplyChanges = useCallback(async () => {
     if (!projectPath) {
@@ -299,22 +409,11 @@ export function PromptGenerator() {
     }
   }, [projectPath, codeGenState.latestFiles]);
 
-  const handleHistoryOptionClick = async (option: {
-    key: string;
-    label: string;
-    value: string;
-  }) => {
-    const session = await codeGenerationHistoryService.getByKey(option.key);
-    if (session) {
-      notification.info({
-        message: 'History Session',
-        description: `Session ID: ${session.sessionId}\nPrompt: ${session.promptLabel}`,
-      });
-    } else {
-      notification.info({
-        message: 'No history found for the selected option.',
-      });
+  const handleHistoryOptionClick = async (option: IterationOption) => {
+    if (codeGenState.selectedIterationId === option.value) {
+      return;
     }
+    dispatch(updateSelectedIteration(option.value));
   };
 
   useEffect(() => {
@@ -428,8 +527,9 @@ export function PromptGenerator() {
   }
 
   const codeGenExists =
-    codeGenState.latestFiles &&
-    Object.keys(codeGenState.latestFiles).length > 0;
+    (codeGenState.latestFiles &&
+      Object.keys(codeGenState.latestFiles).length > 0) ||
+    false;
 
   return (
     <Layout className={styles.promptGeneratorContainer}>
@@ -440,24 +540,26 @@ export function PromptGenerator() {
         />
 
         <Layout className={styles['ide-container']}>
-          <Sidebar
-            fileTreeProps={fileTreeProps}
-            codeGenExists={codeGenExists}
-            handleMultipleSelect={handleMultipleSelect}
-            handleSingleSelect={handleSingleSelect}
-            handleApplyChanges={handleApplyChanges}
-            rules={rules}
-            setSelectedRules={setSelectedRules}
-          />
+          <Loading loading={isLoading}>
+            <Sidebar
+              fileTreeProps={fileTreeProps}
+              codeGenExists={codeGenExists}
+              handleMultipleSelect={handleMultipleSelect}
+              handleSingleSelect={handleSingleSelect}
+              handleApplyChanges={handleApplyChanges}
+              rules={rules}
+              setSelectedRules={setSelectedRules}
+            />
 
-          <ContentArea
-            showCodeViewer={showCodeViewer}
-            originalFileContent={originalFileContent}
-            comparisonFileContent={comparisonFileContent}
-            bigTaskDescRef={bigTaskDescRef}
-            handleSend={handleSend}
-            updateWorkItemDebounced={updateWorkItemDebounced}
-          />
+            <ContentArea
+              showCodeViewer={showCodeViewer}
+              originalFileContent={originalFileContent}
+              comparisonFileContent={comparisonFileContent}
+              bigTaskDescRef={bigTaskDescRef}
+              handleSend={handleSend}
+              updateWorkItemDebounced={updateWorkItemDebounced}
+            />
+          </Loading>
         </Layout>
 
         <TaskDescriptionFooter
@@ -467,10 +569,10 @@ export function PromptGenerator() {
           updateWorkItemDebounced={updateWorkItemDebounced}
         />
       </Layout>
-
       <HistoryPanel
         historyOptions={historyOptions}
         handleHistoryOptionClick={handleHistoryOptionClick}
+        selectedHistoryId={codeGenState.selectedIterationId}
       />
     </Layout>
   );

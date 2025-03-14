@@ -26,6 +26,7 @@ export function CodeViewer({
     height: '100%',
     overflowX: 'auto',
     overflowY: 'auto',
+    userSelect: 'text',
   };
 
   if (originalCode !== undefined && modifiedCode !== undefined) {

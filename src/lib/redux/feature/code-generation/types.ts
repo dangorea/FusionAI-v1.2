@@ -19,6 +19,7 @@ export interface CodeGenerationResult {
 export interface CodeGenerationState {
   result: CodeGenerationResult | null;
   latestFiles: Record<string, string> | null;
+  selectedIterationId: string | null;
   loading: boolean;
   error: string | null;
 }

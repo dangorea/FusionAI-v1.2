@@ -22,6 +22,7 @@ export interface ListBuilderProps {
   containerStyle?: CSSProperties;
   onOptionClick?: (option: ListOption) => void;
   selectionType?: 'single' | 'multiple';
+  selectedKeys?: string[];
 }
 
 export function ListBuilder({
@@ -35,11 +36,15 @@ export function ListBuilder({
   containerStyle,
   onOptionClick,
   selectionType = 'single',
+  selectedKeys,
 }: ListBuilderProps) {
   const [displayedOptions, setDisplayedOptions] = useState<ListOption[]>(
     lazyLoad ? options.slice(0, loadMoreThreshold) : options,
   );
-  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [internalSelectedKeys, setInternalSelectedKeys] = useState<string[]>(
+    [],
+  );
+  const finalSelectedKeys = selectedKeys ?? internalSelectedKeys;
 
   const observerRef = useRef<HTMLDivElement>(null);
 
@@ -82,14 +87,18 @@ export function ListBuilder({
   }, [options, lazyLoad, loadMoreThreshold]);
 
   const handleItemClick = (item: ListOption) => {
+    let newSelectedKeys: string[];
     if (selectionType === 'multiple') {
-      setSelectedKeys((prev) =>
-        prev.includes(item.key)
-          ? prev.filter((key) => key !== item.key)
-          : [...prev, item.key],
-      );
+      if (finalSelectedKeys.includes(item.key)) {
+        newSelectedKeys = finalSelectedKeys.filter((key) => key !== item.key);
+      } else {
+        newSelectedKeys = [...finalSelectedKeys, item.key];
+      }
     } else {
-      setSelectedKeys([item.key]);
+      newSelectedKeys = [item.key];
+    }
+    if (!selectedKeys) {
+      setInternalSelectedKeys(newSelectedKeys);
     }
     onOptionClick?.(item);
   };
@@ -122,7 +131,7 @@ export function ListBuilder({
         dataSource={lazyLoad ? displayedOptions : options}
         style={{ padding: '0 10px' }}
         renderItem={(item: ListOption) => {
-          const isSelected = selectedKeys.includes(item.key);
+          const isSelected = finalSelectedKeys.includes(item.key);
           const itemStyle = {
             cursor: 'pointer',
             padding: '8px 16px',

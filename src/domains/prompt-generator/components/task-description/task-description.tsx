@@ -7,6 +7,7 @@ import React, {
 } from 'react';
 import { Button, Input } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
+import { VoiceInput } from '..';
 import './task-description.module.scss';
 
 export interface TaskDescriptionInputProps {
@@ -100,6 +101,12 @@ export const TaskDescription = forwardRef(
         : undefined,
     };
 
+    // Handler to receive transcription results and append to the current content.
+    const handleVoiceTranscription = (text: string) => {
+      setContent((prev) => (prev ? `${prev} ${text}` : text));
+      onContentChange?.(`${content} ${text}`);
+    };
+
     if (mode === 'small') {
       return (
         <div
@@ -134,15 +141,17 @@ export const TaskDescription = forwardRef(
             <div
               style={{
                 display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'flex-end',
+                flexDirection: 'row',
+                alignItems: 'center',
               }}
             >
+              <VoiceInput onTranscriptionComplete={handleVoiceTranscription} />
               <Button
                 type="primary"
                 shape="circle"
                 icon={<SendOutlined />}
                 onClick={handleSend}
+                style={{ marginLeft: 8 }}
               />
             </div>
           )}
@@ -205,6 +214,7 @@ export const TaskDescription = forwardRef(
             style={{
               display: 'flex',
               justifyContent: 'flex-end',
+              alignItems: 'center',
               padding: '8px 16px',
               borderBottomRightRadius: '7px',
               borderBottomLeftRadius: '7px',
@@ -213,11 +223,13 @@ export const TaskDescription = forwardRef(
               borderTop: 'none',
             }}
           >
+            <VoiceInput onTranscriptionComplete={handleVoiceTranscription} />
             <Button
               type="primary"
               shape="circle"
               icon={<SendOutlined />}
               onClick={handleSend}
+              style={{ marginLeft: 8 }}
             />
           </div>
         )}

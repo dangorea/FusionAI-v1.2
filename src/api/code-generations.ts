@@ -53,7 +53,7 @@ export async function getCodeGenerationSession(
 export async function addIterationAPI(
   id: string,
   data: {
-    correction: string;
+    prompt: string;
     startFromIterationId: string;
   },
 ): Promise<CodeGenerationType> {

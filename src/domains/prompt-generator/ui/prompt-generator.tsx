@@ -24,6 +24,7 @@ import { LocalStorageKeys } from '../../../utils/localStorageKeys';
 import type { FileNode, FileSet } from '../../../components';
 import type { TextBlockType } from '../../work-item/model/types';
 import styles from './prompt-generator.module.scss';
+import type { TaskDescriptionInputRef } from '../components';
 import {
   ContentArea,
   HistoryPanel,
@@ -63,19 +64,22 @@ export function PromptGenerator() {
   );
   const [historyOptions, setHistoryOptions] = useState<IterationOption[]>([]);
 
-  console.log(originalFileContent);
+  const bigTaskDescRef = useRef<TaskDescriptionInputRef | null>(null);
+  const smallTaskDescRef = useRef<TaskDescriptionInputRef | null>(null);
+  const previewTaskDescRef = useRef<TaskDescriptionInputRef | null>(null);
 
-  const bigTaskDescRef = useRef<any>(null);
-  const smallTaskDescRef = useRef<any>(null);
-  const previewTaskDescRef = useRef<any>(null);
-
-  // On mount, clear previous session and load the current code generation session.
   useEffect(() => {
     dispatch(clearCodeGeneration());
     if (workItem?.codeGenerationId) {
       dispatch(fetchCodeGeneration(workItem.codeGenerationId));
     }
   }, [workItem?.codeGenerationId, dispatch]);
+
+  useEffect(() => {
+    if (workItem && workItem.description && bigTaskDescRef.current) {
+      bigTaskDescRef.current.setContent(workItem.description);
+    }
+  }, [workItem, bigTaskDescRef.current]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -269,10 +273,11 @@ export function PromptGenerator() {
           return { path: relative, content };
         },
       );
-      const taskDescription =
+      const description =
         bigTaskDescRef.current?.getContent() ||
         smallTaskDescRef.current?.getContent() ||
         '';
+
       const textBlocks = selectedRules
         .map((ruleId) => {
           const r = rules.find((x) => x.id === ruleId);
@@ -290,7 +295,7 @@ export function PromptGenerator() {
           updateWorkItemThunk({
             orgSlug,
             projectId,
-            workItem: { id, taskDescription, sourceFiles, textBlocks },
+            workItem: { id, description, sourceFiles, textBlocks },
           }),
         );
       } catch (err: any) {
@@ -327,13 +332,15 @@ export function PromptGenerator() {
     setIsLoading(true);
     try {
       if (codeGenState.result) {
-        const correction = smallTaskDescRef.current?.getContent() || '';
+        const prompt = smallTaskDescRef.current?.getContent() || '';
 
         if (codeGenState.selectedIterationId && workItem?.codeGenerationId) {
+          smallTaskDescRef.current?.setContent('');
+
           await dispatch(
             addIterationThunk({
               id: workItem.codeGenerationId,
-              correction,
+              prompt,
               startFromIterationId: codeGenState.selectedIterationId,
             }),
           );
@@ -360,7 +367,6 @@ export function PromptGenerator() {
           setShowCodeViewer(true);
         }
       }
-      smallTaskDescRef.current?.setContent('');
     } catch (err: any) {
       console.error('Error generating code:', err);
       notification.error({
@@ -557,7 +563,10 @@ export function PromptGenerator() {
               comparisonFileContent={comparisonFileContent}
               bigTaskDescRef={bigTaskDescRef}
               handleSend={handleSend}
-              updateWorkItemDebounced={updateWorkItemDebounced}
+              updateWorkItemDebounced={() => {
+                setHasUserModified(true);
+                updateWorkItemDebounced();
+              }}
             />
           </Loading>
         </Layout>
@@ -566,7 +575,10 @@ export function PromptGenerator() {
           ref={smallTaskDescRef}
           codeGenExists={codeGenExists}
           handleSend={handleSend}
-          updateWorkItemDebounced={updateWorkItemDebounced}
+          updateWorkItemDebounced={() => {
+            setHasUserModified(true);
+            updateWorkItemDebounced();
+          }}
         />
       </Layout>
       <HistoryPanel

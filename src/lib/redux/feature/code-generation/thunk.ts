@@ -33,16 +33,16 @@ export const addIterationThunk = createAsyncThunk<
   },
   {
     id: string;
-    correction: string;
+    prompt: string;
     startFromIterationId: string;
   },
   { rejectValue: string }
 >(
   'codeGeneration/addIteration',
-  async ({ id, correction, startFromIterationId }, { rejectWithValue }) => {
+  async ({ id, prompt, startFromIterationId }, { rejectWithValue }) => {
     try {
       const response = await addIterationAPI(id, {
-        correction,
+        prompt,
         startFromIterationId,
       });
       if (!response) {

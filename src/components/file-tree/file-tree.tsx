@@ -1,5 +1,10 @@
-import type { ReactNode } from 'react';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, {
+  ReactNode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react';
 import { notification, Spin, Switch, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import {
@@ -95,7 +100,7 @@ function toAntDataNode(
   const textStyle: React.CSSProperties = { marginLeft: 4 };
   if (isLeaf) {
     if (effectiveChange === 'modified') {
-      textStyle.color = 'yellow';
+      textStyle.color = '#d6b600';
     } else if (effectiveChange === 'added') {
       textStyle.color = 'green';
     } else if (effectiveChange === 'deleted') {
@@ -192,7 +197,7 @@ export function FileTree({
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
-  const [showModifiedOnly, setShowModifiedOnly] = useState(true);
+  const [showModifiedOnly, setShowModifiedOnly] = useState<boolean>(true);
 
   useEffect(() => {
     if (fileSets && fileSets.length > 0) {
@@ -246,21 +251,52 @@ export function FileTree({
     return Array.from(keysSet);
   }, [renderTree, fileSets]);
 
-  // Update expanded keys only when there is a selection
   useEffect(() => {
     if (!treeData.length) return;
-    if (selectedKeys.length === 0) return;
-    const newExpandedKeys = new Set<string>();
-    newExpandedKeys.add(String(treeData[0].key));
-    autoExpandedKeys.forEach((k) => newExpandedKeys.add(k));
-    selectedKeys.forEach((selectedKey) => {
-      const path = findPathInTree(treeData, selectedKey);
-      if (path) {
-        path.forEach((k) => newExpandedKeys.add(k));
+
+    if (selectedKeys.length === 0) {
+      if (fileSets && fileSets.length === 2) {
+        const defaultExpanded = new Set<string>();
+        defaultExpanded.add(String(treeData[0].key));
+        autoExpandedKeys.forEach((k) => defaultExpanded.add(k));
+        const newExpandedKeys = Array.from(defaultExpanded);
+        setExpandedKeys((prev) => {
+          if (
+            prev.length !== newExpandedKeys.length ||
+            !newExpandedKeys.every((k) => prev.includes(k))
+          ) {
+            return newExpandedKeys;
+          }
+          return prev;
+        });
+      } else {
+        if (expandedKeys.length === 0) {
+          setExpandedKeys([String(treeData[0].key)]);
+        }
       }
+      return;
+    }
+
+    setExpandedKeys((prevExpanded) => {
+      const newExpanded = new Set(prevExpanded);
+      newExpanded.add(String(treeData[0].key));
+      autoExpandedKeys.forEach((k) => newExpanded.add(k));
+      selectedKeys.forEach((selectedKey) => {
+        const path = findPathInTree(treeData, selectedKey);
+        if (path) {
+          path.forEach((k) => newExpanded.add(k));
+        }
+      });
+      const newExpandedKeys = Array.from(newExpanded);
+      if (
+        prevExpanded.length !== newExpandedKeys.length ||
+        !newExpandedKeys.every((k) => prevExpanded.includes(k))
+      ) {
+        return newExpandedKeys;
+      }
+      return prevExpanded;
     });
-    setExpandedKeys(Array.from(newExpandedKeys));
-  }, [treeData, selectedKeys, autoExpandedKeys]);
+  }, [treeData, selectedKeys, autoExpandedKeys, fileSets]);
 
   useEffect(() => {
     const validLeafKeys = new Set<string>();
@@ -311,10 +347,13 @@ export function FileTree({
 
   const handleSelect = useCallback(
     (selectedArr: React.Key[]) => {
+      if (selectedArr.length === 0 && selectedKeys.length === 1) {
+        return;
+      }
       setSelectedKeys(selectedArr);
       onSingleSelect?.(selectedArr.length === 1 ? String(selectedArr[0]) : '');
     },
-    [onSingleSelect],
+    [onSingleSelect, selectedKeys],
   );
 
   const handleExpand = useCallback((keys: React.Key[]) => {

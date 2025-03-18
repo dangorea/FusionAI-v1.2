@@ -27,7 +27,7 @@ function SingleCodeViewer({
     fontFamily:
       'Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", monospace',
     fontSize: '13px',
-    lineHeight: '1.5',
+    lineHeight: '1.2',
     padding: '2px 4px',
     whiteSpace: 'pre',
     margin: 0,
@@ -46,7 +46,7 @@ function SingleCodeViewer({
       'Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", monospace',
     fontSize: '13px',
     background: '#1e1e1e',
-    lineHeight: '1.5',
+    lineHeight: '1.2',
     verticalAlign: 'middle',
     margin: 0,
   };
@@ -84,16 +84,13 @@ function SingleCodeViewer({
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
 
-  const rowHeight = 24;
-  const extraRows = Math.max(
-    0,
-    Math.floor(containerHeight / rowHeight) - lines.length,
-  );
-
   const highlight = (text: string) => {
     const grammar = Prism.languages[language] || Prism.languages.javascript;
     return Prism.highlight(text, grammar, language);
   };
+
+  const rowHeight = 16;
+  const totalRows = lines.length;
 
   let lineNumber = 1;
 
@@ -107,20 +104,29 @@ function SingleCodeViewer({
             <div style={lineNumberCellStyle}>{currentNumber}</div>
             <div style={baseCodeCellStyle}>
               <code
-                dangerouslySetInnerHTML={{ __html: highlighted || '&nbsp;' }}
+                dangerouslySetInnerHTML={{
+                  __html: highlighted || '&nbsp;',
+                }}
               />
             </div>
           </React.Fragment>
         );
       })}
-      {Array.from({ length: extraRows }).map((_, i) => (
-        <React.Fragment key={`filler-${i}`}>
-          <div style={lineNumberCellStyle}>&nbsp;</div>
-          <div style={baseCodeCellStyle}>
-            <code>&nbsp;</code>
-          </div>
-        </React.Fragment>
-      ))}
+
+      {(() => {
+        const extraRows = Math.max(
+          0,
+          Math.floor(containerHeight / rowHeight) - totalRows,
+        );
+        return Array.from({ length: extraRows }).map((_, i) => (
+          <React.Fragment key={`filler-${i}`}>
+            <div style={lineNumberCellStyle}>&nbsp;</div>
+            <div style={baseCodeCellStyle}>
+              <code>&nbsp;</code>
+            </div>
+          </React.Fragment>
+        ));
+      })()}
     </div>
   );
 }

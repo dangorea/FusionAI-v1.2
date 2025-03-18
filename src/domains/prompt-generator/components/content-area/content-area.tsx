@@ -1,7 +1,9 @@
+import type { Ref, RefObject } from 'react';
 import React from 'react';
 import { Layout } from 'antd';
 import { CodeViewer, TaskDescription } from '..';
 import styles from './content-area.module.scss';
+import type { DropdownRef } from '../../../../components';
 
 const { Content } = Layout;
 
@@ -9,8 +11,10 @@ interface ContentAreaProps {
   showCodeViewer: boolean;
   originalFileContent: string;
   comparisonFileContent?: string;
-  bigTaskDescRef: React.RefObject<any>;
+  bigTaskDescRef: RefObject<any>;
+  dropdownRef?: Ref<DropdownRef>;
   handleSend: () => void;
+  onDropdownChange?: () => string;
   updateWorkItemDebounced: () => void;
 }
 
@@ -21,6 +25,8 @@ export function ContentArea({
   bigTaskDescRef,
   handleSend,
   updateWorkItemDebounced,
+  onDropdownChange,
+  dropdownRef,
 }: ContentAreaProps) {
   return (
     <Layout className={styles.mainLayout}>
@@ -48,7 +54,9 @@ export function ContentArea({
           <div className={styles.taskCreationContainer}>
             <TaskDescription
               ref={bigTaskDescRef}
+              dropdownRef={dropdownRef}
               onSend={handleSend}
+              onDropdownChange={onDropdownChange}
               mode="big"
               onContentChange={() => {
                 updateWorkItemDebounced();

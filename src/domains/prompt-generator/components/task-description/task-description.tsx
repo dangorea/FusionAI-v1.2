@@ -1,3 +1,4 @@
+import type { CSSProperties, Ref } from 'react';
 import React, {
   forwardRef,
   useEffect,
@@ -9,13 +10,18 @@ import { Button, Input } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
 import { VoiceInput } from '..';
 import './task-description.module.scss';
+import type { DropdownRef } from '../../../../components';
+import { Dropdown } from '../../../../components';
+import { modelProviders } from '../../../../constants/model-provider';
 
 export interface TaskDescriptionInputProps {
   onSend?: (content: string) => void;
   onContentChange?: (content: string) => void;
   mode?: 'big' | 'small';
   preview?: boolean;
-  style?: React.CSSProperties;
+  style?: CSSProperties;
+  dropdownRef?: Ref<DropdownRef>;
+  onDropdownChange?: () => string;
 }
 
 export interface TaskDescriptionInputRef {
@@ -40,7 +46,6 @@ export const TaskDescription = forwardRef(
 
     useEffect(() => {
       if (!containerRef.current || preview || mode === 'small') return;
-
       const observer = new ResizeObserver((entries) => {
         for (const entry of entries) {
           const containerHeight = entry.contentRect.height;
@@ -49,7 +54,6 @@ export const TaskDescription = forwardRef(
           }
         }
       });
-
       observer.observe(containerRef.current);
       return () => observer.disconnect();
     }, [preview, mode]);
@@ -101,7 +105,6 @@ export const TaskDescription = forwardRef(
         : undefined,
     };
 
-    // Handler to receive transcription results and append to the current content.
     const handleVoiceTranscription = (text: string) => {
       setContent((prev) => (prev ? `${prev} ${text}` : text));
       onContentChange?.(`${content} ${text}`);
@@ -112,7 +115,7 @@ export const TaskDescription = forwardRef(
         <div
           style={{
             display: 'flex',
-            flexDirection: 'row',
+            flexDirection: 'column',
             padding: '8px 16px',
             backgroundColor: '#EFF0FB',
             borderRadius: '8px',
@@ -136,23 +139,33 @@ export const TaskDescription = forwardRef(
               lineHeight: '1.4',
             }}
           />
-
           {!preview && (
             <div
               style={{
                 display: 'flex',
                 flexDirection: 'row',
                 alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
-              <VoiceInput onTranscriptionComplete={handleVoiceTranscription} />
-              <Button
-                type="primary"
-                shape="circle"
-                icon={<SendOutlined />}
-                onClick={handleSend}
-                style={{ marginLeft: 8 }}
+              <Dropdown
+                ref={props.dropdownRef}
+                options={modelProviders}
+                defaultValue="claude"
+                selectStyle={{}}
               />
+              <div style={{ display: 'flex', flexDirection: 'row' }}>
+                <VoiceInput
+                  onTranscriptionComplete={handleVoiceTranscription}
+                />
+                <Button
+                  type="primary"
+                  shape="circle"
+                  icon={<SendOutlined />}
+                  onClick={handleSend}
+                  style={{ marginLeft: 8 }}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -183,7 +196,7 @@ export const TaskDescription = forwardRef(
           style={{
             flex: 1,
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: 'row',
             padding: '16px',
             overflow: 'hidden',
             backgroundColor: '#EFF0FB',
@@ -213,7 +226,7 @@ export const TaskDescription = forwardRef(
           <div
             style={{
               display: 'flex',
-              justifyContent: 'flex-end',
+              justifyContent: 'space-between',
               alignItems: 'center',
               padding: '8px 16px',
               borderBottomRightRadius: '7px',
@@ -223,14 +236,22 @@ export const TaskDescription = forwardRef(
               borderTop: 'none',
             }}
           >
-            <VoiceInput onTranscriptionComplete={handleVoiceTranscription} />
-            <Button
-              type="primary"
-              shape="circle"
-              icon={<SendOutlined />}
-              onClick={handleSend}
-              style={{ marginLeft: 8 }}
+            <Dropdown
+              ref={props.dropdownRef}
+              options={modelProviders}
+              defaultValue="claude"
+              selectStyle={{}}
             />
+            <div style={{ display: 'flex', flexDirection: 'row' }}>
+              <VoiceInput onTranscriptionComplete={handleVoiceTranscription} />
+              <Button
+                type="primary"
+                shape="circle"
+                icon={<SendOutlined />}
+                onClick={handleSend}
+                style={{ marginLeft: 8 }}
+              />
+            </div>
           </div>
         )}
       </div>

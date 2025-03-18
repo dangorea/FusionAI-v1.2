@@ -1,6 +1,7 @@
 import { dialog, ipcMain, shell } from 'electron';
 import type { FSWatcher } from 'chokidar';
 import chokidar from 'chokidar';
+import path from 'path';
 import fs from 'fs';
 import { getMainWindow } from './window';
 import { openAuthWindow, silentTokenRenew } from './auth';
@@ -193,6 +194,7 @@ ipcMain.handle(
   'write-file-content',
   async (_event, filePath: string, content: string) => {
     try {
+      fs.mkdirSync(path.dirname(filePath), { recursive: true });
       fs.writeFileSync(filePath, content, 'utf-8');
       return true;
     } catch (error) {

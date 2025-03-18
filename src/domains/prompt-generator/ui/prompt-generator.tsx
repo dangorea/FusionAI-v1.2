@@ -21,7 +21,7 @@ import {
   fetchCodeGeneration,
 } from '../../../lib/redux/feature/code-generation/thunk';
 import { LocalStorageKeys } from '../../../utils/localStorageKeys';
-import type { FileNode, FileSet } from '../../../components';
+import type { DropdownRef, FileNode, FileSet } from '../../../components';
 import type { TextBlockType } from '../../work-item/model/types';
 import styles from './prompt-generator.module.scss';
 import type { TaskDescriptionInputRef } from '../components';
@@ -63,10 +63,57 @@ export function PromptGenerator() {
     null,
   );
   const [historyOptions, setHistoryOptions] = useState<IterationOption[]>([]);
+  const [isFileBlockFeatureEnabled, setIsFileBlockFeatureEnabled] =
+    useState<boolean>(
+      localStorage.getItem('fileBlockFeatureEnabled') === 'true',
+    );
 
   const bigTaskDescRef = useRef<TaskDescriptionInputRef | null>(null);
   const smallTaskDescRef = useRef<TaskDescriptionInputRef | null>(null);
   const previewTaskDescRef = useRef<TaskDescriptionInputRef | null>(null);
+  const featureEnabledRef = useRef(isFileBlockFeatureEnabled);
+  const dropdownRef = useRef<DropdownRef | null>(null);
+
+  useEffect(() => {
+    featureEnabledRef.current = isFileBlockFeatureEnabled;
+  }, [isFileBlockFeatureEnabled]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'x') {
+        if (!featureEnabledRef.current) {
+          setIsFileBlockFeatureEnabled(true);
+          notification.info({
+            message: 'Feature Enabled Temporarily',
+            description:
+              'The file block modification feature is now enabled temporarily.',
+          });
+        }
+      }
+      // Magic shortcut: Ctrl+Shift+M toggles persistent state
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'm') {
+        if (!featureEnabledRef.current) {
+          setIsFileBlockFeatureEnabled(true);
+          localStorage.setItem('fileBlockFeatureEnabled', 'true');
+          notification.info({
+            message: 'Feature Permanently Enabled',
+            description:
+              'The file block modification feature is now permanently enabled.',
+          });
+        } else {
+          setIsFileBlockFeatureEnabled(false);
+          localStorage.removeItem('fileBlockFeatureEnabled');
+          notification.info({
+            message: 'Feature Disabled',
+            description: 'The file block modification feature is now disabled.',
+          });
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   useEffect(() => {
     dispatch(clearCodeGeneration());
@@ -154,7 +201,9 @@ export function PromptGenerator() {
   );
 
   useEffect(() => {
+    if (!isFileBlockFeatureEnabled) return;
     if (!bigTaskDescRef.current) return;
+
     const currentText = bigTaskDescRef.current.getContent();
     const cleaned = removeAllFileBlocks(currentText);
     bigTaskDescRef.current.setContent(cleaned);
@@ -163,7 +212,7 @@ export function PromptGenerator() {
         `\n\n=== File: ${fp} ===\n${content}\n=== EndFile: ${fp} ===\n\n`,
       );
     });
-  }, [selectedFiles, removeAllFileBlocks]);
+  }, [selectedFiles, removeAllFileBlocks, isFileBlockFeatureEnabled]);
 
   useEffect(() => {
     if (
@@ -259,6 +308,13 @@ export function PromptGenerator() {
 
   const updateWorkItemDebounced = useCallback(
     debounce(async () => {
+      if (
+        codeGenState.result &&
+        codeGenState.result.iterations &&
+        codeGenState.result.iterations.length > 0
+      ) {
+        return;
+      }
       if (!hasUserModified || !orgSlug || !projectId) return;
       const sourceFiles = Object.entries(selectedFiles).map(
         ([absPath, content]) => {
@@ -320,7 +376,14 @@ export function PromptGenerator() {
   );
 
   useEffect(() => {
-    if (hasUserModified) {
+    if (
+      hasUserModified &&
+      !(
+        codeGenState.result &&
+        codeGenState.result.iterations &&
+        codeGenState.result.iterations.length > 0
+      )
+    ) {
       updateWorkItemDebounced();
     }
     return () => updateWorkItemDebounced.cancel();
@@ -480,6 +543,8 @@ export function PromptGenerator() {
     }
   }, [projectPath, codeGenState.latestFiles]);
 
+  console.log(dropdownRef.current?.getSelected());
+
   useEffect(() => {
     if (projectPath && codeGenState.latestFiles && !showCodeViewer) {
       const fileKeys = Object.keys(codeGenState.latestFiles);
@@ -562,6 +627,7 @@ export function PromptGenerator() {
               originalFileContent={originalFileContent}
               comparisonFileContent={comparisonFileContent}
               bigTaskDescRef={bigTaskDescRef}
+              dropdownRef={dropdownRef}
               handleSend={handleSend}
               updateWorkItemDebounced={() => {
                 setHasUserModified(true);
@@ -573,6 +639,7 @@ export function PromptGenerator() {
 
         <TaskDescriptionFooter
           ref={smallTaskDescRef}
+          dropdownRef={dropdownRef}
           codeGenExists={codeGenExists}
           handleSend={handleSend}
           updateWorkItemDebounced={() => {

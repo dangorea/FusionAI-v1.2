@@ -178,12 +178,11 @@ export function PromptGenerator() {
       ) {
         let searchPath = filePath;
         if (projectPath && filePath.startsWith(projectPath)) {
-          const projectFolder = pathBrowser.basename(projectPath);
           const relativePath = filePath.slice(projectPath.length);
           const cleanRelativePath = relativePath.startsWith('/')
             ? relativePath.slice(1)
             : relativePath;
-          searchPath = `${projectFolder}/${cleanRelativePath}`;
+          searchPath = cleanRelativePath;
         }
 
         const generatedContent =
@@ -243,69 +242,6 @@ export function PromptGenerator() {
     }
   }, [codeGenState.result]);
 
-  useEffect(() => {
-    if (
-      projectPath &&
-      codeGenState.result &&
-      codeGenState.result.iterations &&
-      codeGenState.selectedIterationId
-    ) {
-      const selectedIteration = codeGenState.result.iterations.find(
-        (iteration) => iteration._id === codeGenState.selectedIterationId,
-      );
-      if (selectedIteration) {
-        const iterationFiles = selectedIteration.files;
-        window.fileAPI
-          .buildGeneratedFileTree(iterationFiles, projectPath)
-          .then((genTree: FileNode) => {
-            setGeneratedFileSet({
-              id: 'generated',
-              name: 'Suggested Changes',
-              tree: genTree,
-              visible: true,
-            });
-          })
-          .catch((err) =>
-            console.error(
-              'Error building generated file tree for selected iteration:',
-              err,
-            ),
-          );
-        const fileKeys = Object.keys(iterationFiles);
-        if (fileKeys.length > 0) {
-          const fileKey = fileKeys[0];
-          setComparisonFileContent(iterationFiles[fileKey]);
-          let absolutePath = '';
-          if (pathBrowser.isAbsolute(fileKey)) {
-            absolutePath = pathBrowser.normalize(fileKey);
-          } else {
-            let relativeKey = fileKey;
-            const projFolderName = projectPath.split(/[\\/]/).pop() || '';
-            if (relativeKey.startsWith(projFolderName)) {
-              relativeKey = relativeKey
-                .slice(projFolderName.length)
-                .replace(/^[/\\]+/, '');
-            }
-            absolutePath = pathBrowser.normalize(
-              pathBrowser.join(projectPath, relativeKey),
-            );
-          }
-          window.fileAPI
-            .readFileContent(absolutePath)
-            .then((originalContent: string) => {
-              setOriginalFileContent(originalContent);
-            })
-            .catch((err: any) =>
-              console.error(
-                'Error reading original file for selected iteration:',
-                err,
-              ),
-            );
-        }
-      }
-    }
-  }, [projectPath, codeGenState.selectedIterationId, codeGenState.result]);
-
   const updateWorkItemDebounced = useCallback(
     debounce(async () => {
       if (
@@ -320,11 +256,10 @@ export function PromptGenerator() {
         ([absPath, content]) => {
           let relative = absPath;
           if (projectPath && absPath.startsWith(projectPath)) {
-            const projName = projectPath.split(/[\\/]/).pop() || '';
             const partial = absPath
               .slice(projectPath.length)
               .replace(/^[/\\]+/, '');
-            relative = `${projName}/${partial}`;
+            relative = partial;
           }
           return { path: relative, content };
         },
@@ -456,15 +391,10 @@ export function PromptGenerator() {
       return;
     }
     try {
-      const projName = projectPath.split(/[\\/]/).pop() || '';
       const files = codeGenState.latestFiles || {};
       await Promise.all(
         Object.entries(files).map(async ([key, content]) => {
-          let absolutePath = key;
-          if (key.startsWith(projName)) {
-            const partial = key.slice(projName.length).replace(/^[/\\]+/, '');
-            absolutePath = `${projectPath}/${partial}`;
-          }
+          const absolutePath = pathBrowser.join(projectPath, key);
           await window.fileAPI.writeFileContent(
             absolutePath,
             content as string,
@@ -543,8 +473,6 @@ export function PromptGenerator() {
     }
   }, [projectPath, codeGenState.latestFiles]);
 
-  console.log(dropdownRef.current?.getSelected());
-
   useEffect(() => {
     if (projectPath && codeGenState.latestFiles && !showCodeViewer) {
       const fileKeys = Object.keys(codeGenState.latestFiles);
@@ -552,7 +480,6 @@ export function PromptGenerator() {
         const fileKey = fileKeys[0];
         const projFolderName = projectPath.split(/[\\/]/).pop() || '';
         let absolutePath = '';
-
         if (pathBrowser.isAbsolute(fileKey)) {
           absolutePath = pathBrowser.normalize(fileKey);
         } else {
@@ -566,7 +493,6 @@ export function PromptGenerator() {
             pathBrowser.join(projectPath, relativeKey),
           );
         }
-
         window.fileAPI
           .readFileContent(absolutePath)
           .then((originalContent: string) => {
@@ -583,7 +509,6 @@ export function PromptGenerator() {
   }, [projectPath, codeGenState.latestFiles, showCodeViewer]);
 
   let fileTreeProps;
-
   if (
     codeGenState.latestFiles &&
     Object.keys(codeGenState.latestFiles).length > 0
@@ -609,7 +534,6 @@ export function PromptGenerator() {
           ref={previewTaskDescRef}
           codeGenExists={codeGenExists}
         />
-
         <Layout className={styles['ide-container']}>
           <Loading loading={isLoading}>
             <Sidebar
@@ -621,7 +545,6 @@ export function PromptGenerator() {
               rules={rules}
               setSelectedRules={setSelectedRules}
             />
-
             <ContentArea
               showCodeViewer={showCodeViewer}
               originalFileContent={originalFileContent}
@@ -636,7 +559,6 @@ export function PromptGenerator() {
             />
           </Loading>
         </Layout>
-
         <TaskDescriptionFooter
           ref={smallTaskDescRef}
           dropdownRef={dropdownRef}

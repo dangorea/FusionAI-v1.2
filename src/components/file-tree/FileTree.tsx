@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { notification, Spin, Switch, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
@@ -130,6 +131,54 @@ function toAntDataNode(
   };
 }
 
+function findPathInTree(
+  nodes: DataNode[],
+  targetKey: React.Key,
+): string[] | null {
+  for (const node of nodes) {
+    if (node.key === targetKey) {
+      return [String(node.key)];
+    }
+    if (node.children) {
+      const childPath = findPathInTree(node.children, targetKey);
+      if (childPath) {
+        return [String(node.key), ...childPath];
+      }
+    }
+  }
+  return null;
+}
+
+interface FolderTitleProps {
+  nodeData: DataNode;
+  toggleExpand: (key: React.Key) => void;
+}
+
+function FolderTitle({ nodeData, toggleExpand }: FolderTitleProps): ReactNode {
+  const handleClick = (e: React.MouseEvent<HTMLSpanElement>) => {
+    e.stopPropagation();
+    toggleExpand(nodeData.key);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLSpanElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      toggleExpand(nodeData.key);
+    }
+  };
+
+  return (
+    <span
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+    >
+      {nodeData.title as ReactNode}
+    </span>
+  );
+}
+
 export function FileTree({
   fileSets,
   projectPath,
@@ -178,6 +227,15 @@ export function FileTree({
     }
   }, [fileSets, projectPath]);
 
+  const treeData = useMemo(() => {
+    if (!renderTree) return [];
+    const dataNode = toAntDataNode(
+      renderTree,
+      fileSets && fileSets.length === 2 ? showModifiedOnly : false,
+    );
+    return dataNode ? [dataNode] : [];
+  }, [renderTree, fileSets, showModifiedOnly]);
+
   const autoExpandedKeys = useMemo(() => {
     if (!renderTree) return [];
     const keysSet = new Set<string>([renderTree.path]);
@@ -188,31 +246,38 @@ export function FileTree({
     return Array.from(keysSet);
   }, [renderTree, fileSets]);
 
+  // Update expanded keys only when there is a selection
   useEffect(() => {
-    setExpandedKeys((prev) => (prev.length === 0 ? autoExpandedKeys : prev));
-  }, [autoExpandedKeys]);
-
-  const treeData = useMemo(() => {
-    if (!renderTree) return [];
-    const dataNode = toAntDataNode(
-      renderTree,
-      fileSets && fileSets.length === 2 ? showModifiedOnly : false,
-    );
-    return dataNode ? [dataNode] : [];
-  }, [renderTree, fileSets, showModifiedOnly]);
+    if (!treeData.length) return;
+    if (selectedKeys.length === 0) return;
+    const newExpandedKeys = new Set<string>();
+    newExpandedKeys.add(String(treeData[0].key));
+    autoExpandedKeys.forEach((k) => newExpandedKeys.add(k));
+    selectedKeys.forEach((selectedKey) => {
+      const path = findPathInTree(treeData, selectedKey);
+      if (path) {
+        path.forEach((k) => newExpandedKeys.add(k));
+      }
+    });
+    setExpandedKeys(Array.from(newExpandedKeys));
+  }, [treeData, selectedKeys, autoExpandedKeys]);
 
   useEffect(() => {
-    const validKeys = new Set<string>();
-    const gatherKeys = (nodes: DataNode[]) => {
-      nodes.forEach((n) => {
-        validKeys.add(String(n.key));
-        if (n.children) gatherKeys(n.children);
+    const validLeafKeys = new Set<string>();
+    const gatherLeafKeys = (nodes: DataNode[]) => {
+      nodes.forEach((node) => {
+        if (node.isLeaf) {
+          validLeafKeys.add(String(node.key));
+        }
+        if (node.children) {
+          gatherLeafKeys(node.children);
+        }
       });
     };
-    gatherKeys(treeData);
-    setExpandedKeys((prev) => prev.filter((k) => validKeys.has(String(k))));
-    setSelectedKeys((prev) => prev.filter((k) => validKeys.has(String(k))));
-    setCheckedKeys((prev) => prev.filter((k) => validKeys.has(String(k))));
+    gatherLeafKeys(treeData);
+
+    setCheckedKeys((prev) => prev.filter((k) => validLeafKeys.has(String(k))));
+    setSelectedKeys((prev) => prev.filter((k) => validLeafKeys.has(String(k))));
   }, [treeData]);
 
   const handleCheck = useCallback(
@@ -224,28 +289,28 @@ export function FileTree({
       const checkedArr = Array.isArray(checkedValue)
         ? checkedValue
         : checkedValue.checked;
-      setCheckedKeys(checkedArr);
-      const leafPaths: string[] = [];
-      const visit = (nodes: DataNode[]) => {
-        nodes.forEach((n) => {
-          if (n.isLeaf && checkedArr.includes(n.key)) {
-            leafPaths.push(String(n.key));
+
+      const leafKeys: string[] = [];
+      const traverse = (nodes: DataNode[]) => {
+        nodes.forEach((node) => {
+          if (node.isLeaf && checkedArr.includes(node.key)) {
+            leafKeys.push(String(node.key));
           }
-          if (n.children) visit(n.children);
+          if (node.children) {
+            traverse(node.children);
+          }
         });
       };
-      visit(treeData);
-      onFileSelectionChange?.(leafPaths);
+      traverse(treeData);
+
+      setCheckedKeys(leafKeys);
+      onFileSelectionChange?.(leafKeys);
     },
     [treeData, onFileSelectionChange],
   );
 
   const handleSelect = useCallback(
-    (selectedArr: React.Key[], info: any) => {
-      if (!info?.node?.isLeaf) {
-        setSelectedKeys([]);
-        return;
-      }
+    (selectedArr: React.Key[]) => {
       setSelectedKeys(selectedArr);
       onSingleSelect?.(selectedArr.length === 1 ? String(selectedArr[0]) : '');
     },
@@ -254,6 +319,15 @@ export function FileTree({
 
   const handleExpand = useCallback((keys: React.Key[]) => {
     setExpandedKeys(keys);
+  }, []);
+
+  const toggleExpand = useCallback((key: React.Key) => {
+    setExpandedKeys((prev) => {
+      if (prev.includes(key)) {
+        return prev.filter((k) => k !== key);
+      }
+      return [...prev, key];
+    });
   }, []);
 
   if (loading) {
@@ -318,6 +392,14 @@ export function FileTree({
           onCheck={handleCheck}
           onSelect={handleSelect}
           onExpand={handleExpand}
+          titleRender={(nodeData) => {
+            if (!nodeData.isLeaf) {
+              return (
+                <FolderTitle nodeData={nodeData} toggleExpand={toggleExpand} />
+              );
+            }
+            return nodeData.title as Iterable<ReactNode>;
+          }}
         />
       </div>
     </div>

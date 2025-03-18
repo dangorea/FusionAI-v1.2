@@ -19,7 +19,7 @@ module.exports = {
     'no-plusplus': 'warn',
     '@typescript-eslint/consistent-type-imports': [
       'error',
-      { prefer: 'type-imports', disallowTypeAnnotations: false },
+      {prefer: 'type-imports', disallowTypeAnnotations: false},
     ],
     '@typescript-eslint/consistent-type-exports': 'error',
     'react/jsx-no-bind': 'off',
@@ -31,6 +31,7 @@ module.exports = {
     'global-require': 'warn',
     'no-new': 'off',
     'promise/always-return': 'off',
+    'react/no-unstable-nested-components': 'off'
   },
   parserOptions: {
     ecmaVersion: 2022,

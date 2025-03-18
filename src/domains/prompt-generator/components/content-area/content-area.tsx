@@ -31,35 +31,41 @@ export function ContentArea({
   return (
     <Layout className={styles.mainLayout}>
       <Content className={styles.content}>
-        {showCodeViewer ? (
-          <CodeViewer
-            originalCode={originalFileContent}
-            modifiedCode={comparisonFileContent}
-            code={originalFileContent}
-            language="typescript"
-            singleViewerStyleOverrides={{
-              container: {
-                borderBottomRightRadius: '8px',
-                borderTopRightRadius: '8px',
-              },
-            }}
-            diffViewerStyleOverrides={{
-              container: {
-                borderBottomRightRadius: '8px',
-                borderTopRightRadius: '8px',
-              },
+        {/* Always render the TaskDescription component, but hide it when showing code */}
+        <div
+          className={styles.taskCreationContainer}
+          style={{ display: showCodeViewer ? 'none' : 'block' }}
+        >
+          <TaskDescription
+            ref={bigTaskDescRef}
+            dropdownRef={dropdownRef}
+            onSend={handleSend}
+            onDropdownChange={onDropdownChange}
+            mode="big"
+            onContentChange={() => {
+              updateWorkItemDebounced();
             }}
           />
-        ) : (
-          <div className={styles.taskCreationContainer}>
-            <TaskDescription
-              ref={bigTaskDescRef}
-              dropdownRef={dropdownRef}
-              onSend={handleSend}
-              onDropdownChange={onDropdownChange}
-              mode="big"
-              onContentChange={() => {
-                updateWorkItemDebounced();
+        </div>
+
+        {showCodeViewer && (
+          <div style={{ height: '100%' }}>
+            <CodeViewer
+              originalCode={originalFileContent}
+              modifiedCode={comparisonFileContent}
+              code={originalFileContent}
+              language="typescript"
+              singleViewerStyleOverrides={{
+                container: {
+                  borderBottomRightRadius: '8px',
+                  borderTopRightRadius: '8px',
+                },
+              }}
+              diffViewerStyleOverrides={{
+                container: {
+                  borderBottomRightRadius: '8px',
+                  borderTopRightRadius: '8px',
+                },
               }}
             />
           </div>

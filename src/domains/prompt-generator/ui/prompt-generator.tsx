@@ -90,7 +90,6 @@ export function PromptGenerator() {
           });
         }
       }
-      // Magic shortcut: Ctrl+Shift+M toggles persistent state
       if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'm') {
         if (!featureEnabledRef.current) {
           setIsFileBlockFeatureEnabled(true);
@@ -478,6 +477,12 @@ export function PromptGenerator() {
     dispatch(updateSelectedIteration(option.value));
   };
 
+  const handleClosePreview = useCallback(() => {
+    setShowCodeViewer(false);
+    setOriginalFileContent('');
+    setComparisonFileContent(undefined);
+  }, []);
+
   useEffect(() => {
     const unsub = window.electron.ipcRenderer.on(
       'file-changed',
@@ -619,6 +624,7 @@ export function PromptGenerator() {
                 setHasUserModified(true);
                 updateWorkItemDebounced();
               }}
+              onClosePreview={handleClosePreview}
             />
           </Loading>
         </Layout>

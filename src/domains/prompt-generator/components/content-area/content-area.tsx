@@ -1,6 +1,7 @@
 import type { Ref, RefObject } from 'react';
 import React from 'react';
-import { Layout } from 'antd';
+import { Button, Layout } from 'antd';
+import { CloseCircleOutlined } from '@ant-design/icons';
 import { CodeViewer, TaskDescription } from '..';
 import styles from './content-area.module.scss';
 import type { DropdownRef } from '../../../../components';
@@ -16,6 +17,7 @@ interface ContentAreaProps {
   handleSend: () => void;
   onDropdownChange?: () => string;
   updateWorkItemDebounced: () => void;
+  onClosePreview?: () => void;
 }
 
 export function ContentArea({
@@ -27,11 +29,11 @@ export function ContentArea({
   updateWorkItemDebounced,
   onDropdownChange,
   dropdownRef,
+  onClosePreview,
 }: ContentAreaProps) {
   return (
     <Layout className={styles.mainLayout}>
       <Content className={styles.content}>
-        {/* Always render the TaskDescription component, but hide it when showing code */}
         <div
           className={styles.taskCreationContainer}
           style={{ display: showCodeViewer ? 'none' : 'block' }}
@@ -49,7 +51,27 @@ export function ContentArea({
         </div>
 
         {showCodeViewer && (
-          <div style={{ height: '100%' }}>
+          <div style={{ position: 'relative', height: '100%' }}>
+            <Button
+              icon={<CloseCircleOutlined />}
+              shape="circle"
+              onClick={onClosePreview}
+              style={{
+                position: 'absolute',
+                top: 10,
+                right: 10,
+                opacity: 0.2,
+                transition: 'opacity 0.2s ease-in-out',
+                zIndex: 2,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '1';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '0.40';
+              }}
+            />
+
             <CodeViewer
               originalCode={originalFileContent}
               modifiedCode={comparisonFileContent}

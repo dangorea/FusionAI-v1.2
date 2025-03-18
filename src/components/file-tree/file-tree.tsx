@@ -1,10 +1,5 @@
-import React, {
-  ReactNode,
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import type { ReactNode } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { notification, Spin, Switch, Tree } from 'antd';
 import type { DataNode } from 'antd/es/tree';
 import {
@@ -269,10 +264,8 @@ export function FileTree({
           }
           return prev;
         });
-      } else {
-        if (expandedKeys.length === 0) {
-          setExpandedKeys([String(treeData[0].key)]);
-        }
+      } else if (expandedKeys.length === 0) {
+        setExpandedKeys([String(treeData[0].key)]);
       }
       return;
     }

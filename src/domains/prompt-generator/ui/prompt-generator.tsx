@@ -242,6 +242,69 @@ export function PromptGenerator() {
     }
   }, [codeGenState.result]);
 
+  useEffect(() => {
+    if (
+      projectPath &&
+      codeGenState.result &&
+      codeGenState.result.iterations &&
+      codeGenState.selectedIterationId
+    ) {
+      const selectedIteration = codeGenState.result.iterations.find(
+        (iteration) => iteration._id === codeGenState.selectedIterationId,
+      );
+      if (selectedIteration) {
+        const iterationFiles = selectedIteration.files;
+        window.fileAPI
+          .buildGeneratedFileTree(iterationFiles, projectPath)
+          .then((genTree: FileNode) => {
+            setGeneratedFileSet({
+              id: 'generated',
+              name: 'Suggested Changes',
+              tree: genTree,
+              visible: true,
+            });
+          })
+          .catch((err) =>
+            console.error(
+              'Error building generated file tree for selected iteration:',
+              err,
+            ),
+          );
+        const fileKeys = Object.keys(iterationFiles);
+        if (fileKeys.length > 0) {
+          const fileKey = fileKeys[0];
+          setComparisonFileContent(iterationFiles[fileKey]);
+          let absolutePath = '';
+          if (pathBrowser.isAbsolute(fileKey)) {
+            absolutePath = pathBrowser.normalize(fileKey);
+          } else {
+            let relativeKey = fileKey;
+            const projFolderName = projectPath.split(/[\\/]/).pop() || '';
+            if (relativeKey.startsWith(projFolderName)) {
+              relativeKey = relativeKey
+                .slice(projFolderName.length)
+                .replace(/^[/\\]+/, '');
+            }
+            absolutePath = pathBrowser.normalize(
+              pathBrowser.join(projectPath, relativeKey),
+            );
+          }
+          window.fileAPI
+            .readFileContent(absolutePath)
+            .then((originalContent: string) => {
+              setOriginalFileContent(originalContent);
+            })
+            .catch((err: any) =>
+              console.error(
+                'Error reading original file for selected iteration:',
+                err,
+              ),
+            );
+        }
+      }
+    }
+  }, [projectPath, codeGenState.selectedIterationId, codeGenState.result]);
+
   const updateWorkItemDebounced = useCallback(
     debounce(async () => {
       if (

@@ -1,2 +1,2 @@
-export type { FileSet, FileNode } from './FileTree';
-export { FileTree } from './FileTree';
+export type { FileSet, FileNode } from './file-tree';
+export { FileTree } from './file-tree';

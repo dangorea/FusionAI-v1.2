@@ -35,7 +35,7 @@ export function Sidebar({
               : styles.fileTreeContainer
           }
         >
-          <div style={{ maxHeight: '74vh' }}>
+          <div style={{ maxHeight: '72vh' }}>
             <FileTree
               {...fileTreeProps}
               onFileSelectionChange={handleMultipleSelect}

@@ -31,6 +31,9 @@ export function ContentArea({
   dropdownRef,
   onClosePreview,
 }: ContentAreaProps) {
+  const showCloseViewerButton =
+    originalFileContent !== undefined && !comparisonFileContent;
+
   return (
     <Layout className={styles.mainLayout}>
       <Content className={styles.content}>
@@ -52,25 +55,27 @@ export function ContentArea({
 
         {showCodeViewer && (
           <div style={{ position: 'relative', height: '100%' }}>
-            <Button
-              icon={<CloseCircleOutlined />}
-              shape="circle"
-              onClick={onClosePreview}
-              style={{
-                position: 'absolute',
-                top: 10,
-                right: 10,
-                opacity: 0.2,
-                transition: 'opacity 0.2s ease-in-out',
-                zIndex: 2,
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = '1';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = '0.40';
-              }}
-            />
+            {showCloseViewerButton ? (
+              <Button
+                icon={<CloseCircleOutlined />}
+                shape="circle"
+                onClick={onClosePreview}
+                style={{
+                  position: 'absolute',
+                  top: 10,
+                  right: 10,
+                  opacity: 0.2,
+                  transition: 'opacity 0.2s ease-in-out',
+                  zIndex: 2,
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.opacity = '1';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.opacity = '0.40';
+                }}
+              />
+            ) : null}
 
             <CodeViewer
               originalCode={originalFileContent}

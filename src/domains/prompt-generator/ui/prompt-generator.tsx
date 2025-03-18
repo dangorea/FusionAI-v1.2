@@ -452,23 +452,37 @@ export function PromptGenerator() {
       notification.error({ message: 'Project path not set!' });
       return;
     }
+
     try {
-      const files = codeGenState.latestFiles || {};
+      const selectedPaths = Object.keys(selectedFiles);
+
+      if (!selectedPaths.length) {
+        notification.info({ message: 'No files selected to apply changes.' });
+        return;
+      }
+
       await Promise.all(
-        Object.entries(files).map(async ([key, content]) => {
-          const absolutePath = pathBrowser.join(projectPath, key);
-          await window.fileAPI.writeFileContent(
-            absolutePath,
-            content as string,
-          );
+        selectedPaths.map(async (originalPath) => {
+          let relativePath = pathBrowser.relative(projectPath, originalPath);
+          if (relativePath.startsWith('/') || relativePath.startsWith('\\')) {
+            relativePath = relativePath.slice(1);
+          }
+
+          const generatedContent = codeGenState.latestFiles?.[relativePath];
+          const fallbackContent = selectedFiles[originalPath] ?? '';
+          const contentToWrite = generatedContent ?? fallbackContent;
+          const absolutePath = pathBrowser.join(projectPath, relativePath);
+
+          await window.fileAPI.writeFileContent(absolutePath, contentToWrite);
         }),
       );
-      notification.success({ message: 'Files updated successfully.' });
+
+      notification.success({ message: 'Selected files updated successfully.' });
     } catch (err: any) {
       console.error('Error applying changes:', err);
       notification.error({ message: 'Failed to apply changes.' });
     }
-  }, [projectPath, codeGenState.latestFiles]);
+  }, [projectPath, selectedFiles, codeGenState.latestFiles]);
 
   const handleHistoryOptionClick = async (option: IterationOption) => {
     if (codeGenState.selectedIterationId === option.value) {

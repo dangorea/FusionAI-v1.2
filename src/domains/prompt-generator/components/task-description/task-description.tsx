@@ -8,10 +8,9 @@ import React, {
 } from 'react';
 import { Button, Input } from 'antd';
 import { SendOutlined } from '@ant-design/icons';
-import { VoiceInput } from '..';
-import './task-description.module.scss';
 import type { DropdownRef } from '../../../../components';
-import { Dropdown } from '../../../../components';
+import { Dropdown, VoiceInput } from '../../../../components';
+import './task-description.module.scss';
 import { modelProviders } from '../../../../constants/model-provider';
 
 export interface TaskDescriptionInputProps {

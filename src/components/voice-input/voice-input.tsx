@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Button, message, Tooltip } from 'antd';
 import { AudioOutlined, LoadingOutlined } from '@ant-design/icons';
-import { transcribeAudio } from '../../../../api/speech-to-text';
+import { transcribeAudio } from '../../api/speech-to-text';
 import './voice-input.module.scss';
 
 interface VoiceInputBetterProps {

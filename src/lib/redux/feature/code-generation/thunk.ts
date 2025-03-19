@@ -17,9 +17,21 @@ export const fetchCodeGeneration = createAsyncThunk<
       if (!response) {
         return rejectWithValue('Failed to fetch code generation');
       }
+
+      response.iterations = response.iterations.map((iteration) => {
+        if (!iteration.files) {
+          iteration.files = {};
+        }
+        return iteration;
+      });
+
       const latestIteration =
         response.iterations[response.iterations.length - 1];
-      return { result: response, latestFiles: latestIteration.files };
+
+      return {
+        result: response,
+        latestFiles: latestIteration.files ?? {},
+      };
     } catch (error: any) {
       return rejectWithValue(error.message);
     }
@@ -49,11 +61,19 @@ export const addIterationThunk = createAsyncThunk<
         return rejectWithValue('Failed to add iteration');
       }
 
+      response.iterations = response.iterations.map((iteration) => {
+        if (!iteration.files) {
+          iteration.files = {};
+        }
+        return iteration;
+      });
+
       const latestIteration =
         response.iterations[response.iterations.length - 1];
+
       return {
         newIteration: latestIteration,
-        latestFiles: latestIteration.files,
+        latestFiles: latestIteration.files ?? {},
       };
     } catch (error: any) {
       return rejectWithValue(error.message);

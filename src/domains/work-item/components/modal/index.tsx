@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Button, Form, Input, Modal } from 'antd';
 import type { WorkItemType } from '../../model/types';
+import { VoiceInput } from '../../../../components';
 
 type PartialWorkItem = Pick<WorkItemType, 'description'>;
 
@@ -15,14 +16,14 @@ interface WorkItemsModalProps {
 }
 
 export function WorkItemsModal({
-  isModalOpen,
-  modalMode,
-  editingItemIds = [],
-  allWorkItems = [],
-  onClose,
-  onCreate,
-  onEdit,
-}: WorkItemsModalProps) {
+                                 isModalOpen,
+                                 modalMode,
+                                 editingItemIds = [],
+                                 allWorkItems = [],
+                                 onClose,
+                                 onCreate,
+                                 onEdit
+                               }: WorkItemsModalProps) {
   const [form] = Form.useForm();
 
   const itemsToEdit = allWorkItems.filter((w) => editingItemIds.includes(w.id));
@@ -44,6 +45,11 @@ export function WorkItemsModal({
     form.resetFields();
   };
 
+  const handleTranscriptionComplete = (transcribedText: string) => {
+    const existing = form.getFieldValue('description') || '';
+    form.setFieldsValue({ description: `${existing} ${transcribedText}` });
+  };
+
   const title = modalMode === 'edit' ? 'Edit Work Item(s)' : 'Add Work Item';
 
   return (
@@ -56,13 +62,34 @@ export function WorkItemsModal({
       footer={null}
     >
       <Form form={form} layout="vertical" onFinish={handleFinish}>
-        <Form.Item
-          label="Description"
-          name="description"
-          rules={[{ required: true, message: 'Please input the description!' }]}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'center',
+            width: '100%',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: '5px'
+          }}
         >
-          <Input.TextArea placeholder="Enter description" rows={4} />
-        </Form.Item>
+          <Form.Item
+            label="Description"
+            name="description"
+            rules={[
+              { required: true, message: 'Please input the description!' }
+            ]}
+            style={{ width: '100%' }}
+          >
+            <Input.TextArea rows={4} placeholder="Enter description" />
+          </Form.Item>
+
+          <div>
+            <VoiceInput
+              onTranscriptionComplete={handleTranscriptionComplete}
+              disabled={false}
+            />
+          </div>
+        </div>
 
         <Form.Item>
           <Button type="primary" htmlType="submit" style={{ marginRight: 8 }}>

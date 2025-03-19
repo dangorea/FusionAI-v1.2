@@ -6,4 +6,3 @@ export * from './task-description-header';
 export * from './task-description-footer';
 export * from './content-area';
 export * from './loading';
-export * from './voice-input';

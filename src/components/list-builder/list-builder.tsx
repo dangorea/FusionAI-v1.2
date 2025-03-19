@@ -6,7 +6,7 @@ const { Title } = Typography;
 
 export interface ListOption {
   key: string;
-  label: string;
+  label: ReactNode;
   value: string;
   icon?: ReactNode;
 }
@@ -138,6 +138,7 @@ export function ListBuilder({
             borderRadius: '8px',
             backgroundColor: isSelected ? '#e6f7ff' : '#EFF0FB',
           };
+
           return (
             <List.Item onClick={() => handleItemClick(item)} style={itemStyle}>
               {item.icon ? (
@@ -147,7 +148,12 @@ export function ListBuilder({
                   <span style={{ marginRight: 8 }}>{globalOptionIcon}</span>
                 )
               )}
-              <span>{item.label}</span>
+
+              {typeof item.label === 'string' ? (
+                <span>{item.label}</span>
+              ) : (
+                item.label
+              )}
             </List.Item>
           );
         }}

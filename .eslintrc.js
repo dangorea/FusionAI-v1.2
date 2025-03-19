@@ -19,7 +19,7 @@ module.exports = {
     'no-plusplus': 'warn',
     '@typescript-eslint/consistent-type-imports': [
       'error',
-      {prefer: 'type-imports', disallowTypeAnnotations: false},
+      { prefer: 'type-imports', disallowTypeAnnotations: false }
     ],
     '@typescript-eslint/consistent-type-exports': 'error',
     'react/jsx-no-bind': 'off',
@@ -31,35 +31,37 @@ module.exports = {
     'global-require': 'warn',
     'no-new': 'off',
     'promise/always-return': 'off',
-    'react/no-unstable-nested-components': 'off'
+    'react/no-unstable-nested-components': 'off',
+    'promise/no-return-wrap': 'off',
+    'promise/no-promise-in-callback': 'off'
   },
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
-    project: './tsconfig.json',
+    project: './tsconfig.json'
   },
   settings: {
     'import/resolver': {
       node: {
         extensions: ['.js', '.jsx', '.ts', '.tsx'],
-        moduleDirectory: ['node_modules', 'src/'],
+        moduleDirectory: ['node_modules', 'src/']
       },
       webpack: {
-        config: require.resolve('./.erb/configs/webpack.config.eslint.ts'),
+        config: require.resolve('./.erb/configs/webpack.config.eslint.ts')
       },
-      typescript: {},
+      typescript: {}
     },
     'import/parsers': {
-      '@typescript-eslint/parser': ['.ts', '.tsx'],
-    },
+      '@typescript-eslint/parser': ['.ts', '.tsx']
+    }
   },
   overrides: [
     {
       files: ['*.js'],
       rules: {
-        '@typescript-eslint/consistent-type-exports': 'off',
-      },
-    },
+        '@typescript-eslint/consistent-type-exports': 'off'
+      }
+    }
   ],
-  ignorePatterns: ['.eslintrc.js'],
+  ignorePatterns: ['.eslintrc.js']
 };

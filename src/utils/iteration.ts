@@ -1,8 +1,4 @@
-export interface IterationOption {
-  key: string;
-  label: string;
-  value: string;
-}
+import type { ListOption } from '../components';
 
 /**
  * Extracts the additional information from a prompt.
@@ -57,7 +53,7 @@ export function extractIterationLabel(
 export function buildIterationsHistory(
   iterations: { _id: string; prompt?: string }[],
   maxLength: number = 200,
-): IterationOption[] {
+): ListOption[] {
   return iterations.map((iteration) => ({
     key: iteration._id,
     label: extractIterationLabel(iteration.prompt || '', maxLength),

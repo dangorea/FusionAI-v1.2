@@ -21,13 +21,15 @@ function SingleCodeViewer({
   language = 'typescript',
   styleOverrides = {},
 }: SingleCodeViewerProps) {
-  const lines = code.split(/\r?\n/);
+  const displayedCode = code.replace(/\\r/g, '\r').replace(/\\n/g, '\n');
+
+  const lines = displayedCode.trimEnd().split(/\r?\n/);
 
   const defaultBaseCodeCellStyle: React.CSSProperties = {
     fontFamily:
       'Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", monospace',
     fontSize: '13px',
-    lineHeight: '1.2',
+    lineHeight: '1',
     padding: '2px 4px',
     whiteSpace: 'pre',
     margin: 0,
@@ -46,8 +48,7 @@ function SingleCodeViewer({
       'Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", monospace',
     fontSize: '13px',
     background: '#1e1e1e',
-    lineHeight: '1.2',
-    verticalAlign: 'middle',
+    lineHeight: '1',
     margin: 0,
   };
   const lineNumberCellStyle: React.CSSProperties = {
@@ -70,7 +71,7 @@ function SingleCodeViewer({
   };
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const [containerHeight, setContainerHeight] = useState<number>(0);
+  const [containerHeight, setContainerHeight] = useState(0);
 
   useEffect(() => {
     function updateHeight() {
@@ -89,36 +90,30 @@ function SingleCodeViewer({
     return Prism.highlight(text, grammar, language);
   };
 
-  const rowHeight = 16;
-  const totalRows = lines.length;
-
-  let lineNumber = 1;
+  const rowHeight = 18;
 
   return (
     <div style={containerStyle} ref={containerRef}>
-      {lines.map((line, index) => {
-        const highlighted = highlight(line);
-        const currentNumber = lineNumber++;
-        return (
-          <React.Fragment key={index}>
-            <div style={lineNumberCellStyle}>{currentNumber}</div>
-            <div style={baseCodeCellStyle}>
-              <code
-                dangerouslySetInnerHTML={{
-                  __html: highlighted || '&nbsp;',
-                }}
-              />
-            </div>
-          </React.Fragment>
-        );
-      })}
-
+      {lines.map((line, index) => (
+        <React.Fragment key={index}>
+          <div style={lineNumberCellStyle}>{index + 1}</div>
+          <div style={baseCodeCellStyle}>
+            <code
+              dangerouslySetInnerHTML={{
+                __html: highlight(line) || '&nbsp;',
+              }}
+            />
+          </div>
+        </React.Fragment>
+      ))}
       {(() => {
-        const extraRows = Math.max(
-          0,
-          Math.floor(containerHeight / rowHeight) - totalRows,
+        const usedSpace = lines.length * rowHeight;
+        if (usedSpace >= containerHeight) return null;
+
+        const extraRowCount = Math.floor(
+          (containerHeight - usedSpace) / rowHeight,
         );
-        return Array.from({ length: extraRows }).map((_, i) => (
+        return Array.from({ length: extraRowCount }).map((_, i) => (
           <React.Fragment key={`filler-${i}`}>
             <div style={lineNumberCellStyle}>&nbsp;</div>
             <div style={baseCodeCellStyle}>

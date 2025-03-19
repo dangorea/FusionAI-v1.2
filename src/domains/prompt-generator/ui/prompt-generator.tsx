@@ -48,6 +48,7 @@ export function PromptGenerator() {
   const workItem = useAppSelector(selectSelectedWorkItemEntity);
   const codeGenState = useAppSelector((state) => state.codeGeneration);
   const orgSlug = org?.slug;
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [projectPath, setProjectPath] = useState<string>('');
   const [selectedFiles, setSelectedFiles] = useState<Record<string, string>>(
@@ -67,6 +68,7 @@ export function PromptGenerator() {
     useState<boolean>(
       localStorage.getItem('fileBlockFeatureEnabled') === 'true',
     );
+  const [defaultCheckedKeys, setDefaultCheckedKeys] = useState<React.Key[]>([]);
 
   const bigTaskDescRef = useRef<TaskDescriptionInputRef | null>(null);
   const smallTaskDescRef = useRef<TaskDescriptionInputRef | null>(null);
@@ -74,45 +76,7 @@ export function PromptGenerator() {
   const featureEnabledRef = useRef(isFileBlockFeatureEnabled);
   const dropdownRef = useRef<DropdownRef | null>(null);
 
-  useEffect(() => {
-    featureEnabledRef.current = isFileBlockFeatureEnabled;
-  }, [isFileBlockFeatureEnabled]);
-
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'x') {
-        if (!featureEnabledRef.current) {
-          setIsFileBlockFeatureEnabled(true);
-          notification.info({
-            message: 'Feature Enabled Temporarily',
-            description:
-              'The file block modification feature is now enabled temporarily.',
-          });
-        }
-      }
-      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'm') {
-        if (!featureEnabledRef.current) {
-          setIsFileBlockFeatureEnabled(true);
-          localStorage.setItem('fileBlockFeatureEnabled', 'true');
-          notification.info({
-            message: 'Feature Permanently Enabled',
-            description:
-              'The file block modification feature is now permanently enabled.',
-          });
-        } else {
-          setIsFileBlockFeatureEnabled(false);
-          localStorage.removeItem('fileBlockFeatureEnabled');
-          notification.info({
-            message: 'Feature Disabled',
-            description: 'The file block modification feature is now disabled.',
-          });
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  const [isInitialDescriptionSet, setIsInitialDescriptionSet] = useState(false);
 
   useEffect(() => {
     dispatch(clearCodeGeneration());
@@ -122,10 +86,12 @@ export function PromptGenerator() {
   }, [workItem?.codeGenerationId, dispatch]);
 
   useEffect(() => {
-    if (workItem && workItem.description && bigTaskDescRef.current) {
+    if (!workItem || !bigTaskDescRef.current) return;
+    if (!isInitialDescriptionSet && workItem.description) {
       bigTaskDescRef.current.setContent(workItem.description);
+      setIsInitialDescriptionSet(true);
     }
-  }, [workItem, bigTaskDescRef.current]);
+  }, [workItem, isInitialDescriptionSet]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -166,36 +132,43 @@ export function PromptGenerator() {
         setShowCodeViewer(false);
         return;
       }
+
       setHasUserModified(true);
 
       const originalContent = await window.fileAPI.readFileContent(filePath);
       setOriginalFileContent(originalContent);
 
-      if (
-        codeGenState.latestFiles &&
-        Object.keys(codeGenState.latestFiles).length > 0
-      ) {
+      let iterationFiles: Record<string, string> | null = null;
+      if (codeGenState.result && codeGenState.selectedIterationId) {
+        const selectedIteration = codeGenState.result.iterations.find(
+          (iteration) => iteration._id === codeGenState.selectedIterationId,
+        );
+        if (selectedIteration) {
+          iterationFiles = selectedIteration.files;
+        }
+      }
+
+      if (iterationFiles) {
         let searchPath = filePath;
         if (projectPath && filePath.startsWith(projectPath)) {
-          const relativePath = filePath.slice(projectPath.length);
-          const cleanRelativePath = relativePath.startsWith('/')
-            ? relativePath.slice(1)
-            : relativePath;
-          searchPath = cleanRelativePath;
+          const relativePath = filePath
+            .slice(projectPath.length)
+            .replace(/^[/\\]+/, '');
+          searchPath = pathBrowser.normalize(relativePath);
         }
 
         const generatedContent =
-          codeGenState.latestFiles[searchPath] ||
-          codeGenState.latestFiles[pathBrowser.normalize(searchPath)] ||
-          codeGenState.latestFiles[pathBrowser.basename(searchPath)];
+          iterationFiles[searchPath] ||
+          iterationFiles[pathBrowser.basename(searchPath)];
 
         setComparisonFileContent(generatedContent || undefined);
       } else {
         setComparisonFileContent(undefined);
       }
+
       setShowCodeViewer(true);
     },
-    [codeGenState.latestFiles, projectPath],
+    [codeGenState.result, codeGenState.selectedIterationId, projectPath],
   );
 
   useEffect(() => {
@@ -211,6 +184,18 @@ export function PromptGenerator() {
       );
     });
   }, [selectedFiles, removeAllFileBlocks, isFileBlockFeatureEnabled]);
+
+  useEffect(() => {
+    if (workItem?.sourceFiles && projectPath) {
+      const checkedPaths = workItem.sourceFiles.map((sf) => {
+        if (pathBrowser.isAbsolute(sf.path)) {
+          return pathBrowser.normalize(sf.path);
+        }
+        return pathBrowser.normalize(pathBrowser.join(projectPath, sf.path));
+      });
+      setDefaultCheckedKeys(checkedPaths);
+    }
+  }, [workItem?.sourceFiles, projectPath]);
 
   useEffect(() => {
     if (
@@ -343,6 +328,7 @@ export function PromptGenerator() {
             : null;
         })
         .filter(Boolean) as TextBlockType[];
+
       try {
         await dispatch(
           updateWorkItemThunk({
@@ -392,7 +378,10 @@ export function PromptGenerator() {
     setIsLoading(true);
     try {
       if (codeGenState.result) {
-        const prompt = smallTaskDescRef.current?.getContent() || '';
+        const prompt =
+          smallTaskDescRef.current?.getContent() ||
+          bigTaskDescRef.current?.getContent() ||
+          '';
 
         if (codeGenState.selectedIterationId && workItem?.codeGenerationId) {
           smallTaskDescRef.current?.setContent('');
@@ -498,6 +487,46 @@ export function PromptGenerator() {
   }, []);
 
   useEffect(() => {
+    featureEnabledRef.current = isFileBlockFeatureEnabled;
+  }, [isFileBlockFeatureEnabled]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'x') {
+        if (!featureEnabledRef.current) {
+          setIsFileBlockFeatureEnabled(true);
+          notification.info({
+            message: 'Feature Enabled Temporarily',
+            description:
+              'The file block modification feature is now enabled temporarily.',
+          });
+        }
+      }
+      if (event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'm') {
+        if (!featureEnabledRef.current) {
+          setIsFileBlockFeatureEnabled(true);
+          localStorage.setItem('fileBlockFeatureEnabled', 'true');
+          notification.info({
+            message: 'Feature Permanently Enabled',
+            description:
+              'The file block modification feature is now permanently enabled.',
+          });
+        } else {
+          setIsFileBlockFeatureEnabled(false);
+          localStorage.removeItem('fileBlockFeatureEnabled');
+          notification.info({
+            message: 'Feature Disabled',
+            description: 'The file block modification feature is now disabled.',
+          });
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  useEffect(() => {
     const unsub = window.electron.ipcRenderer.on(
       'file-changed',
       (data: any) => {
@@ -510,10 +539,12 @@ export function PromptGenerator() {
         const shortPath = data.filePath.startsWith(projectPath)
           ? data.filePath.slice(projectPath.length)
           : data.filePath;
-        notification.info({
-          message: `${rootFolder} File Updated`,
-          description: `File changed: ${shortPath}`,
-        });
+        if (!showCodeViewer) {
+          notification.info({
+            message: `${rootFolder} File Updated`,
+            description: `File changed: ${shortPath}`,
+          });
+        }
       },
     );
     return () => unsub();
@@ -601,7 +632,7 @@ export function PromptGenerator() {
       fileTreeProps = {};
     }
   } else {
-    fileTreeProps = { projectPath };
+    fileTreeProps = { projectPath, initialCheckedKeys: defaultCheckedKeys };
   }
 
   const codeGenExists =

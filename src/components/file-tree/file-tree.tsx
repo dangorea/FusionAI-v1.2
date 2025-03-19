@@ -34,6 +34,7 @@ export interface FileTreeProps {
   onFileSelectionChange?: (selected: string[]) => void;
   onSingleSelect?: (filePath: string) => void;
   className?: string;
+  initialCheckedKeys?: React.Key[];
   style?: React.CSSProperties;
 }
 
@@ -185,6 +186,7 @@ export function FileTree({
   onFileSelectionChange,
   onSingleSelect,
   className,
+  initialCheckedKeys,
   style,
 }: FileTreeProps) {
   const [loading, setLoading] = useState(false);
@@ -193,6 +195,12 @@ export function FileTree({
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
   const [showModifiedOnly, setShowModifiedOnly] = useState<boolean>(true);
+
+  useEffect(() => {
+    if (initialCheckedKeys && initialCheckedKeys.length > 0) {
+      setCheckedKeys(initialCheckedKeys);
+    }
+  }, [initialCheckedKeys]);
 
   useEffect(() => {
     if (fileSets && fileSets.length > 0) {

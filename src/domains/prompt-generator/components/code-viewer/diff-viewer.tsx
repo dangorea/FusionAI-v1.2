@@ -27,23 +27,30 @@ function DiffViewer({
   language = 'typescript',
   styleOverrides = {},
 }: DiffViewerProps) {
-  const cleanedOriginal = originalCode.trimEnd();
-  const cleanedModified = modifiedCode.trimEnd();
+  const displayedOriginal = originalCode
+    .replace(/\\r/g, '\r')
+    .replace(/\\n/g, '\n')
+    .trimEnd();
 
-  const diffParts = diffLines(cleanedOriginal, cleanedModified);
+  const displayedModified = modifiedCode
+    .replace(/\\r/g, '\r')
+    .replace(/\\n/g, '\n')
+    .trimEnd();
+
+  const diffParts = diffLines(displayedOriginal, displayedModified);
 
   const highlightCode = (code: string) => {
     const grammar = Prism.languages[language] || Prism.languages.javascript;
     return Prism.highlight(code, grammar, language);
   };
 
-  const isNewFile = !cleanedOriginal.trim();
+  const isNewFile = !displayedOriginal.trim();
 
   const defaultBaseCodeCellStyle: React.CSSProperties = {
     fontFamily:
       'Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", monospace',
     fontSize: '13px',
-    lineHeight: '1.2',
+    lineHeight: '1',
     padding: '2px 4px',
     whiteSpace: 'pre',
     margin: 0,
@@ -76,8 +83,7 @@ function DiffViewer({
       'Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", monospace',
     fontSize: '13px',
     background: '#1e1e1e',
-    lineHeight: '1.2',
-    verticalAlign: 'middle',
+    lineHeight: '1',
     margin: 0,
   };
   const lineNumberCellStyle: React.CSSProperties = {
@@ -103,31 +109,21 @@ function DiffViewer({
     ...styleOverrides.unchangedCodeCell,
   });
 
-  const getFillerStyle = (): React.CSSProperties => ({
+  const getEmptyStyle = (): React.CSSProperties => ({
     ...baseCodeCellStyle,
     backgroundColor: 'transparent',
   });
 
   const getLeftCellStyle = (type: 'unchanged' | 'removed' | 'empty') => {
-    switch (type) {
-      case 'removed':
-        return getRemovedStyle();
-      case 'unchanged':
-        return getUnchangedStyle();
-      default:
-        return getUnchangedStyle();
-    }
+    if (type === 'removed') return getRemovedStyle();
+    if (type === 'unchanged') return getUnchangedStyle();
+    return getEmptyStyle();
   };
 
   const getRightCellStyle = (type: 'unchanged' | 'added' | 'empty') => {
-    switch (type) {
-      case 'added':
-        return getAddedStyle();
-      case 'unchanged':
-        return getUnchangedStyle();
-      default:
-        return getUnchangedStyle();
-    }
+    if (type === 'added') return getAddedStyle();
+    if (type === 'unchanged') return getUnchangedStyle();
+    return getEmptyStyle();
   };
 
   const containerRef = useRef<HTMLDivElement>(null);
@@ -145,58 +141,50 @@ function DiffViewer({
     return () => window.removeEventListener('resize', updateHeight);
   }, []);
 
-  const rowHeight = 16;
+  const rowHeight = 18;
 
   if (isNewFile) {
-    const lines = cleanedModified.split('\n').filter((l, i, arr) => {
-      return !(l === '' && i === arr.length - 1);
-    });
-
+    const lines = displayedModified.split('\n');
     const totalRows = lines.length;
-
-    const codeLines = lines.map((line, index) => (
-      <React.Fragment key={index}>
-        <div style={lineNumberCellStyle}>{index + 1}</div>
-        <div style={getAddedStyle()}>
-          <code
-            dangerouslySetInnerHTML={{
-              __html: highlightCode(line) || '&nbsp;',
-            }}
-          />
-        </div>
-      </React.Fragment>
-    ));
-
-    const fillerElements = (() => {
-      const usedHeight = totalRows * rowHeight;
-      if (usedHeight >= containerHeight) {
-        return null;
-      }
-
-      const extraRows = Math.max(
-        0,
-        Math.floor((containerHeight - usedHeight) / rowHeight),
-      );
-      return Array.from({ length: extraRows }).map((_, i) => (
-        <React.Fragment key={`filler-${i}`}>
-          <div style={lineNumberCellStyle}>&nbsp;</div>
-          <div style={getFillerStyle()}>
-            <code>&nbsp;</code>
-          </div>
-        </React.Fragment>
-      ));
-    })();
 
     return (
       <div style={containerStyle} ref={containerRef}>
-        {codeLines}
-        {fillerElements}
+        {lines.map((line, idx) => (
+          <React.Fragment key={idx}>
+            <div style={lineNumberCellStyle}>{idx + 1}</div>
+            <div style={getAddedStyle()}>
+              <code
+                dangerouslySetInnerHTML={{
+                  __html: highlightCode(line) || '&nbsp;',
+                }}
+              />
+            </div>
+          </React.Fragment>
+        ))}
+
+        {/* Filler lines only if leftover space at bottom */}
+        {(() => {
+          const usedSpace = totalRows * rowHeight;
+          if (usedSpace >= containerHeight) return null;
+
+          const extraRowCount = Math.floor(
+            (containerHeight - usedSpace) / rowHeight,
+          );
+          return Array.from({ length: extraRowCount }).map((_, i) => (
+            <React.Fragment key={`filler-${i}`}>
+              <div style={lineNumberCellStyle}>&nbsp;</div>
+              <div style={getEmptyStyle()}>
+                <code>&nbsp;</code>
+              </div>
+            </React.Fragment>
+          ));
+        })()}
       </div>
     );
   }
 
-  let leftLineNumber = 1;
-  let rightLineNumber = 1;
+  let leftLineNum = 1;
+  let rightLineNum = 1;
 
   const rows: {
     left: string;
@@ -207,7 +195,6 @@ function DiffViewer({
 
   for (let i = 0; i < diffParts.length; i++) {
     const part = diffParts[i];
-
     const lines = part.value.split('\n');
     if (lines[lines.length - 1] === '') {
       lines.pop();
@@ -265,62 +252,54 @@ function DiffViewer({
     }
   }
 
-  const totalRows = rows.length;
-
-  const rowElements = rows.map((row, index) => {
-    const leftNumber = row.left !== '' ? leftLineNumber++ : '';
-    const rightNumber = row.right !== '' ? rightLineNumber++ : '';
-
-    return (
-      <React.Fragment key={index}>
-        <div style={lineNumberCellStyle}>{leftNumber || ' '}</div>
-        <div style={getLeftCellStyle(row.leftType)}>
-          <code
-            dangerouslySetInnerHTML={{
-              __html: row.left ? highlightCode(row.left) : '&nbsp;',
-            }}
-          />
-        </div>
-
-        <div style={lineNumberCellStyle}>{rightNumber || ' '}</div>
-        <div style={getRightCellStyle(row.rightType)}>
-          <code
-            dangerouslySetInnerHTML={{
-              __html: row.right ? highlightCode(row.right) : '&nbsp;',
-            }}
-          />
-        </div>
-      </React.Fragment>
-    );
-  });
-
-  const fillerElements = (() => {
-    const usedHeight = totalRows * rowHeight;
-    if (usedHeight >= containerHeight) {
-      return null;
-    }
-    const extraRows = Math.max(
-      0,
-      Math.floor((containerHeight - usedHeight) / rowHeight),
-    );
-    return Array.from({ length: extraRows }).map((_, i) => (
-      <React.Fragment key={`filler-${i}`}>
-        <div style={lineNumberCellStyle}>&nbsp;</div>
-        <div style={getUnchangedStyle()}>
-          <code>&nbsp;</code>
-        </div>
-        <div style={lineNumberCellStyle}>&nbsp;</div>
-        <div style={getUnchangedStyle()}>
-          <code>&nbsp;</code>
-        </div>
-      </React.Fragment>
-    ));
-  })();
-
   return (
     <div style={containerStyle} ref={containerRef}>
-      {rowElements}
-      {fillerElements}
+      {rows.map((row, idx) => {
+        const leftNum = row.left ? leftLineNum++ : '';
+        const rightNum = row.right ? rightLineNum++ : '';
+        return (
+          <React.Fragment key={idx}>
+            <div style={lineNumberCellStyle}>{leftNum || ' '}</div>
+            <div style={getLeftCellStyle(row.leftType)}>
+              <code
+                dangerouslySetInnerHTML={{
+                  __html: row.left ? highlightCode(row.left) : '&nbsp;',
+                }}
+              />
+            </div>
+
+            <div style={lineNumberCellStyle}>{rightNum || ' '}</div>
+            <div style={getRightCellStyle(row.rightType)}>
+              <code
+                dangerouslySetInnerHTML={{
+                  __html: row.right ? highlightCode(row.right) : '&nbsp;',
+                }}
+              />
+            </div>
+          </React.Fragment>
+        );
+      })}
+
+      {(() => {
+        const usedSpace = rows.length * rowHeight;
+        if (usedSpace >= containerHeight) return null;
+
+        const extraRowCount = Math.floor(
+          (containerHeight - usedSpace) / rowHeight,
+        );
+        return Array.from({ length: extraRowCount }).map((_, i) => (
+          <React.Fragment key={`filler-${i}`}>
+            <div style={lineNumberCellStyle}>&nbsp;</div>
+            <div style={getEmptyStyle()}>
+              <code>&nbsp;</code>
+            </div>
+            <div style={lineNumberCellStyle}>&nbsp;</div>
+            <div style={getEmptyStyle()}>
+              <code>&nbsp;</code>
+            </div>
+          </React.Fragment>
+        ));
+      })()}
     </div>
   );
 }

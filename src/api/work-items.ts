@@ -36,6 +36,23 @@ export async function generateCodeSession(
   }
 }
 
+export async function clearCodeSession(
+  orgSlug: string,
+  projectId: string,
+  id: string,
+): Promise<WorkItemType> {
+  try {
+    const url = WORK_ITEMS_BASE_URL(orgSlug, projectId);
+    const response = await instance.patch<WorkItemType>(
+      `${url}/${id}/clear-code-session`,
+    );
+    return response.data;
+  } catch (error) {
+    console.error('[API] POST request failed:', error);
+    throw error;
+  }
+}
+
 export const updateWorkItem = async (
   orgSlug: string,
   projectId: string,

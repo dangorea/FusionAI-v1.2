@@ -9,6 +9,7 @@ import { selectAllRules } from '../../../lib/redux/feature/rules/selectors';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
 import { selectSelectedWorkItemEntity } from '../../../lib/redux/feature/work-items/selectors';
 import {
+  clearCodeSessionThunk,
   updateCodeSession,
   updateWorkItemThunk,
 } from '../../../lib/redux/feature/work-items/thunk';
@@ -21,7 +22,12 @@ import {
   fetchCodeGeneration,
 } from '../../../lib/redux/feature/code-generation/thunk';
 import { LocalStorageKeys } from '../../../utils/localStorageKeys';
-import type { DropdownRef, FileNode, FileSet } from '../../../components';
+import type {
+  DropdownRef,
+  FileNode,
+  FileSet,
+  ListOption,
+} from '../../../components';
 import type { TextBlockType } from '../../work-item/model/types';
 import styles from './prompt-generator.module.scss';
 import type { TaskDescriptionInputRef } from '../components';
@@ -33,7 +39,6 @@ import {
   TaskDescriptionFooter,
   TaskDescriptionHeader,
 } from '../components';
-import type { IterationOption } from '../../../utils/iteration';
 import {
   buildIterationsHistory,
   extractIterationLabel,
@@ -63,7 +68,7 @@ export function PromptGenerator() {
   const [generatedFileSet, setGeneratedFileSet] = useState<FileSet | null>(
     null,
   );
-  const [historyOptions, setHistoryOptions] = useState<IterationOption[]>([]);
+  const [historyOptions, setHistoryOptions] = useState<ListOption[]>([]);
   const [isFileBlockFeatureEnabled, setIsFileBlockFeatureEnabled] =
     useState<boolean>(
       localStorage.getItem('fileBlockFeatureEnabled') === 'true',
@@ -473,7 +478,8 @@ export function PromptGenerator() {
     }
   }, [projectPath, selectedFiles, codeGenState.latestFiles]);
 
-  const handleHistoryOptionClick = async (option: IterationOption) => {
+  const handleHistoryOptionClick = async (option: ListOption) => {
+    console.log(option);
     if (codeGenState.selectedIterationId === option.value) {
       return;
     }
@@ -640,6 +646,35 @@ export function PromptGenerator() {
       Object.keys(codeGenState.latestFiles).length > 0) ||
     false;
 
+  async function handleEditFirstItem() {
+    if (!orgSlug || !projectId || !id) return;
+
+    try {
+      setIsLoading(true);
+      dispatch(clearCodeGeneration());
+
+      await dispatch(clearCodeSessionThunk({ orgSlug, projectId, id }));
+
+      setShowCodeViewer(false);
+      setHistoryOptions([]);
+      setBaseFileSet(null);
+      setGeneratedFileSet(null);
+
+      setIsLoading(false);
+
+      notification.info({
+        message: 'Work item reset',
+        description: 'You can now start a fresh code generation from scratch.',
+      });
+    } catch (error: any) {
+      console.error('Failed to reset the code generation:', error);
+      notification.error({
+        message: 'Reset failed',
+        description: error.message || 'Error resetting code generation.',
+      });
+    }
+  }
+
   return (
     <Layout className={styles.promptGeneratorContainer}>
       <Layout className={styles['ide-layout']}>
@@ -688,6 +723,7 @@ export function PromptGenerator() {
         historyOptions={historyOptions}
         handleHistoryOptionClick={handleHistoryOptionClick}
         selectedHistoryId={codeGenState.selectedIterationId}
+        onEditFirstItem={handleEditFirstItem}
       />
     </Layout>
   );

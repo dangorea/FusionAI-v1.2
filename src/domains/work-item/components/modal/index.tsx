@@ -16,14 +16,14 @@ interface WorkItemsModalProps {
 }
 
 export function WorkItemsModal({
-                                 isModalOpen,
-                                 modalMode,
-                                 editingItemIds = [],
-                                 allWorkItems = [],
-                                 onClose,
-                                 onCreate,
-                                 onEdit
-                               }: WorkItemsModalProps) {
+  isModalOpen,
+  modalMode,
+  editingItemIds = [],
+  allWorkItems = [],
+  onClose,
+  onCreate,
+  onEdit,
+}: WorkItemsModalProps) {
   const [form] = Form.useForm();
 
   const itemsToEdit = allWorkItems.filter((w) => editingItemIds.includes(w.id));
@@ -69,14 +69,14 @@ export function WorkItemsModal({
             width: '100%',
             flexDirection: 'row',
             alignItems: 'center',
-            gap: '5px'
+            gap: '5px',
           }}
         >
           <Form.Item
             label="Description"
             name="description"
             rules={[
-              { required: true, message: 'Please input the description!' }
+              { required: true, message: 'Please input the description!' },
             ]}
             style={{ width: '100%' }}
           >

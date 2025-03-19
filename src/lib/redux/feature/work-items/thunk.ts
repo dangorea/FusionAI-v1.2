@@ -8,6 +8,7 @@ import type {
   UpdateWorkItemParams,
 } from './types';
 import {
+  clearCodeSession,
   createWorkItem as createWorkItemApi,
   deleteWorkItem as deleteWorkItemApi,
   fetchWorkItems,
@@ -16,6 +17,7 @@ import {
 } from '../../../../api/work-items';
 import type { WorkItemType } from '../../../../domains/work-item/model/types';
 import type { RootState } from '../../store';
+import { clearCodeGeneration } from '../code-generation/reducer';
 
 export const loadWorkItemsThunk = createAsyncThunk<
   LoadWorkItemsResponse,
@@ -108,6 +110,24 @@ export const updateCodeSession = createAsyncThunk<
     } catch (error: any) {
       console.error('Error updating work item:', error);
       return rejectWithValue(error);
+    }
+  },
+);
+
+export const clearCodeSessionThunk = createAsyncThunk<
+  WorkItemType,
+  { orgSlug: string; projectId: string; id: string },
+  { rejectValue: string }
+>(
+  'workItems/clearCodeSession',
+  async ({ orgSlug, projectId, id }, { dispatch, rejectWithValue }) => {
+    try {
+      const updatedWorkItem = await clearCodeSession(orgSlug, projectId, id);
+      dispatch(clearCodeGeneration());
+      return updatedWorkItem as WorkItemType;
+    } catch (error: any) {
+      console.error('Error clearing code session:', error);
+      return rejectWithValue(error.message);
     }
   },
 );

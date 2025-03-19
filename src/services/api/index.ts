@@ -8,19 +8,15 @@ const instance = axios.create({
 export const setAuthToken = (token: string) => {
   if (token) {
     instance.defaults.headers.common.Authorization = `Bearer ${token}`;
+  } else {
+    delete instance.defaults.headers.common.Authorization;
   }
 };
 
-instance.interceptors.request.use(
-  (config) => {
-    console.log('[axiosInstance] Request config before sending:', config);
-    return config;
-  },
-  (error) => {
-    console.error('[axiosInstance] Request error:', error);
-    return Promise.reject(error);
-  },
-);
+const savedAccessToken = localStorage.getItem('access_token');
+if (savedAccessToken) {
+  setAuthToken(savedAccessToken);
+}
 
 let isRenewing = false;
 let failedQueue: Array<{
@@ -39,14 +35,43 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
+instance.interceptors.request.use(
+  (config) => {
+    if (isRenewing) {
+      return new Promise((resolve, reject) => {
+        failedQueue.push({
+          resolve: (token: string) => {
+            if (config.headers) {
+              config.headers.Authorization = `Bearer ${token}`;
+            }
+            resolve(config);
+          },
+          reject: (err) => {
+            reject(err);
+          },
+        });
+      });
+    }
+
+    console.log('[axiosInstance] Request config before sending:', config);
+    return config;
+  },
+  (error) => {
+    console.error('[axiosInstance] Request error:', error);
+    return Promise.reject(error);
+  },
+);
+
 instance.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       console.warn(
-        '[axiosInstance] 401 error detected. Starting silent authentication...',
+        '[axiosInstance] 401 detected. Attempting silent refresh...',
       );
+      originalRequest._retry = true;
 
       if (isRenewing) {
         return new Promise((resolve, reject) => {
@@ -61,7 +86,6 @@ instance.interceptors.response.use(
           .catch((err) => Promise.reject(err));
       }
 
-      originalRequest._retry = true;
       isRenewing = true;
 
       try {
@@ -79,6 +103,7 @@ instance.interceptors.response.use(
           'silentTokenRenew',
           silentAuthUrl,
         );
+
         const tokenUrl = `https://${window.env.AUTH0_DOMAIN}/oauth/token`;
         const body = {
           grant_type: 'authorization_code',
@@ -96,32 +121,39 @@ instance.interceptors.response.use(
           '[axiosInstance] Silent authentication succeeded:',
           tokenData,
         );
+
         localStorage.setItem('access_token', tokenData.access_token);
+        setAuthToken(tokenData.access_token);
+
         if (tokenData.id_token) {
           localStorage.setItem('id_token', tokenData.id_token);
-          setAuthToken(tokenData.id_token);
-        } else {
-          setAuthToken(tokenData.access_token);
         }
+
         processQueue(null, tokenData.access_token);
+
         if (originalRequest.headers) {
           originalRequest.headers.Authorization = `Bearer ${tokenData.access_token}`;
         }
+
         return instance(originalRequest);
       } catch (silentError) {
         console.error(
           '[axiosInstance] Silent authentication failed:',
           silentError,
         );
-        processQueue(silentError, null);
+
         localStorage.removeItem('access_token');
         localStorage.removeItem('id_token');
         window.location.href = '/login';
+
+        processQueue(silentError, null);
+
         return Promise.reject(silentError);
       } finally {
         isRenewing = false;
       }
     }
+
     return Promise.reject(error);
   },
 );

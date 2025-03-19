@@ -3,6 +3,7 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { WorkItemsState } from './types';
 import { workItemsAdapter } from './adapter';
 import {
+  clearCodeSessionThunk,
   createWorkItemThunk,
   deleteWorkItemThunk,
   loadWorkItemsThunk,
@@ -38,6 +39,9 @@ const workItemsSlice = createSlice({
       workItemsAdapter.removeOne(state, action.payload);
     });
     builder.addCase(updateCodeSession.fulfilled, (state, action) => {
+      workItemsAdapter.upsertOne(state, action.payload);
+    });
+    builder.addCase(clearCodeSessionThunk.fulfilled, (state, action) => {
       workItemsAdapter.upsertOne(state, action.payload);
     });
   },

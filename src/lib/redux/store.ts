@@ -4,10 +4,9 @@ import userReducer from './feature/user/reducer';
 import projectsReducer from './feature/projects/reducer';
 import rulesReducer from './feature/rules/reducer';
 import workItemsReducer from './feature/work-items/reducer';
-import rootUI from './feature/rootSlice/reducer';
+import configReducer from './feature/config/reducer';
 import authReducer from './feature/auth/reducer';
-import codeGeneration from './feature/code-generation/reducer';
-import { axiosTokenMiddleware } from './middleware/axiosTokenMiddleware';
+import codeGenerationReducer from './feature/code-generation/reducer';
 
 export const makeStore = () => {
   return configureStore({
@@ -18,11 +17,11 @@ export const makeStore = () => {
       rules: rulesReducer,
       workItems: workItemsReducer,
       auth: authReducer,
-      rootUI,
-      codeGeneration,
+      config: configReducer,
+      codeGeneration: codeGenerationReducer,
     },
-    middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(axiosTokenMiddleware),
+    // middleware: (getDefaultMiddleware) =>
+    //   getDefaultMiddleware().concat(axiosTokenMiddleware),
   });
 };
 

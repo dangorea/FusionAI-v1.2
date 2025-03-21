@@ -50,3 +50,8 @@ export type User = {
   sid: string;
   auth_time: number;
 };
+
+export type LLMProvider = {
+  id: string;
+  name: string;
+};

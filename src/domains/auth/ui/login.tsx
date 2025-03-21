@@ -100,7 +100,6 @@ export function Login() {
 
       if (tokenData.id_token) {
         localStorage.setItem('id_token', tokenData.id_token);
-        setAuthToken(tokenData.id_token);
         dispatch(setToken(tokenData.id_token));
       }
 
@@ -111,6 +110,7 @@ export function Login() {
       localStorage.removeItem('pkce_code_verifier');
 
       dispatch(setToken(tokenData.access_token));
+      setAuthToken(tokenData.access_token);
 
       navigate('/');
     } catch (error) {

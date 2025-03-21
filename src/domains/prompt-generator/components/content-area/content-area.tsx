@@ -2,9 +2,16 @@ import type { Ref, RefObject } from 'react';
 import React from 'react';
 import { Button, Layout } from 'antd';
 import { CloseCircleOutlined } from '@ant-design/icons';
-import { CodeViewer, TaskDescription } from '..';
+import { CodeViewer } from '../code-viewer';
+import { TaskDescription } from '../task-description';
 import styles from './content-area.module.scss';
 import type { DropdownRef } from '../../../../components';
+import { useAppDispatch, useAppSelector } from '../../../../lib/redux/hook';
+import {
+  selectProviders,
+  selectSelectedProviderEntity,
+} from '../../../../lib/redux/feature/config/selectors';
+import { setSelectedProvider } from '../../../../lib/redux/feature/config/reducer';
 
 const { Content } = Layout;
 
@@ -17,7 +24,6 @@ interface ContentAreaProps {
   disableSend: boolean;
   updateWorkItemDebounced: (value: string) => void;
   dropdownRef?: Ref<DropdownRef>;
-  onDropdownChange?: () => string;
   onClosePreview?: () => void;
 }
 
@@ -28,13 +34,22 @@ export function ContentArea({
   bigTaskDescRef,
   handleSend,
   updateWorkItemDebounced,
-  onDropdownChange,
   dropdownRef,
   onClosePreview,
   disableSend,
 }: ContentAreaProps) {
+  const dispatch = useAppDispatch();
   const showCloseViewerButton =
     originalFileContent !== undefined && !comparisonFileContent;
+  const providers = useAppSelector(selectProviders).map((provider) => ({
+    label: provider.name,
+    value: provider.id,
+  }));
+  const selectedProvider = useAppSelector(selectSelectedProviderEntity);
+
+  const handleProviderChange = (value: string | string[]) => {
+    dispatch(setSelectedProvider(value as string));
+  };
 
   return (
     <Layout className={styles.mainLayout}>
@@ -47,8 +62,10 @@ export function ContentArea({
             ref={bigTaskDescRef}
             dropdownRef={dropdownRef}
             onSend={handleSend}
-            onDropdownChange={onDropdownChange}
+            onDropdownChange={handleProviderChange}
             mode="big"
+            dropdownOptions={providers}
+            defaultDropdownValue={selectedProvider?.id ?? providers[3].value}
             disableSend={disableSend}
             onContentChange={(value) => {
               updateWorkItemDebounced(value);

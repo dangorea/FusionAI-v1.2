@@ -1,5 +1,5 @@
 import instance from '../services/api';
-import type { CodeGenerationType } from '../types/common';
+import type { CodeGenerationType, LLMProvider } from '../types/common';
 
 /**
  * Sends a code generation request to the API
@@ -55,6 +55,7 @@ export async function addIterationAPI(
   data: {
     prompt: string;
     startFromIterationId: string;
+    provider: string;
   },
 ): Promise<CodeGenerationType> {
   try {
@@ -62,6 +63,24 @@ export async function addIterationAPI(
       `/code-generation/${id}/iterations`,
       data,
     );
+    return response.data;
+  } catch (error: any) {
+    console.error('Error in addIterationAPI:', error);
+    if (error.response?.data?.message) {
+      throw new Error(error.response.data.message);
+    }
+    throw new Error('Failed to add iteration to code generation API');
+  }
+}
+
+/**
+ * Retrieves a specific LLMs providers
+ * @returns The LLMs providers
+ * @throws Error if the API request fails
+ */
+export async function getProvider(): Promise<LLMProvider[]> {
+  try {
+    const response = await instance.get(`/code-generation/providers`);
     return response.data;
   } catch (error: any) {
     console.error('Error in get code generation session request:', error);

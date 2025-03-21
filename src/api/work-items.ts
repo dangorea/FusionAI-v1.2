@@ -25,13 +25,17 @@ export async function generateCodeSession(
   orgSlug: string,
   projectId: string,
   id: string,
+  provider: string,
 ): Promise<WorkItemType> {
   try {
     const url = WORK_ITEMS_BASE_URL(orgSlug, projectId);
-    const response = await instance.post<WorkItemType>(`${url}/${id}/generate`);
+    const response = await instance.post<WorkItemType>(
+      `${url}/${id}/generate`,
+      { provider },
+    );
     return response.data;
-  } catch (error) {
-    console.error('[API] POST request failed:', error);
+  } catch (error: any) {
+    console.error('[API] generateCodeSession failed:', error);
     throw error;
   }
 }

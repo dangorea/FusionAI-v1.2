@@ -47,27 +47,27 @@ export const addIterationThunk = createAsyncThunk<
     id: string;
     prompt: string;
     startFromIterationId: string;
+    provider: string; // <-- New parameter
   },
   { rejectValue: string }
 >(
   'codeGeneration/addIteration',
-  async ({ id, prompt, startFromIterationId }, { rejectWithValue }) => {
+  async (
+    { id, prompt, startFromIterationId, provider },
+    { rejectWithValue },
+  ) => {
     try {
       const response = await addIterationAPI(id, {
         prompt,
         startFromIterationId,
+        provider,
       });
-      if (!response) {
-        return rejectWithValue('Failed to add iteration');
-      }
-
       response.iterations = response.iterations.map((iteration) => {
         if (!iteration.files) {
           iteration.files = {};
         }
         return iteration;
       });
-
       const latestIteration =
         response.iterations[response.iterations.length - 1];
 

@@ -464,6 +464,9 @@ export function PromptGenerator() {
   }, [hasUserModified, updateWorkItemDebounced, showCodeViewer]);
 
   const handleSend = useCallback(async () => {
+    const selectedProvider =
+      (dropdownRef.current?.getSelected() as string) || '';
+
     setHasUserModified(true);
     if (!orgSlug || !projectId || !id) return;
     setIsLoading(true);
@@ -483,6 +486,7 @@ export function PromptGenerator() {
               id: workItem.codeGenerationId,
               prompt,
               startFromIterationId: codeGenState.selectedIterationId,
+              provider: selectedProvider,
             }),
           );
           await dispatch(fetchCodeGeneration(workItem.codeGenerationId));
@@ -497,7 +501,12 @@ export function PromptGenerator() {
         }
 
         const updateAction = await dispatch(
-          updateCodeSession({ orgSlug, projectId, id }),
+          updateCodeSession({
+            orgSlug,
+            projectId,
+            id,
+            provider: selectedProvider,
+          }),
         );
         const updatedWorkItem = updateAction.payload as WorkItemType;
 
@@ -862,7 +871,7 @@ export function PromptGenerator() {
       <Layout className={styles['ide-layout']}>
         <TaskDescriptionHeader
           ref={previewTaskDescRef}
-          codeGenExists={codeGenExists}
+          codeGenExists={showCodeViewer && codeGenExists}
         />
         <Layout className={styles['ide-container']}>
           <Loading loading={isLoading}>

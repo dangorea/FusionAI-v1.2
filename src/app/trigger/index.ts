@@ -6,6 +6,7 @@ import { fetchOrganizationBlocks } from '../../lib/redux/feature/organization/th
 import { fetchProjects } from '../../lib/redux/feature/projects/thunk';
 import { fetchRules } from '../../lib/redux/feature/rules/thunk';
 import { fetchOrganizationManagements } from '../../lib/redux/feature/user/thunk';
+import { fetchProviders } from '../../lib/redux/feature/config/thunk';
 
 type Props = {
   children: ReactNode;
@@ -15,6 +16,10 @@ export function Trigger({ children }: Props) {
   const dispatch = useAppDispatch();
   const org = useAppSelector(selectSelectedOrganizationEntity);
   const orgSlug = org?.slug;
+
+  useEffect(() => {
+    dispatch(fetchProviders());
+  }, [dispatch]);
 
   useEffect(() => {
     dispatch(fetchOrganizationBlocks());

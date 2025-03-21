@@ -14,7 +14,7 @@ export const {
 
 export const selectCurrentOrganizationId = createSelector(
   selectOrganizationState,
-  (state) => state.selectedOrganization || 'default',
+  (state) => state.selectedOrganization,
 );
 
 export const selectSelectedOrganizationEntity = createSelector(

@@ -100,15 +100,15 @@ export const deleteWorkItemThunk = createAsyncThunk<
 
 export const updateCodeSession = createAsyncThunk<
   WorkItemType,
-  { orgSlug: string; projectId: string; id: string },
+  { orgSlug: string; projectId: string; id: string; provider: string }, // <-- Added provider
   { state: RootState }
 >(
   'workItems/updateCodeSession',
-  async ({ orgSlug, projectId, id }, { rejectWithValue }) => {
+  async ({ orgSlug, projectId, id, provider }, { rejectWithValue }) => {
     try {
-      return await generateCodeSession(orgSlug, projectId, id);
+      return await generateCodeSession(orgSlug, projectId, id, provider); // <-- Pass provider here
     } catch (error: any) {
-      console.error('Error updating work item:', error);
+      console.error('Error updating code session:', error);
       return rejectWithValue(error);
     }
   },

@@ -78,7 +78,6 @@ export const Dropdown = forwardRef<DropdownRef, DropdownProps>(
       onChange?.(value);
     };
 
-    // Minimal default styling for the Select:
     const defaultSelectStyle: CSSProperties = {
       border: 'none',
       backgroundColor: 'transparent',
@@ -86,6 +85,7 @@ export const Dropdown = forwardRef<DropdownRef, DropdownProps>(
       whiteSpace: 'normal',
       overflow: 'visible',
       textOverflow: 'unset',
+      width: 'max-content',
     };
 
     const optionStyle: CSSProperties = {
@@ -101,11 +101,10 @@ export const Dropdown = forwardRef<DropdownRef, DropdownProps>(
           value={selected}
           onChange={handleChange}
           style={{ ...defaultSelectStyle, ...selectStyle }}
-          bordered={false}
+          variant="borderless"
           optionLabelProp="label"
-          dropdownMatchSelectWidth
           dropdownStyle={{
-            width: '100%',
+            width: 'max-content',
             whiteSpace: 'normal',
             overflow: 'visible',
             textOverflow: 'unset',

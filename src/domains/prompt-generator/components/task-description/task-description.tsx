@@ -11,7 +11,7 @@ import { SendOutlined } from '@ant-design/icons';
 import type { DropdownRef } from '../../../../components';
 import { Dropdown, VoiceInput } from '../../../../components';
 import './task-description.module.scss';
-import { modelProviders } from '../../../../constants/model-provider';
+import type { DropdownOption } from '../../../../components/dropdown/dropdown';
 
 export interface TaskDescriptionInputProps {
   onSend?: (content: string) => void;
@@ -20,8 +20,10 @@ export interface TaskDescriptionInputProps {
   preview?: boolean;
   style?: CSSProperties;
   dropdownRef?: Ref<DropdownRef>;
-  onDropdownChange?: () => string;
+  onDropdownChange?: (value: string | string[]) => void;
   disableSend?: boolean;
+  dropdownOptions?: DropdownOption[];
+  defaultDropdownValue?: string;
 }
 
 export interface TaskDescriptionInputRef {
@@ -154,9 +156,9 @@ export const TaskDescription = forwardRef(
             >
               <Dropdown
                 ref={props.dropdownRef}
-                options={modelProviders}
-                defaultValue="claude"
-                selectStyle={{}}
+                options={props.dropdownOptions ?? []}
+                defaultValue={props.defaultDropdownValue}
+                onChange={props.onDropdownChange}
               />
               <div style={{ display: 'flex', flexDirection: 'row' }}>
                 <VoiceInput
@@ -243,9 +245,9 @@ export const TaskDescription = forwardRef(
           >
             <Dropdown
               ref={props.dropdownRef}
-              options={modelProviders}
-              defaultValue="claude"
-              selectStyle={{}}
+              options={props.dropdownOptions ?? []}
+              defaultValue={props.defaultDropdownValue}
+              onChange={props.onDropdownChange}
             />
             <div style={{ display: 'flex', flexDirection: 'row' }}>
               <VoiceInput onTranscriptionComplete={handleVoiceTranscription} />

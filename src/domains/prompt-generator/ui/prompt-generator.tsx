@@ -9,7 +9,6 @@ import { selectAllRules } from '../../../lib/redux/feature/rules/selectors';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
 import { selectSelectedWorkItemEntity } from '../../../lib/redux/feature/work-items/selectors';
 import {
-  clearCodeSessionThunk,
   updateCodeSession,
   updateWorkItemThunk,
 } from '../../../lib/redux/feature/work-items/thunk';
@@ -28,7 +27,7 @@ import type {
   FileSet,
   ListOption,
 } from '../../../components';
-import type { TextBlockType } from '../../work-item/model/types';
+import type { TextBlockType, WorkItemType } from '../../work-item/model/types';
 import styles from './prompt-generator.module.scss';
 import type { TaskDescriptionInputRef } from '../components';
 import {
@@ -43,6 +42,88 @@ import {
   buildIterationsHistory,
   extractIterationLabel,
 } from '../../../utils/iteration';
+
+export function removeAllFileBlocks(text: string): string {
+  const pattern = /\n\n=== File: .*? ===\n[\s\S]*?\n=== EndFile: .*? ===\n\n/g;
+  return text.replace(pattern, '');
+}
+
+export function getAbsoluteFilePath(
+  filePath: string,
+  projectPath: string,
+): string {
+  if (pathBrowser.isAbsolute(filePath)) {
+    return pathBrowser.normalize(filePath);
+  }
+  let relativeKey = filePath;
+  const projFolderName = projectPath.split(/[\\/]/).pop() || '';
+  if (relativeKey.startsWith(projFolderName)) {
+    relativeKey = relativeKey
+      .slice(projFolderName.length)
+      .replace(/^[/\\]+/, '');
+  }
+  return pathBrowser.normalize(pathBrowser.join(projectPath, relativeKey));
+}
+
+export function getRelativePath(filePath: string, projectPath: string): string {
+  return projectPath && filePath.startsWith(projectPath)
+    ? filePath.slice(projectPath.length).replace(/^[/\\]+/, '')
+    : filePath;
+}
+
+export async function buildGeneratedFileSet(
+  iterationFiles: Record<string, string>,
+  projectPath: string,
+): Promise<FileSet> {
+  const genTree = await window.fileAPI.buildGeneratedFileTree(
+    iterationFiles,
+    projectPath,
+  );
+  return {
+    id: 'generated',
+    name: 'Suggested Changes',
+    tree: genTree,
+    visible: true,
+  };
+}
+
+export function getIterationFileContent(
+  filePath: string,
+  iterationFiles: Record<string, string>,
+  projectPath: string,
+): string | undefined {
+  let searchPath = filePath;
+  if (projectPath && filePath.startsWith(projectPath)) {
+    const relativePath = getRelativePath(filePath, projectPath);
+    searchPath = pathBrowser.normalize(relativePath);
+  }
+  return (
+    iterationFiles[searchPath] ||
+    iterationFiles[pathBrowser.basename(searchPath)]
+  );
+}
+
+export function updateTaskDescriptionWithFileBlocks(
+  ref: TaskDescriptionInputRef,
+  selectedFiles: Record<string, string>,
+): string {
+  const currentText = ref.getContent();
+  const cleaned = removeAllFileBlocks(currentText);
+  ref.setContent(cleaned);
+  Object.entries(selectedFiles).forEach(([fp, content]) => {
+    ref.addExtraContent(
+      `\n\n=== File: ${fp} ===\n${content}\n=== EndFile: ${fp} ===\n\n`,
+    );
+  });
+  return cleaned;
+}
+
+export function getCheckedPaths(
+  sourceFiles: { path: string }[],
+  projectPath: string,
+): React.Key[] {
+  return sourceFiles.map((sf) => getAbsoluteFilePath(sf.path, projectPath));
+}
 
 export function PromptGenerator() {
   const { id } = useParams();
@@ -74,6 +155,11 @@ export function PromptGenerator() {
       localStorage.getItem('fileBlockFeatureEnabled') === 'true',
     );
   const [defaultCheckedKeys, setDefaultCheckedKeys] = useState<React.Key[]>([]);
+  const [fileTreeTouched, setFileTreeTouched] = useState<boolean>(false);
+  const [preventComparisonAutoLoad, setPreventComparisonAutoLoad] =
+    useState<boolean>(false);
+  const [bigTaskDescription, setBigTaskDescription] = useState<string>('');
+  const [smallTaskDescription, setSmalTaskDescription] = useState<string>('');
 
   const bigTaskDescRef = useRef<TaskDescriptionInputRef | null>(null);
   const smallTaskDescRef = useRef<TaskDescriptionInputRef | null>(null);
@@ -81,22 +167,29 @@ export function PromptGenerator() {
   const featureEnabledRef = useRef(isFileBlockFeatureEnabled);
   const dropdownRef = useRef<DropdownRef | null>(null);
 
-  const [isInitialDescriptionSet, setIsInitialDescriptionSet] = useState(false);
-
   useEffect(() => {
     dispatch(clearCodeGeneration());
-    if (workItem?.codeGenerationId) {
-      dispatch(fetchCodeGeneration(workItem.codeGenerationId));
-    }
+    const action = async () => {
+      if (workItem?.codeGenerationId) {
+        setIsLoading(true);
+        await dispatch(fetchCodeGeneration(workItem.codeGenerationId));
+        setIsLoading(false);
+      }
+    };
+
+    action();
   }, [workItem?.codeGenerationId, dispatch]);
 
   useEffect(() => {
-    if (!workItem || !bigTaskDescRef.current) return;
-    if (!isInitialDescriptionSet && workItem.description) {
+    if (
+      workItem?.description &&
+      bigTaskDescRef.current &&
+      bigTaskDescription.trim() === ''
+    ) {
       bigTaskDescRef.current.setContent(workItem.description);
-      setIsInitialDescriptionSet(true);
+      setBigTaskDescription(workItem.description);
     }
-  }, [workItem, isInitialDescriptionSet]);
+  }, [workItem]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -108,13 +201,37 @@ export function PromptGenerator() {
     }
   }, [projectId]);
 
-  const removeAllFileBlocks = useCallback((text: string) => {
-    const pattern =
-      /\n\n=== File: .*? ===\n[\s\S]*?\n=== EndFile: .*? ===\n\n/g;
-    return text.replace(pattern, '');
-  }, []);
+  useEffect(() => {
+    async function loadSourceFiles() {
+      if (
+        workItem?.sourceFiles &&
+        projectPath &&
+        Object.keys(selectedFiles).length === 0
+      ) {
+        const filePaths = workItem.sourceFiles.map((sf) =>
+          getAbsoluteFilePath(sf.path, projectPath),
+        );
+        const filesContent = await Promise.all(
+          filePaths.map(async (fp) => {
+            const content = await window.fileAPI.readFileContent(fp);
+            return { fp, content };
+          }),
+        );
+        const newSelectedFiles: Record<string, string> = {};
+        filesContent.forEach(({ fp, content }) => {
+          newSelectedFiles[fp] = content;
+        });
+        setSelectedFiles(newSelectedFiles);
+      }
+    }
+
+    loadSourceFiles();
+  }, [workItem, projectPath]);
+
+  const removeAllFileBlocksCallback = useCallback(removeAllFileBlocks, []);
 
   const handleMultipleSelect = useCallback(async (filePaths: string[]) => {
+    setFileTreeTouched(true);
     setHasUserModified(true);
     const loaded = await Promise.all(
       filePaths.map(async (fp) => {
@@ -154,18 +271,11 @@ export function PromptGenerator() {
       }
 
       if (iterationFiles) {
-        let searchPath = filePath;
-        if (projectPath && filePath.startsWith(projectPath)) {
-          const relativePath = filePath
-            .slice(projectPath.length)
-            .replace(/^[/\\]+/, '');
-          searchPath = pathBrowser.normalize(relativePath);
-        }
-
-        const generatedContent =
-          iterationFiles[searchPath] ||
-          iterationFiles[pathBrowser.basename(searchPath)];
-
+        const generatedContent = getIterationFileContent(
+          filePath,
+          iterationFiles,
+          projectPath,
+        );
         setComparisonFileContent(generatedContent || undefined);
       } else {
         setComparisonFileContent(undefined);
@@ -180,24 +290,16 @@ export function PromptGenerator() {
     if (!isFileBlockFeatureEnabled) return;
     if (!bigTaskDescRef.current) return;
 
-    const currentText = bigTaskDescRef.current.getContent();
-    const cleaned = removeAllFileBlocks(currentText);
-    bigTaskDescRef.current.setContent(cleaned);
-    Object.entries(selectedFiles).forEach(([fp, content]) => {
-      bigTaskDescRef.current?.addExtraContent(
-        `\n\n=== File: ${fp} ===\n${content}\n=== EndFile: ${fp} ===\n\n`,
-      );
-    });
-  }, [selectedFiles, removeAllFileBlocks, isFileBlockFeatureEnabled]);
+    const cleaned = updateTaskDescriptionWithFileBlocks(
+      bigTaskDescRef.current,
+      selectedFiles,
+    );
+    setBigTaskDescription(cleaned);
+  }, [selectedFiles, removeAllFileBlocksCallback, isFileBlockFeatureEnabled]);
 
   useEffect(() => {
     if (workItem?.sourceFiles && projectPath) {
-      const checkedPaths = workItem.sourceFiles.map((sf) => {
-        if (pathBrowser.isAbsolute(sf.path)) {
-          return pathBrowser.normalize(sf.path);
-        }
-        return pathBrowser.normalize(pathBrowser.join(projectPath, sf.path));
-      });
+      const checkedPaths = getCheckedPaths(workItem.sourceFiles, projectPath);
       setDefaultCheckedKeys(checkedPaths);
     }
   }, [workItem?.sourceFiles, projectPath]);
@@ -263,21 +365,7 @@ export function PromptGenerator() {
         if (fileKeys.length > 0) {
           const fileKey = fileKeys[0];
           setComparisonFileContent(iterationFiles[fileKey]);
-          let absolutePath = '';
-          if (pathBrowser.isAbsolute(fileKey)) {
-            absolutePath = pathBrowser.normalize(fileKey);
-          } else {
-            let relativeKey = fileKey;
-            const projFolderName = projectPath.split(/[\\/]/).pop() || '';
-            if (relativeKey.startsWith(projFolderName)) {
-              relativeKey = relativeKey
-                .slice(projFolderName.length)
-                .replace(/^[/\\]+/, '');
-            }
-            absolutePath = pathBrowser.normalize(
-              pathBrowser.join(projectPath, relativeKey),
-            );
-          }
+          const absolutePath = getAbsoluteFilePath(fileKey, projectPath);
           window.fileAPI
             .readFileContent(absolutePath)
             .then((originalContent: string) => {
@@ -296,52 +384,52 @@ export function PromptGenerator() {
 
   const updateWorkItemDebounced = useCallback(
     debounce(async () => {
-      if (
-        codeGenState.result &&
-        codeGenState.result.iterations &&
-        codeGenState.result.iterations.length > 0
-      ) {
-        return;
-      }
-      if (!hasUserModified || !orgSlug || !projectId) return;
-      const sourceFiles = Object.entries(selectedFiles).map(
-        ([absPath, content]) => {
-          let relative = absPath;
-          if (projectPath && absPath.startsWith(projectPath)) {
-            const partial = absPath
-              .slice(projectPath.length)
-              .replace(/^[/\\]+/, '');
-            relative = partial;
-          }
-          return { path: relative, content };
-        },
-      );
-      const description =
+      if (!orgSlug || !projectId) return;
+
+      const currentDescription =
         bigTaskDescRef.current?.getContent() ||
         smallTaskDescRef.current?.getContent() ||
         '';
 
-      const textBlocks = selectedRules
-        .map((ruleId) => {
-          const r = rules.find((x) => x.id === ruleId);
-          return r
-            ? {
-                id: r.id,
-                title: r.title,
-                details: r.title,
-              }
-            : null;
-        })
-        .filter(Boolean) as TextBlockType[];
+      const descriptionChanged = currentDescription !== workItem?.description;
+      const fileTreeChanged = fileTreeTouched;
+      const textBlocksChanged = selectedRules.length > 0;
+
+      if (!descriptionChanged && !fileTreeChanged && !textBlocksChanged) {
+        return;
+      }
+      const computedSourceFiles = fileTreeChanged
+        ? Object.entries(selectedFiles).map(([absPath, content]) => {
+            const relative = getRelativePath(absPath, projectPath);
+            return { path: relative, content };
+          })
+        : workItem?.sourceFiles || [];
+
+      const computedTextBlocks = textBlocksChanged
+        ? (selectedRules
+            .map((ruleId) => {
+              const r = rules.find((x) => x.id === ruleId);
+              return r ? { id: r.id, title: r.title, details: r.title } : null;
+            })
+            .filter(Boolean) as TextBlockType[])
+        : workItem?.textBlocks || [];
+
+      const updatePayload: Partial<WorkItemType> = { id };
+      if (descriptionChanged) {
+        updatePayload.description = currentDescription;
+      }
+      updatePayload.sourceFiles = computedSourceFiles;
+      updatePayload.textBlocks = computedTextBlocks;
 
       try {
         await dispatch(
           updateWorkItemThunk({
             orgSlug,
             projectId,
-            workItem: { id, description, sourceFiles, textBlocks },
+            workItem: updatePayload,
           }),
         );
+        setHasUserModified(false);
       } catch (err: any) {
         console.error('Failed to update work item:', err);
         notification.error({
@@ -355,27 +443,22 @@ export function PromptGenerator() {
       selectedFiles,
       selectedRules,
       rules,
-      hasUserModified,
       orgSlug,
       projectId,
       id,
       projectPath,
+      workItem,
+      codeGenState.result,
+      fileTreeTouched,
     ],
   );
 
   useEffect(() => {
-    if (
-      hasUserModified &&
-      !(
-        codeGenState.result &&
-        codeGenState.result.iterations &&
-        codeGenState.result.iterations.length > 0
-      )
-    ) {
+    if (hasUserModified) {
       updateWorkItemDebounced();
     }
     return () => updateWorkItemDebounced.cancel();
-  }, [updateWorkItemDebounced, hasUserModified]);
+  }, [hasUserModified, updateWorkItemDebounced]);
 
   const handleSend = useCallback(async () => {
     setHasUserModified(true);
@@ -390,6 +473,7 @@ export function PromptGenerator() {
 
         if (codeGenState.selectedIterationId && workItem?.codeGenerationId) {
           smallTaskDescRef.current?.setContent('');
+          setSmalTaskDescription('');
 
           await dispatch(
             addIterationThunk({
@@ -409,11 +493,10 @@ export function PromptGenerator() {
           workItem.sourceFiles?.length
         ) {
           const firstFilePath = workItem.sourceFiles[0].path;
-          const normalizedFilePath = pathBrowser.isAbsolute(firstFilePath)
-            ? pathBrowser.normalize(firstFilePath)
-            : pathBrowser.normalize(
-                pathBrowser.join(projectPath, firstFilePath),
-              );
+          const normalizedFilePath = getAbsoluteFilePath(
+            firstFilePath,
+            projectPath,
+          );
           const original =
             await window.fileAPI.readFileContent(normalizedFilePath);
           setOriginalFileContent(original);
@@ -429,6 +512,7 @@ export function PromptGenerator() {
       });
     } finally {
       setIsLoading(false);
+      setBigTaskDescription('');
     }
   }, [
     orgSlug,
@@ -457,11 +541,7 @@ export function PromptGenerator() {
 
       await Promise.all(
         selectedPaths.map(async (originalPath) => {
-          let relativePath = pathBrowser.relative(projectPath, originalPath);
-          if (relativePath.startsWith('/') || relativePath.startsWith('\\')) {
-            relativePath = relativePath.slice(1);
-          }
-
+          const relativePath = getRelativePath(originalPath, projectPath);
           const generatedContent = codeGenState.latestFiles?.[relativePath];
           const fallbackContent = selectedFiles[originalPath] ?? '';
           const contentToWrite = generatedContent ?? fallbackContent;
@@ -478,12 +558,90 @@ export function PromptGenerator() {
     }
   }, [projectPath, selectedFiles, codeGenState.latestFiles]);
 
-  const handleHistoryOptionClick = async (option: ListOption) => {
-    console.log(option);
-    if (codeGenState.selectedIterationId === option.value) {
+  const loadFirstComparisonFile = useCallback(() => {
+    if (!projectPath || !codeGenState.latestFiles || preventComparisonAutoLoad)
       return;
+    const fileKeys = Object.keys(codeGenState.latestFiles);
+    if (fileKeys.length > 0) {
+      const fileKey = fileKeys[0];
+      const absolutePath = getAbsoluteFilePath(fileKey, projectPath);
+      window.fileAPI
+        .readFileContent(absolutePath)
+        .then((originalContent: string) => {
+          setOriginalFileContent(originalContent);
+          const generatedContent = codeGenState.latestFiles?.[fileKey] || '';
+          setComparisonFileContent(generatedContent);
+        })
+        .catch((err: any) =>
+          console.error('Error auto-loading comparison file:', err),
+        );
+      window.fileAPI
+        .buildGeneratedFileTree(codeGenState.latestFiles, projectPath)
+        .then((genTree: FileNode) => {
+          setGeneratedFileSet({
+            id: 'generated',
+            name: 'Suggested Changes',
+            tree: genTree,
+            visible: true,
+          });
+          setShowCodeViewer(true);
+        })
+        .catch((err) =>
+          console.error('Error building generated file tree', err),
+        );
     }
+  }, [projectPath, codeGenState.latestFiles]);
+
+  const handleHistoryOptionClick = async (option: ListOption) => {
+    if (!orgSlug || !projectId || !id) return;
+
+    setPreventComparisonAutoLoad(false);
     dispatch(updateSelectedIteration(option.value));
+
+    if (projectPath && codeGenState.result && codeGenState.result.iterations) {
+      const selectedIteration = codeGenState.result.iterations.find(
+        (iteration) => iteration._id === option.value,
+      );
+      if (selectedIteration) {
+        const iterationFiles = selectedIteration.files;
+        try {
+          const genFileSet = await buildGeneratedFileSet(
+            iterationFiles,
+            projectPath,
+          );
+          setGeneratedFileSet(genFileSet);
+        } catch (err) {
+          console.error(
+            'Error building generated file tree for selected iteration:',
+            err,
+          );
+        }
+
+        const fileKeys = Object.keys(iterationFiles);
+        if (fileKeys.length > 0) {
+          const fileKey = fileKeys[0];
+          setComparisonFileContent(iterationFiles[fileKey]);
+          const absolutePath = getAbsoluteFilePath(fileKey, projectPath);
+          try {
+            const originalContent =
+              await window.fileAPI.readFileContent(absolutePath);
+            setOriginalFileContent(originalContent);
+            setShowCodeViewer(true);
+          } catch (err) {
+            console.error(
+              'Error reading original file for selected iteration:',
+              err,
+            );
+          }
+        }
+
+        const promptText = selectedIteration.prompt || '';
+        const additionalInfo = extractIterationLabel(promptText, 98);
+        if (previewTaskDescRef.current) {
+          previewTaskDescRef.current.setContent(additionalInfo);
+        }
+      }
+    }
   };
 
   const handleClosePreview = useCallback(() => {
@@ -593,47 +751,73 @@ export function PromptGenerator() {
   }, [projectPath, codeGenState.latestFiles]);
 
   useEffect(() => {
+    if (preventComparisonAutoLoad) return;
     if (projectPath && codeGenState.latestFiles && !showCodeViewer) {
-      const fileKeys = Object.keys(codeGenState.latestFiles);
-      if (fileKeys.length > 0) {
-        const fileKey = fileKeys[0];
-        const projFolderName = projectPath.split(/[\\/]/).pop() || '';
-        let absolutePath = '';
-        if (pathBrowser.isAbsolute(fileKey)) {
-          absolutePath = pathBrowser.normalize(fileKey);
-        } else {
-          let relativeKey = fileKey;
-          if (relativeKey.startsWith(projFolderName)) {
-            relativeKey = relativeKey
-              .slice(projFolderName.length)
-              .replace(/^[/\\]+/, '');
-          }
-          absolutePath = pathBrowser.normalize(
-            pathBrowser.join(projectPath, relativeKey),
-          );
-        }
-        window.fileAPI
-          .readFileContent(absolutePath)
-          .then((originalContent: string) => {
-            setOriginalFileContent(originalContent);
-            const generatedContent = codeGenState.latestFiles?.[fileKey] || '';
-            setComparisonFileContent(generatedContent);
-            setShowCodeViewer(true);
-          })
-          .catch((err: any) =>
-            console.error('Error auto-loading comparison file:', err),
-          );
-      }
+      loadFirstComparisonFile();
     }
-  }, [projectPath, codeGenState.latestFiles, showCodeViewer]);
+  }, [
+    projectPath,
+    codeGenState.latestFiles,
+    showCodeViewer,
+    preventComparisonAutoLoad,
+    loadFirstComparisonFile,
+  ]);
+
+  async function handleEditFirstItem() {
+    if (!orgSlug || !projectId || !id) return;
+    try {
+      setShowCodeViewer(false);
+      setGeneratedFileSet(null);
+      setComparisonFileContent(undefined);
+      setOriginalFileContent('');
+      setPreventComparisonAutoLoad(true);
+
+      if (projectPath) {
+        const tree = await window.fileAPI.getFileTree(projectPath);
+        setBaseFileSet({
+          id: 'base',
+          name: projectPath.split(/[\\/]/).pop() || 'Project',
+          tree,
+          visible: true,
+        });
+      }
+
+      if (workItem?.sourceFiles && projectPath) {
+        const checkedPaths = getCheckedPaths(workItem.sourceFiles, projectPath);
+        setDefaultCheckedKeys(checkedPaths);
+
+        const filesContent = await Promise.all(
+          checkedPaths.map(async (fp) => {
+            const content = await window.fileAPI.readFileContent(fp as string);
+            return { fp, content };
+          }),
+        );
+        const selectedFilesMap: Record<string, string> = {};
+        filesContent.forEach(({ fp, content }) => {
+          selectedFilesMap[fp as string] = content;
+        });
+        setSelectedFiles(selectedFilesMap);
+      }
+
+      if (bigTaskDescRef.current && workItem) {
+        bigTaskDescRef.current.setContent(workItem.description);
+      }
+      setBigTaskDescription(workItem?.description || '');
+    } catch (error: any) {
+      console.error('Failed to reset the code generation:', error);
+      notification.error({
+        message: 'Reset failed',
+        description: error.message || 'Error resetting code generation.',
+      });
+    }
+  }
 
   let fileTreeProps;
-  if (
-    codeGenState.latestFiles &&
-    Object.keys(codeGenState.latestFiles).length > 0
-  ) {
+  if (showCodeViewer) {
     if (baseFileSet && generatedFileSet) {
       fileTreeProps = { fileSets: [baseFileSet, generatedFileSet] };
+    } else if (baseFileSet) {
+      fileTreeProps = { fileSets: [baseFileSet] };
     } else {
       fileTreeProps = {};
     }
@@ -646,34 +830,14 @@ export function PromptGenerator() {
       Object.keys(codeGenState.latestFiles).length > 0) ||
     false;
 
-  async function handleEditFirstItem() {
-    if (!orgSlug || !projectId || !id) return;
+  const disableSendBigTaskDescription =
+    (bigTaskDescription.trim() || '') === '' ||
+    (!showCodeViewer && Object.keys(selectedFiles).length === 0);
 
-    try {
-      setIsLoading(true);
-      dispatch(clearCodeGeneration());
-
-      await dispatch(clearCodeSessionThunk({ orgSlug, projectId, id }));
-
-      setShowCodeViewer(false);
-      setHistoryOptions([]);
-      setBaseFileSet(null);
-      setGeneratedFileSet(null);
-
-      setIsLoading(false);
-
-      notification.info({
-        message: 'Work item reset',
-        description: 'You can now start a fresh code generation from scratch.',
-      });
-    } catch (error: any) {
-      console.error('Failed to reset the code generation:', error);
-      notification.error({
-        message: 'Reset failed',
-        description: error.message || 'Error resetting code generation.',
-      });
-    }
-  }
+  const disableSmallTaskDescription = !!(
+    (smallTaskDescRef.current && smallTaskDescription.trim() === '') ||
+    ''
+  );
 
   return (
     <Layout className={styles.promptGeneratorContainer}>
@@ -700,7 +864,9 @@ export function PromptGenerator() {
               bigTaskDescRef={bigTaskDescRef}
               dropdownRef={dropdownRef}
               handleSend={handleSend}
-              updateWorkItemDebounced={() => {
+              disableSend={disableSendBigTaskDescription}
+              updateWorkItemDebounced={(value) => {
+                setBigTaskDescription(value);
                 setHasUserModified(true);
                 updateWorkItemDebounced();
               }}
@@ -711,9 +877,11 @@ export function PromptGenerator() {
         <TaskDescriptionFooter
           ref={smallTaskDescRef}
           dropdownRef={dropdownRef}
-          codeGenExists={codeGenExists}
+          codeGenExists={showCodeViewer && codeGenExists}
           handleSend={handleSend}
-          updateWorkItemDebounced={() => {
+          disableSend={disableSmallTaskDescription}
+          updateWorkItemDebounced={(value) => {
+            setSmalTaskDescription(value);
             setHasUserModified(true);
             updateWorkItemDebounced();
           }}

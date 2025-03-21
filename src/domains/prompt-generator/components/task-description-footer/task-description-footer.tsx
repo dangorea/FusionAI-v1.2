@@ -8,7 +8,8 @@ interface TaskDescriptionFooterProps {
   codeGenExists: boolean;
   dropdownRef: Ref<DropdownRef>;
   handleSend: () => void;
-  updateWorkItemDebounced: () => void;
+  updateWorkItemDebounced: (value: string) => void;
+  disableSend: boolean;
 }
 
 export const TaskDescriptionFooter = React.forwardRef<
@@ -16,7 +17,13 @@ export const TaskDescriptionFooter = React.forwardRef<
   TaskDescriptionFooterProps
 >(
   (
-    { codeGenExists, handleSend, updateWorkItemDebounced, dropdownRef },
+    {
+      codeGenExists,
+      handleSend,
+      updateWorkItemDebounced,
+      dropdownRef,
+      disableSend,
+    },
     ref,
   ) => {
     return (
@@ -26,8 +33,9 @@ export const TaskDescriptionFooter = React.forwardRef<
           dropdownRef={dropdownRef}
           onSend={handleSend}
           mode="small"
-          onContentChange={() => {
-            updateWorkItemDebounced();
+          disableSend={disableSend}
+          onContentChange={(value) => {
+            updateWorkItemDebounced(value);
           }}
           style={{
             visibility: codeGenExists ? 'visible' : 'hidden',

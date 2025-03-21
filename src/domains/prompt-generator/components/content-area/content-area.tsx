@@ -13,10 +13,11 @@ interface ContentAreaProps {
   originalFileContent: string;
   comparisonFileContent?: string;
   bigTaskDescRef: RefObject<any>;
-  dropdownRef?: Ref<DropdownRef>;
   handleSend: () => void;
+  disableSend: boolean;
+  updateWorkItemDebounced: (value: string) => void;
+  dropdownRef?: Ref<DropdownRef>;
   onDropdownChange?: () => string;
-  updateWorkItemDebounced: () => void;
   onClosePreview?: () => void;
 }
 
@@ -30,6 +31,7 @@ export function ContentArea({
   onDropdownChange,
   dropdownRef,
   onClosePreview,
+  disableSend,
 }: ContentAreaProps) {
   const showCloseViewerButton =
     originalFileContent !== undefined && !comparisonFileContent;
@@ -47,8 +49,9 @@ export function ContentArea({
             onSend={handleSend}
             onDropdownChange={onDropdownChange}
             mode="big"
-            onContentChange={() => {
-              updateWorkItemDebounced();
+            disableSend={disableSend}
+            onContentChange={(value) => {
+              updateWorkItemDebounced(value);
             }}
           />
         </div>

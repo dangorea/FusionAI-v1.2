@@ -21,6 +21,7 @@ export interface TaskDescriptionInputProps {
   style?: CSSProperties;
   dropdownRef?: Ref<DropdownRef>;
   onDropdownChange?: () => string;
+  disableSend?: boolean;
 }
 
 export interface TaskDescriptionInputRef {
@@ -57,13 +58,17 @@ export const TaskDescription = forwardRef(
       return () => observer.disconnect();
     }, [preview, mode]);
 
-    useImperativeHandle(ref, () => ({
-      addExtraContent: (extra: string) => {
-        setContent((prev) => (prev ? `${prev}${extra}` : extra));
-      },
-      getContent: () => content,
-      setContent: (value: string) => setContent(value),
-    }));
+    useImperativeHandle(
+      ref,
+      () => ({
+        addExtraContent: (extra: string) => {
+          setContent((prev) => (prev ? `${prev}${extra}` : extra));
+        },
+        getContent: () => content,
+        setContent: (value: string) => setContent(value),
+      }),
+      [content],
+    );
 
     const handleSend = () => {
       if (onSend) {
@@ -162,6 +167,7 @@ export const TaskDescription = forwardRef(
                   shape="circle"
                   icon={<SendOutlined />}
                   onClick={handleSend}
+                  disabled={props.disableSend}
                   style={{ marginLeft: 8 }}
                 />
               </div>
@@ -248,6 +254,7 @@ export const TaskDescription = forwardRef(
                 shape="circle"
                 icon={<SendOutlined />}
                 onClick={handleSend}
+                disabled={props.disableSend}
                 style={{ marginLeft: 8 }}
               />
             </div>

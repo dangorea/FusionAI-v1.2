@@ -42,6 +42,7 @@ import {
   buildIterationsHistory,
   extractIterationLabel,
 } from '../../../utils/iteration';
+import { clearLocalCodeGenerationId } from '../../../lib/redux/feature/work-items/reducer';
 
 export function removeAllFileBlocks(text: string): string {
   const pattern = /\n\n=== File: .*? ===\n[\s\S]*?\n=== EndFile: .*? ===\n\n/g;
@@ -454,18 +455,20 @@ export function PromptGenerator() {
   );
 
   useEffect(() => {
-    if (hasUserModified) {
+    if (hasUserModified && !showCodeViewer) {
       updateWorkItemDebounced();
+    } else {
+      updateWorkItemDebounced.cancel();
     }
     return () => updateWorkItemDebounced.cancel();
-  }, [hasUserModified, updateWorkItemDebounced]);
+  }, [hasUserModified, updateWorkItemDebounced, showCodeViewer]);
 
   const handleSend = useCallback(async () => {
     setHasUserModified(true);
     if (!orgSlug || !projectId || !id) return;
     setIsLoading(true);
     try {
-      if (codeGenState.result) {
+      if (codeGenState.result && !preventComparisonAutoLoad) {
         const prompt =
           smallTaskDescRef.current?.getContent() ||
           bigTaskDescRef.current?.getContent() ||
@@ -486,13 +489,24 @@ export function PromptGenerator() {
           setShowCodeViewer(true);
         }
       } else {
-        await dispatch(updateCodeSession({ orgSlug, projectId, id }));
+        updateWorkItemDebounced.cancel();
+        setHasUserModified(false);
+
+        if (workItem && workItem.codeGenerationId) {
+          dispatch(clearLocalCodeGenerationId(id));
+        }
+
+        const updateAction = await dispatch(
+          updateCodeSession({ orgSlug, projectId, id }),
+        );
+        const updatedWorkItem = updateAction.payload as WorkItemType;
+
         if (
-          workItem &&
-          workItem.codeGenerationId &&
-          workItem.sourceFiles?.length
+          updatedWorkItem &&
+          updatedWorkItem.codeGenerationId &&
+          updatedWorkItem.sourceFiles?.length
         ) {
-          const firstFilePath = workItem.sourceFiles[0].path;
+          const firstFilePath = updatedWorkItem.sourceFiles[0].path;
           const normalizedFilePath = getAbsoluteFilePath(
             firstFilePath,
             projectPath,
@@ -500,7 +514,7 @@ export function PromptGenerator() {
           const original =
             await window.fileAPI.readFileContent(normalizedFilePath);
           setOriginalFileContent(original);
-          await dispatch(fetchCodeGeneration(workItem.codeGenerationId));
+          setPreventComparisonAutoLoad(false);
           setShowCodeViewer(true);
         }
       }
@@ -513,6 +527,8 @@ export function PromptGenerator() {
     } finally {
       setIsLoading(false);
       setBigTaskDescription('');
+      updateWorkItemDebounced.cancel();
+      setHasUserModified(false);
     }
   }, [
     orgSlug,
@@ -523,6 +539,8 @@ export function PromptGenerator() {
     projectPath,
     codeGenState.result,
     codeGenState.selectedIterationId,
+    preventComparisonAutoLoad,
+    updateWorkItemDebounced,
   ]);
 
   const handleApplyChanges = useCallback(async () => {
@@ -882,8 +900,6 @@ export function PromptGenerator() {
           disableSend={disableSmallTaskDescription}
           updateWorkItemDebounced={(value) => {
             setSmalTaskDescription(value);
-            setHasUserModified(true);
-            updateWorkItemDebounced();
           }}
         />
       </Layout>

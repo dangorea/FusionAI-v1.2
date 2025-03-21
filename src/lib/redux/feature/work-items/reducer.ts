@@ -24,6 +24,13 @@ const workItemsSlice = createSlice({
       state.selectedWorkItem = action.payload;
     },
     setWorkItems: workItemsAdapter.setAll,
+    clearLocalCodeGenerationId(state, action: PayloadAction<string>) {
+      const id = action.payload;
+      const workItem = state.entities[id];
+      if (workItem) {
+        state.entities[id] = { ...workItem, codeGenerationId: undefined };
+      }
+    },
   },
   extraReducers: (builder) => {
     builder.addCase(loadWorkItemsThunk.fulfilled, (state, action) => {
@@ -47,5 +54,6 @@ const workItemsSlice = createSlice({
   },
 });
 
-export const { setSelectedWorkItem, setWorkItems } = workItemsSlice.actions;
+export const { setSelectedWorkItem, setWorkItems, clearLocalCodeGenerationId } =
+  workItemsSlice.actions;
 export default workItemsSlice.reducer;

@@ -90,7 +90,7 @@
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@electron/notarize": "^2.3.2",
     "@reduxjs/toolkit": "^2.6.0",
-    "antd": "^5.24.3",
+    "antd": "^5.24.4",
     "axios": "^1.7.9",
     "chokidar": "^4.0.3",
     "crypto-js": "^4.2.0",

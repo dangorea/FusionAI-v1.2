@@ -2,7 +2,7 @@ import React from 'react';
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import { Button } from 'antd';
 import type { ListOption } from '../../../../components';
-import { ListBuilder } from '../../../../components';
+import { ListBuilder, SlidePanel } from '../../../../components';
 import styles from './history-panel.module.scss';
 
 interface HistoryPanelProps {
@@ -47,7 +47,7 @@ export function HistoryPanel({
     return opt;
   });
 
-  return (
+  const panelContent = (
     <div className={styles['history-container']}>
       <ListBuilder
         headerTitle="History"
@@ -58,5 +58,11 @@ export function HistoryPanel({
         selectionType="single"
       />
     </div>
+  );
+
+  return (
+    <SlidePanel direction="right" panelWidth="10%" defaultOpen>
+      {panelContent}
+    </SlidePanel>
   );
 }

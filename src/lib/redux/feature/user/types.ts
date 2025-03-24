@@ -1,12 +1,19 @@
-import type { EntityId } from '@reduxjs/toolkit';
-
-export interface OrganizationManagementDataType {
-  userId: string;
-  roles: string[];
+export interface User {
+  auth0Id: string;
+  email: string;
+  emailVerified: boolean;
+  givenName: string;
+  familyName: string;
+  fullName: string;
+  nickname: string;
+  profilePicture: string;
+  lastUpdated?: Date;
+  isOnboarded: boolean;
+  onboardingDetails: Record<string, any>;
+  invitationStatus?: string;
+  invitedBy?: string;
 }
 
-export interface OrgManagementState {
-  ids: EntityId[];
-  entities: Record<string, OrganizationManagementDataType>;
-  selectedManagement: string | null;
+export interface UserState {
+  user: User | null;
 }

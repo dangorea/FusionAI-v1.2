@@ -2,7 +2,7 @@ import type { EntityId } from '@reduxjs/toolkit';
 import { createEntityAdapter } from '@reduxjs/toolkit';
 import type { OrganizationManagementDataType } from './types';
 
-export const userAdapter = createEntityAdapter<
+export const organizationManagementAdapter = createEntityAdapter<
   OrganizationManagementDataType,
   EntityId
 >({

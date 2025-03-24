@@ -10,10 +10,12 @@ import {
 } from '../../../utils/auth';
 import styles from './login-page.module.scss';
 import { setAuthToken } from '../../../services/api';
+import { setUser } from '../../../lib/redux/feature/user/reducer';
+import { registerUser } from '../../../api/users';
 
 const { Title } = Typography;
 
-export function Login() {
+export default function Login() {
   const [status, setStatus] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const dispatch = useAppDispatch();
@@ -95,6 +97,15 @@ export function Login() {
       }
 
       const tokenData = await response.json();
+
+      const userRegisterResponse = await registerUser(tokenData);
+
+      if (!userRegisterResponse) {
+        throw new Error('Failed to register user');
+      }
+
+      // Dispatch the user info to Redux
+      dispatch(setUser(userRegisterResponse));
 
       localStorage.setItem('access_token', tokenData.access_token || '');
 

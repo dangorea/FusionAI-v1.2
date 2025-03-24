@@ -1,45 +1,36 @@
-import type { PayloadAction } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
-import type {
-  OrganizationManagementDataType,
-  OrgManagementState,
-} from './types';
-import { fetchOrganizationManagements } from './thunk';
-import { userAdapter } from './adapter';
-import { USER_REDUCER_NAME } from '../../reducer-constant';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import type { User, UserState } from './types';
+import { fetchUser } from './thunk';
 
-const initialState: OrgManagementState = userAdapter.getInitialState({
-  selectedManagement: null,
-});
+const initialState: UserState = {
+  user: null,
+};
 
 const userSlice = createSlice({
-  name: USER_REDUCER_NAME,
+  name: 'user',
   initialState,
   reducers: {
-    setSelectedManagement(
-      state,
-      action: PayloadAction<OrganizationManagementDataType | null>,
-    ) {
-      state.selectedManagement = action.payload ? action.payload.userId : null;
+    setUser(state, action: PayloadAction<User>) {
+      state.user = action.payload;
     },
-    addOrganizationManagement: userAdapter.addOne,
-    setOrganizationManagements: userAdapter.setAll,
-    editOrganizationManagement: userAdapter.upsertOne,
-    deleteOrganizationManagement: userAdapter.removeOne,
+    clearUser(state) {
+      state.user = null;
+    },
   },
   extraReducers: (builder) => {
-    builder.addCase(fetchOrganizationManagements.fulfilled, (state, action) => {
-      userAdapter.setAll(state, action.payload);
+    builder.addCase(
+      fetchUser.fulfilled,
+      (state, action: PayloadAction<User>) => {
+        state.user = action.payload;
+      },
+    );
+    builder.addCase(fetchUser.rejected, (state) => {
+      // Handle errors as needed, e.g., clear user state or show an error message
+      state.user = null;
     });
   },
 });
 
-export const {
-  setSelectedManagement,
-  addOrganizationManagement,
-  setOrganizationManagements,
-  editOrganizationManagement,
-  deleteOrganizationManagement,
-} = userSlice.actions;
-
+export const { setUser, clearUser } = userSlice.actions;
 export default userSlice.reducer;

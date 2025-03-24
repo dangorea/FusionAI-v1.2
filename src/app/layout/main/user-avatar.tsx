@@ -1,21 +1,21 @@
+import React from 'react';
 import { Avatar, message, Space, Tooltip, Typography } from 'antd';
 import { CopyOutlined } from '@ant-design/icons';
-import { jwtDecode } from 'jwt-decode';
-import type { User } from '../../../types/common';
+import { useAppSelector } from '../../../lib/redux/hook';
+import { selectCurrentUser } from '../../../lib/redux/feature/user/selectors';
 
 const { Text } = Typography;
 
 function UserAvatar() {
-  const idToken = localStorage.getItem('id_token');
-  const user = idToken ? (jwtDecode(idToken) as User) : null;
+  // Get the current user from Redux
+  const user = useAppSelector(selectCurrentUser);
 
   const handleCopyId = () => {
-    if (user?.sub) {
+    if (user?.auth0Id) {
       navigator.clipboard
-        .writeText(user.sub)
+        .writeText(user.auth0Id)
         .then(() => {
           message.success('User ID copied to clipboard!');
-          return true;
         })
         .catch(() => {
           message.error('Failed to copy User ID');
@@ -25,7 +25,7 @@ function UserAvatar() {
 
   return (
     <Space>
-      <Avatar src={user?.picture} alt={user?.name} />
+      <Avatar src={user?.profilePicture} alt={user?.fullName} />
       <Tooltip
         title={
           <Space>
@@ -44,7 +44,7 @@ function UserAvatar() {
         }}
       >
         <span style={{ marginRight: '5px', cursor: 'pointer' }}>
-          {user?.name}
+          {user?.fullName}
         </span>
       </Tooltip>
     </Space>

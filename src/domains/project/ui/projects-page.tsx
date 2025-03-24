@@ -23,7 +23,7 @@ export function Projects() {
   const [selectedProjects, setSelectedProjects] = useState<ProjectType[]>([]);
 
   const handleAddProject = async (
-    newProject: Pick<ProjectType, 'title' | 'details'>,
+    newProject: Pick<ProjectType, 'name' | 'description'>,
   ) => {
     try {
       if (!org?.slug) throw new Error('No organization selected');
@@ -48,7 +48,7 @@ export function Projects() {
   };
 
   const handleEditProject = async (
-    updatedProject: Pick<ProjectType, 'id' | 'title' | 'details'>,
+    updatedProject: Pick<ProjectType, 'id' | 'name' | 'description'>,
   ) => {
     try {
       if (!org?.slug) throw new Error('No organization selected');

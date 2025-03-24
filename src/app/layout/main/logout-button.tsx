@@ -5,6 +5,7 @@ import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import { clearToken } from '../../../lib/redux/feature/auth/reducer';
 import index from '../../../services/api';
 import { getToken } from '../../../lib/redux/feature/auth/selectors';
+import { clearUser } from '../../../lib/redux/feature/user/reducer';
 
 function LogoutButton() {
   const token = useAppSelector(getToken);
@@ -16,6 +17,7 @@ function LogoutButton() {
     localStorage.removeItem('id_token');
     localStorage.removeItem('refresh_token');
     dispatch(clearToken());
+    dispatch(clearUser());
     delete index.defaults.headers.common.Authorization;
 
     const domain = window.env.AUTH0_DOMAIN;

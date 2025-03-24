@@ -3,7 +3,7 @@ import type { ProjectType } from '../domains/project/model/type';
 
 export const readProjects = async (orgSlug: string): Promise<ProjectType[]> => {
   try {
-    if (!orgSlug || orgSlug === 'default') {
+    if (!orgSlug) {
       return [];
     }
 
@@ -22,7 +22,7 @@ export const readProjects = async (orgSlug: string): Promise<ProjectType[]> => {
 
 export const createProject = async (
   orgSlug: string,
-  newProject: Pick<ProjectType, 'title' | 'details'>,
+  newProject: Pick<ProjectType, 'name' | 'description'>,
 ): Promise<ProjectType> => {
   try {
     const url = `${BASE_URL}/orgs/${orgSlug}/projects`;
@@ -36,7 +36,7 @@ export const createProject = async (
 
 export const updateProject = async (
   orgSlug: string,
-  updatedProject: Pick<ProjectType, 'id' | 'title' | 'details'>,
+  updatedProject: Pick<ProjectType, 'id' | 'name' | 'description'>,
 ): Promise<ProjectType> => {
   try {
     const { id, ...projectWithoutId } = updatedProject;

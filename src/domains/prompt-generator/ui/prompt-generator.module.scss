@@ -2,11 +2,14 @@
   display: flex;
   flex-direction: row;
   justify-content: space-between;
+  width: 100%;
   height: 94vh;
   background: #fff;
 }
 
 .ide-layout {
+  flex: 1;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   gap: 10px;

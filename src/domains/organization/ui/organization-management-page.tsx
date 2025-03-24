@@ -2,15 +2,15 @@ import React, { useState } from 'react';
 import { notification } from 'antd';
 import styles from './organization-management.module.scss';
 import { NOTIFICATION_DURATION_SHORT } from '../../../utils/notifications';
-import type { OrganizationManagementDataType } from '../../../lib/redux/feature/user/types';
+import type { OrganizationManagementDataType } from '../../../lib/redux/feature/organization-management/types';
 import {
   addOrganizationManagement,
   deleteOrganizationManagement,
   editOrganizationManagement,
-} from '../../../lib/redux/feature/user/reducer';
+} from '../../../lib/redux/feature/organization-management/reducer';
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
-import { userAdapter } from '../../../lib/redux/feature/user/adapter';
+import { organizationManagementAdapter } from '../../../lib/redux/feature/organization-management/adapter';
 import type { RootState } from '../../../lib/redux/store';
 import {
   addOrganizationMember,
@@ -26,7 +26,9 @@ export function OrganizationManagement() {
   const dispatch = useAppDispatch();
   const org = useAppSelector(selectSelectedOrganizationEntity);
   const organizationManagements = useAppSelector((state: RootState) =>
-    userAdapter.getSelectors().selectAll(state.user),
+    organizationManagementAdapter
+      .getSelectors()
+      .selectAll(state.organizationManagement),
   );
   const [selectedManagements, setSelectedManagements] = useState<
     OrganizationManagementDataType[]

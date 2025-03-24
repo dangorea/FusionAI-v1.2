@@ -8,9 +8,11 @@ import { DirectorySelector } from '../../../../components';
 
 interface ProjectModalProps {
   selectedProjects: ProjectType[];
-  onAdd: (newProject: Pick<ProjectType, 'title' | 'details'>) => Promise<void>;
+  onAdd: (
+    newProject: Pick<ProjectType, 'name' | 'description'>,
+  ) => Promise<void>;
   onEdit: (
-    updatedProject: Pick<ProjectType, 'id' | 'title' | 'details'>,
+    updatedProject: Pick<ProjectType, 'id' | 'name' | 'description'>,
   ) => Promise<void>;
   onDelete: () => Promise<void>;
 }
@@ -23,12 +25,12 @@ export function ProjectModal({
 }: ProjectModalProps) {
   const [open, setOpen] = useState(false);
 
-  const handleAdd = async (data: { title: string; details: string }) => {
+  const handleAdd = async (data: Pick<ProjectType, 'name' | 'description'>) => {
     await onAdd(data);
     setOpen(false);
   };
 
-  const handleEdit = (data: { title: string; details: string }) => {
+  const handleEdit = (data: Pick<ProjectType, 'name' | 'description'>) => {
     if (selectedProjects.length > 0) {
       const projectToEdit = selectedProjects[0];
       onEdit({ ...data, id: projectToEdit.id });

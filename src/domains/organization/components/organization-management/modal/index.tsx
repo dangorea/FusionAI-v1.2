@@ -3,7 +3,7 @@ import { Button, Modal } from 'antd';
 import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { OrganizationManagementModalForm } from './form';
 import styles from './organization-management-modal.module.scss';
-import type { OrganizationManagementDataType } from '../../../../../lib/redux/feature/user/types';
+import type { OrganizationManagementDataType } from '../../../../../lib/redux/feature/organization-management/types';
 
 interface OrganizationManagementModalProps {
   selectedManagements: OrganizationManagementDataType[];

@@ -3,7 +3,7 @@ import { Input, Table } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
 import type { InputRef } from 'antd/es/input';
 import type { FilterDropdownProps } from 'antd/es/table/interface';
-import type { OrganizationManagementDataType } from '../../../../../lib/redux/feature/user/types';
+import type { OrganizationManagementDataType } from '../../../../../lib/redux/feature/organization-management/types';
 
 interface OrganizationManagementTableProps {
   organizationManagements: OrganizationManagementDataType[];

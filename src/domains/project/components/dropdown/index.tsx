@@ -1,6 +1,6 @@
 import { DownOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Dropdown, Space } from 'antd';
+import { Button, Dropdown, Space } from 'antd';
 import { useCallback, useEffect, useState } from 'react';
 import { LocalStorageKeys } from '../../../../utils/localStorageKeys';
 import { useAppDispatch, useAppSelector } from '../../../../lib/redux/hook';
@@ -66,13 +66,13 @@ export function ProjectsDropdown({ value, onChange }: ProjectsDropdownProps) {
   };
 
   const items: MenuProps['items'] = projects.map((project) => ({
-    label: project.title,
+    label: project.name,
     key: project.id,
   }));
 
   const selectedProjectTitle =
     currentValue &&
-    projects.find((project) => project.id === currentValue)?.title;
+    projects.find((project) => project.id === currentValue)?.name;
 
   return (
     <Dropdown
@@ -84,12 +84,21 @@ export function ProjectsDropdown({ value, onChange }: ProjectsDropdownProps) {
       }}
       trigger={['click']}
     >
-      <a onClick={(e) => e.preventDefault()}>
+      <Button
+        type="text"
+        aria-label="Select a project"
+        style={{
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+          padding: 0,
+        }}
+      >
         <Space>
           {selectedProjectTitle || 'Select a Project'}
           <DownOutlined />
         </Space>
-      </a>
+      </Button>
     </Dropdown>
   );
 }

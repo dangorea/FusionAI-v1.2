@@ -1,5 +1,5 @@
 import instance, { BASE_URL } from '../services/api';
-import type { OrganizationManagementDataType } from '../lib/redux/feature/user/types';
+import type { OrganizationManagementDataType } from '../lib/redux/feature/organization-management/types';
 
 const ORGANIZATION_MANAGEMENT_URL = `${BASE_URL}/orgs`;
 

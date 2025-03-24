@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Button, Form, Input, Select } from 'antd';
 import styles from './organization-management-modal-form.module.scss';
-import type { OrganizationManagementDataType } from '../../../../../../lib/redux/feature/user/types';
+import type { OrganizationManagementDataType } from '../../../../../../lib/redux/feature/organization-management/types';
 
 interface OrganizationManagementModalFormProps {
   onSubmit: (data: OrganizationManagementDataType) => void;

@@ -12,6 +12,7 @@ import { createWorkItemThunk } from '../../../lib/redux/feature/work-items/thunk
 import { NOTIFICATION_DURATION_LONG } from '../../../utils/notifications';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
 import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
+import { fetchUser } from '../../../lib/redux/feature/user/thunk';
 
 const { Content } = Layout;
 
@@ -24,6 +25,10 @@ export default function MainLayout() {
 
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    dispatch(fetchUser());
+  }, [dispatch]);
 
   useEffect(() => {
     if (location.pathname === '/') {

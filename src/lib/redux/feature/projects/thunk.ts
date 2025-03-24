@@ -37,7 +37,7 @@ export const createProjectThunk = createAsyncThunk(
       newProject,
     }: {
       orgSlug: string;
-      newProject: Pick<ProjectType, 'title' | 'details'>;
+      newProject: Pick<ProjectType, 'name' | 'description'>;
     },
     { dispatch, rejectWithValue },
   ) => {
@@ -47,7 +47,7 @@ export const createProjectThunk = createAsyncThunk(
 
       notification.success({
         message: 'Project Added',
-        description: `Project "${createdProject.title}" created successfully!`,
+        description: `Project "${createdProject.name}" created successfully!`,
       });
 
       return createdProject;
@@ -69,7 +69,7 @@ export const updateProjectThunk = createAsyncThunk(
       updatedProject,
     }: {
       orgSlug: string;
-      updatedProject: Pick<ProjectType, 'id' | 'title' | 'details'>;
+      updatedProject: Pick<ProjectType, 'id' | 'name' | 'description'>;
     },
     { dispatch, rejectWithValue },
   ) => {
@@ -83,7 +83,7 @@ export const updateProjectThunk = createAsyncThunk(
 
       notification.success({
         message: 'Project Updated',
-        description: `Project "${response.title}" updated successfully!`,
+        description: `Project "${response.name}" updated successfully!`,
       });
 
       return response;

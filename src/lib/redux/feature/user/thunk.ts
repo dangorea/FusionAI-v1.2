@@ -1,21 +1,15 @@
+/* eslint-disable import/prefer-default-export */
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { notification } from 'antd';
-import { fetchOrganizationMembers } from '../../../../api/organization-management';
+import { getCurrentUser } from '../../../../api/users';
 
-export const fetchOrganizationManagements = createAsyncThunk(
-  'orgManagement/fetchOrganizationManagements',
-  async (slug: string, { rejectWithValue }) => {
+export const fetchUser = createAsyncThunk(
+  'user/fetchUser',
+  async (_, { rejectWithValue }) => {
     try {
-      const managements = await fetchOrganizationMembers(slug);
-      return managements;
+      const response = await getCurrentUser();
+      return response;
     } catch (error: any) {
-      console.error('[Thunk] Failed to fetch organization managements:', error);
-      notification.error({
-        message: 'Failed to Fetch Organization Managements',
-        description:
-          'There was an issue fetching organization managements from the server.',
-      });
-      return rejectWithValue(error);
+      return rejectWithValue(error.response?.data || error.message);
     }
   },
 );

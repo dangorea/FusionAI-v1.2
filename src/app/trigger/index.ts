@@ -5,7 +5,7 @@ import { selectSelectedOrganizationEntity } from '../../lib/redux/feature/organi
 import { fetchOrganizationBlocks } from '../../lib/redux/feature/organization/thunk';
 import { fetchProjects } from '../../lib/redux/feature/projects/thunk';
 import { fetchRules } from '../../lib/redux/feature/rules/thunk';
-import { fetchOrganizationManagements } from '../../lib/redux/feature/user/thunk';
+import { fetchOrganizationManagements } from '../../lib/redux/feature/organization-management/thunk';
 import { fetchProviders } from '../../lib/redux/feature/config/thunk';
 
 type Props = {

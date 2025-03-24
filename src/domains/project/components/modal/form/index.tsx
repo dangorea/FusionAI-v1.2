@@ -4,7 +4,7 @@ import styles from './project-modal-form.module.scss';
 import type { ProjectType } from '../../../model/type';
 
 interface ProjectModalFormProps {
-  onSubmit: (data: { title: string; details: string }) => void;
+  onSubmit: (data: { name: string; description: string }) => void;
   project: ProjectType;
 }
 
@@ -14,18 +14,18 @@ export function ProjectModalForm({ onSubmit, project }: ProjectModalFormProps) {
   useEffect(() => {
     if (project) {
       form.setFieldsValue({
-        title: project.title,
-        details: project.details,
+        name: project.name,
+        description: project.description,
       });
     } else {
       form.resetFields();
     }
   }, [project, form]);
 
-  const handleFinish = (values: { title: string; details: string }) => {
+  const handleFinish = (values: { name: string; description: string }) => {
     onSubmit({
-      title: values.title,
-      details: values.details,
+      name: values.name,
+      description: values.description,
     });
     form.resetFields();
   };
@@ -39,14 +39,14 @@ export function ProjectModalForm({ onSubmit, project }: ProjectModalFormProps) {
     >
       <Form.Item
         label="Title"
-        name="title"
+        name="name"
         rules={[{ required: true, message: 'Please input the title!' }]}
       >
         <Input placeholder="Your project's title..." />
       </Form.Item>
       <Form.Item
         label="Content"
-        name="details"
+        name="description"
         rules={[{ required: true, message: 'Please input the content!' }]}
       >
         <Input.TextArea

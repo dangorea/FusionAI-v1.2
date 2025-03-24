@@ -1,3 +1,4 @@
+import type { Key } from 'react';
 import React, { useRef, useState } from 'react';
 import { SearchOutlined } from '@ant-design/icons';
 import { Input, Table } from 'antd';
@@ -75,21 +76,28 @@ export function ProjectTable({
         }}
       />
     ),
-    onFilter: (value: string, record: ProjectType) => {
+    onFilter: (value: boolean | Key, record: ProjectType) => {
+      if (typeof value === 'boolean') {
+        // Handle or ignore boolean values as needed
+        return false;
+      }
       const fieldValue = record[dataIndex];
       return fieldValue
-        ? fieldValue.toString().toLowerCase().includes(value.toLowerCase())
+        ? fieldValue
+            .toString()
+            .toLowerCase()
+            .includes(value.toString().toLowerCase())
         : false;
     },
   });
 
   const filteredData = (projectBlocks || []).filter((item) => {
-    const title = item.title || '';
-    const details = item.details || '';
+    const name = item.name || '';
+    const description = item.description || '';
     const organization = item.orgId || '';
     return (
-      title.toLowerCase().includes(searchText.toLowerCase()) ||
-      details.toLowerCase().includes(searchText.toLowerCase()) ||
+      name.toLowerCase().includes(searchText.toLowerCase()) ||
+      description.toLowerCase().includes(searchText.toLowerCase()) ||
       organization.toLowerCase().includes(searchText.toLowerCase())
     );
   });
@@ -97,10 +105,10 @@ export function ProjectTable({
   const columns = [
     {
       title: 'Title',
-      dataIndex: 'title',
-      key: 'title',
+      dataIndex: 'name',
+      key: 'name',
       width: '20%',
-      ...getColumnSearchProps('title'),
+      ...getColumnSearchProps('name'),
     },
     {
       title: 'Organization',
@@ -109,9 +117,9 @@ export function ProjectTable({
       width: '20%',
     },
     {
-      title: 'Details',
-      dataIndex: 'details',
-      key: 'details',
+      title: 'Description',
+      dataIndex: 'description',
+      key: 'description',
       render: (text: string, record: ProjectType) => {
         const isExpanded = expandedRowKeys.includes(record.id);
         const contentPreview =

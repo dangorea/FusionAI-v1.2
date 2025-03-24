@@ -1,7 +1,7 @@
 import React from 'react';
 import { createMemoryRouter } from 'react-router';
 import MainLayout from '../layout/main';
-import { Login } from '../../domains/auth/ui';
+import Login from '../../domains/auth/ui/login';
 import {
   Organization,
   OrganizationManagement,

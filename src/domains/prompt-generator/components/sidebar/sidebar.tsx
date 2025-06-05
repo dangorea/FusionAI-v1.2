@@ -1,8 +1,8 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Button, Layout } from 'antd';
-import { PlusSquareFilled } from '@ant-design/icons';
-import { FileTree, ListBuilder } from '../../../../components';
+import { FileTree } from '../../../../components';
 import styles from './sidebar.module.scss';
+import { useResizablePanel } from '../../../../hooks/useResizablePanel';
 
 const { Sider } = Layout;
 
@@ -12,8 +12,7 @@ interface SidebarProps {
   handleMultipleSelect: (filePaths: string[]) => void;
   handleSingleSelect: (filePath: string) => void;
   handleApplyChanges: () => void;
-  rules: any[];
-  setSelectedRules: React.Dispatch<React.SetStateAction<string[]>>;
+  sidebarSelectedFiles: Record<string, string>;
 }
 
 export function Sidebar({
@@ -22,11 +21,23 @@ export function Sidebar({
   handleMultipleSelect,
   handleSingleSelect,
   handleApplyChanges,
-  rules,
-  setSelectedRules,
+  sidebarSelectedFiles,
 }: SidebarProps) {
+  const { panelRef, panelWidth, startResizing } = useResizablePanel({
+    direction: 'left',
+  });
+
+  const disableApplyButton = useMemo(
+    () => Object.keys(sidebarSelectedFiles).length === 0,
+    [sidebarSelectedFiles],
+  );
+
+  if (!codeGenExists) {
+    return null;
+  }
+
   return (
-    <Sider width={360} className={styles.sider}>
+    <Sider ref={panelRef} width={panelWidth} className={styles.sider}>
       <div className={styles.siderInner}>
         <div
           className={
@@ -35,7 +46,7 @@ export function Sidebar({
               : styles.fileTreeContainer
           }
         >
-          <div style={{ maxHeight: '72vh' }}>
+          <div style={{ maxHeight: '92%' }}>
             <FileTree
               {...fileTreeProps}
               onFileSelectionChange={handleMultipleSelect}
@@ -54,44 +65,19 @@ export function Sidebar({
                 block
                 className={styles.applyChangesBtn}
                 onClick={handleApplyChanges}
+                disabled={disableApplyButton}
               >
                 Apply Changes
               </Button>
             </div>
           )}
         </div>
-
-        {!codeGenExists && (
-          <div className={styles.listBuilderContainer}>
-            <ListBuilder
-              headerTitle="Rules"
-              options={rules.map((r) => ({
-                key: r.id,
-                label: r.title,
-                value: r.id,
-              }))}
-              onOptionClick={(opt) => {
-                setSelectedRules((prev) =>
-                  prev.includes(opt.value)
-                    ? prev.filter((id) => id !== opt.value)
-                    : [...prev, opt.value],
-                );
-              }}
-              selectionType="multiple"
-            />
-            <div className={styles.buttonContainer}>
-              <Button
-                block
-                className={styles.addPromptBtn}
-                onClick={() => console.log('Add new text prompt clicked')}
-              >
-                <PlusSquareFilled />
-                New Rule
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
+      <div
+        role="presentation"
+        className={styles.resizer}
+        onMouseDown={startResizing}
+      />
     </Sider>
   );
 }

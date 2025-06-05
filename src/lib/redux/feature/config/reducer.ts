@@ -23,8 +23,16 @@ export const config = createSlice({
     builder.addCase(fetchProviders.fulfilled, (state, action) => {
       state.provider.options = action.payload;
 
+      // If no provider has been selected yet, use the default provider from the options
       if (!state.provider.selectedProvider) {
-        state.provider.selectedProvider = action.payload[3].id;
+        const defaultProvider = action.payload.find(
+          (provider) => provider.default,
+        );
+        if (defaultProvider) {
+          state.provider.selectedProvider = defaultProvider.id;
+        } else if (action.payload.length > 0) {
+          state.provider.selectedProvider = action.payload[0].id;
+        }
       }
     });
   },

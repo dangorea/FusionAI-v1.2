@@ -3,14 +3,14 @@ import { createSlice } from '@reduxjs/toolkit';
 import type { WorkItemsState } from './types';
 import { workItemsAdapter } from './adapter';
 import {
-  clearCodeSessionThunk,
   createWorkItemThunk,
   deleteWorkItemThunk,
   loadWorkItemsThunk,
-  updateCodeSession,
   updateWorkItemThunk,
 } from './thunk';
+import { executeAICoder } from '../artifacts/thunk';
 import { WORK_ITEMS_REDUCER_NAME } from '../../reducer-constant';
+import type { GenerationType } from '../artifacts/types';
 
 const initialState: WorkItemsState = workItemsAdapter.getInitialState({
   selectedWorkItem: null,
@@ -45,12 +45,13 @@ const workItemsSlice = createSlice({
     builder.addCase(deleteWorkItemThunk.fulfilled, (state, action) => {
       workItemsAdapter.removeOne(state, action.payload);
     });
-    builder.addCase(updateCodeSession.fulfilled, (state, action) => {
-      workItemsAdapter.upsertOne(state, action.payload);
-    });
-    builder.addCase(clearCodeSessionThunk.fulfilled, (state, action) => {
-      workItemsAdapter.upsertOne(state, action.payload);
-    });
+    builder.addCase(
+      executeAICoder.fulfilled,
+      (state, action: PayloadAction<GenerationType>) => {
+        const updatedWorkItem = action.payload.result.workItem;
+        workItemsAdapter.upsertOne(state, updatedWorkItem);
+      },
+    );
   },
 });
 

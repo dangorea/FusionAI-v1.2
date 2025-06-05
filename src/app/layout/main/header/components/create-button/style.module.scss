@@ -1,0 +1,15 @@
+.icon-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 24px;
+  height: 24px;
+  background: linear-gradient(to bottom, #5E6AD2, #0A86CE);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.icon {
+  color: #fff;
+  font-size: 18px;
+}

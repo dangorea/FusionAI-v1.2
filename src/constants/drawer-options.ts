@@ -3,12 +3,14 @@ import {
   FileTextOutlined,
   FundProjectionScreenOutlined,
   OpenAIOutlined,
+  RobotOutlined,
   SettingOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons';
 
 export enum DrawerOption {
-  TextBlocks = 'Rules',
+  Knowledge = 'Knowledge Base',
+  Personalities = 'Personalities',
   Settings = 'Settings',
   Projects = 'Projects',
   WorkItems = 'Work Items',
@@ -18,24 +20,32 @@ export enum DrawerOption {
 
 export const MenuOptions = [
   {
-    icon: ShareAltOutlined,
-    text: DrawerOption.Organizations,
+    icon: OpenAIOutlined,
+    text: DrawerOption.WorkItems
   },
+  {
+    icon: FileTextOutlined,
+    text: DrawerOption.Knowledge,
+  },
+  {
+    icon: RobotOutlined,
+    text: DrawerOption.Personalities,
+  },
+
   {
     icon: FundProjectionScreenOutlined,
     text: DrawerOption.Projects,
   },
   {
-    icon: FileTextOutlined,
-    text: DrawerOption.TextBlocks,
+    icon: ShareAltOutlined,
+    text: DrawerOption.Organizations,
+  },
+  {
+    icon: AuditOutlined,
+    text: DrawerOption.OrganizationManagement,
   },
   {
     icon: SettingOutlined,
     text: DrawerOption.Settings,
-  },
-  { icon: OpenAIOutlined, text: DrawerOption.WorkItems },
-  {
-    icon: AuditOutlined,
-    text: DrawerOption.OrganizationManagement,
   },
 ];

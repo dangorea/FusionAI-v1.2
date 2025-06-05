@@ -1,0 +1,78 @@
+.fileTreePanelContainer {
+  border: 1px solid #D8DBF4 !important;
+  border-top-right-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.fileTreePanelHeader {
+  justify-content: flex-end;
+  border: none;
+  background: #EFF0FB;
+  height: 40px;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.mainContainer {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  min-height: 0;
+}
+
+.fileTreeContainer {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.sectionDescription {
+  font-size: 12px;
+  color: #666666;
+  white-space: nowrap;
+}
+
+.listBuilderHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  justify-self: flex-end;
+  padding: 8px 8px 8px 20px;
+  border-top: 1px solid #EFF0FB;
+  border-bottom: 1px solid #EFF0FB;
+}
+
+.listBuilderContainer {
+  flex: 0 0 auto;
+  overflow-y: auto;
+  min-height: 0;
+
+  .buttonContainer {
+    margin-top: auto;
+    padding: 0 5px;
+    display: flex;
+    justify-content: center;
+
+    button {
+      background: linear-gradient(180deg, #5e6ad2 0%, #0a86ce 100%);
+      color: #eff0fb;
+      justify-content: flex-start;
+      gap: 22px;
+      height: 45px;
+      border-radius: 8px;
+      font-size: 15px;
+    }
+  }
+}
+
+.collapsed {
+  width: 50px;
+}
+
+.expanded {
+  width: 11%;
+}

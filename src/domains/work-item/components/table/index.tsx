@@ -1,13 +1,18 @@
-import React from 'react';
-import { Input, Table } from 'antd';
+import React, { useCallback, useMemo } from 'react';
+import { Table } from 'antd';
 import dayjs from 'dayjs';
+import { useNavigate } from 'react-router';
 import type { WorkItemType } from '../../model/types';
+import { setSelectedWorkItem } from '../../../../lib/redux/feature/work-items/reducer';
+import { useAppDispatch } from '../../../../lib/redux/hook';
+import { CommonTable } from '../../../../components';
+import { CommonSearchBar } from '../../../../components/common-search-bar';
+import './styles.module.scss';
 
 interface WorkItemTableProps {
   workItems: WorkItemType[];
   selectedRowKeys: React.Key[];
   onSelectChange: (selectedKeys: React.Key[]) => void;
-  onRowClick?: (record: WorkItemType) => void;
   currentPage: number;
   pageSize: number;
   total: number;
@@ -15,64 +20,65 @@ interface WorkItemTableProps {
   onSearch?: (value: string) => void;
 }
 
-export function WorkItemTable({
+function WorkItemTable({
   workItems,
   selectedRowKeys,
   onSelectChange,
-  onRowClick,
   currentPage,
   pageSize,
   total,
   onPageChange,
   onSearch,
 }: WorkItemTableProps) {
-  const columns = [
-    {
-      title: 'Name',
-      dataIndex: 'name',
-      key: 'name',
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+
+  const handleRowClick = useCallback(
+    (record: WorkItemType) => {
+      dispatch(setSelectedWorkItem(record.id));
+      navigate(`/prompt-generator/${record.id}`);
     },
-    {
-      title: 'Created',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: '20%',
-      render: (date: string) => dayjs(date).format('YYYY-MM-DD HH:mm'),
-      sorter: (a: any, b: any) =>
-        dayjs(b.createdAt).unix() - dayjs(a.createdAt).unix(),
-      defaultSortOrder: 'descend' as const,
-    },
-  ];
+    [dispatch, navigate],
+  );
+
+  const paginationData = useMemo(
+    () => ({
+      current: currentPage,
+      pageSize,
+      total,
+      onChange: onPageChange,
+    }),
+    [currentPage, onPageChange, pageSize, total],
+  );
 
   return (
     <>
-      <Input.Search
-        placeholder="Search work items..."
-        onSearch={onSearch}
-        style={{ marginBottom: 16 }}
-      />
-      <Table
-        rowSelection={{
-          type: 'checkbox',
-          selectedRowKeys,
-          onChange: onSelectChange,
-        }}
-        columns={columns}
-        dataSource={workItems}
-        rowKey="id"
-        scroll={{ y: 800 }}
-        pagination={{
-          current: currentPage,
-          pageSize,
-          total,
-          onChange: onPageChange,
-        }}
-        style={{ width: '100%' }}
-        onRow={(record) => ({
-          onClick: () => onRowClick?.(record),
-          style: { cursor: 'pointer' },
-        })}
-      />
+      <CommonSearchBar placeholder="Search work items..." onSearch={onSearch} />
+      <CommonTable
+        selectedRowKeys={selectedRowKeys}
+        onChange={onSelectChange}
+        tableData={workItems}
+        paginationData={paginationData}
+        handleRowClick={handleRowClick}
+      >
+        <Table.Column title="Name" render={(_, record) => record.name} />
+        <Table.Column
+          title="Created"
+          style={{ width: '20%' }}
+          onCell={() => ({
+            style: { minWidth: 170 },
+          })}
+          render={(_, record) =>
+            dayjs(record.createdAt).format('YYYY-MM-DD HH:mm')
+          }
+          sorter={(a: any, b: any) =>
+            dayjs(b.createdAt).unix() - dayjs(a.createdAt).unix()
+          }
+          defaultSortOrder="ascend"
+        />
+      </CommonTable>
     </>
   );
 }
+
+export { WorkItemTable };

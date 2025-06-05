@@ -1,0 +1,53 @@
+.defaultBaseCodeCellStyle {
+  font-family: Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1;
+  padding: 2px 4px;
+  white-space: pre;
+  margin: 0;
+  user-select: text;
+}
+
+.defaultLineNumberCellStyle {
+  width: 50px;
+  text-align: center;
+  padding-right: 8px;
+  color: #858585;
+  font-family: Menlo, Monaco, Consolas, "Andale Mono", "Ubuntu Mono", "Courier New", monospace;
+  font-size: 13px;
+  background: #1e1e1e;
+  line-height: 1;
+  margin: 0;
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  user-select: none;
+}
+
+.outerPanelStyle {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #1e1e1e;
+  color: #d4d4d4;
+}
+
+.panelInnerStyle {
+  display: flex;
+  flex-direction: row;
+}
+
+.panelLineNumbersStyle {
+  width: 50px;
+  background: #1e1e1e;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.panelCodeStyle {
+  flex: 1;
+  overflow-x: auto;
+  display: flex;
+  flex-direction: column;
+};

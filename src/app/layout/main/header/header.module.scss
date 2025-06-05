@@ -1,0 +1,39 @@
+.header {
+  display: flex;
+  padding: 0 10px;
+  background-color: var(--app-color-itemBackground);
+  border-bottom: 1px solid #D8DBF4;
+
+  .burgerBtn {
+    margin: 16px;
+    border: none;
+
+    svg {
+      transition: fill 0.3s ease;
+
+      &:hover {
+        fill: var(--app-color-iconHover);
+      }
+    }
+  }
+}
+
+.content {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 30px;
+  margin-left: 30px;
+}
+
+.menu-icon {
+  color: #7B85DA;
+}
+
+@media screen and (max-width: 800px) {
+  .content {
+    margin-left: 0;
+    gap: 10px;
+    justify-content: space-around;
+  }
+}

@@ -1,5 +1,6 @@
 .list-item {
   cursor: pointer;
+  padding: 0 !important;
   padding-right: 10px;
   display: flex;
   justify-content: flex-start;
@@ -8,8 +9,10 @@
   .text {
     display: flex;
     align-items: center;
+    padding: 12px 0;
     text-decoration: inherit;
     color: inherit;
+    width: 100%;
   }
 
   &:hover {

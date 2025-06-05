@@ -1,2 +1,3 @@
-export * from './organization-block';
-export * from './organization-management';
+export { OrganizationBlockTable } from './table';
+export { OrganizationModalForm } from './form';
+export { OrganizationDropdown } from './dropdown';

@@ -151,7 +151,12 @@ export function getFileTree(dir: string, isRoot = true): FileNode | null {
 export function buildFileTreeFromMapping(
   mapping: Record<
     string,
-    { content: string; changeType?: 'added' | 'modified' | 'deleted' } | string
+    | {
+        content: string;
+        changeType?: 'added' | 'modified' | 'deleted';
+        deleted?: boolean;
+      }
+    | string
   >,
   projectPath: string,
 ): FileNode {
@@ -165,12 +170,15 @@ export function buildFileTreeFromMapping(
       mapping[filePath] = fileData;
     }
 
-    let absFilePath = filePath;
-    if (!path.isAbsolute(filePath)) {
-      absFilePath = path.join(projectPath, filePath);
+    if (fileData.deleted === true) {
+      fileData.changeType = 'deleted';
     }
 
     if (!fileData.changeType) {
+      let absFilePath = filePath;
+      if (!path.isAbsolute(filePath)) {
+        absFilePath = path.join(projectPath, filePath);
+      }
       if (!fs.existsSync(absFilePath)) {
         fileData.changeType = 'added';
       } else {
@@ -178,6 +186,9 @@ export function buildFileTreeFromMapping(
       }
     }
 
+    const absFilePath = path.isAbsolute(filePath)
+      ? filePath
+      : path.join(projectPath, filePath);
     const rel = path.relative(projectPath, absFilePath);
     const parts = rel.split(path.sep).filter(Boolean);
 

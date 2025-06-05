@@ -1,0 +1,76 @@
+.userAvatar {
+  border: 2px solid transparent;
+  cursor: pointer;
+
+  &:hover {
+    border-color: #5E6AD2;
+  }
+}
+
+.userInfo {
+  display: none;
+
+  @media (min-width: 768px) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 4px;
+  }
+}
+
+.userName {
+  font-weight: 500;
+  max-width: 120px;
+  color: #2A305E;
+}
+
+.downIcon {
+  font-size: 12px;
+  color: #5E6AD2;
+}
+
+.profileDropdown {
+  width: 240px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+
+  :global(.ant-dropdown-menu) {
+    padding: 8px 0;
+    border-radius: 8px;
+  }
+
+  :global(.ant-dropdown-menu-item),
+  :global(.ant-dropdown-menu-submenu-title) {
+    padding: 8px 16px;
+
+    &:hover {
+      background-color: #F5F6FD;
+    }
+  }
+}
+
+.userInfoItem {
+  padding: 8px 0;
+}
+
+.userEmail {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #6B7280;
+  font-size: 12px;
+  cursor: pointer;
+
+  &:hover {
+    color: #5E6AD2;
+  }
+}
+
+.copyIcon {
+  font-size: 12px;
+  color: #6B7280;
+
+  &:hover {
+    color: #5E6AD2;
+  }
+}

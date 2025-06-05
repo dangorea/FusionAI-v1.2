@@ -1,7 +1,6 @@
 {
-  "name": "fusion-ai",
-  "version": "4.6.0",
-  "description": "FusionAI",
+  "version": "0.1.5",
+  "description": "AngenAI",
   "license": "MIT",
   "main": "./dist/main/main.js",
   "scripts": {

@@ -4,7 +4,7 @@ import type { WorkItemType } from '../domains/work-item/model/types';
 const WORK_ITEMS_BASE_URL = (orgSlug: string, projectId: string) =>
   `${BASE_URL}/orgs/${orgSlug}/projects/${projectId}/work-items`;
 
-export type CreateWorkItem = Pick<WorkItemType, 'description' | 'projectId'>;
+export type CreateWorkItem = Pick<WorkItemType, 'description'>;
 
 export const createWorkItem = async (
   orgSlug: string,
@@ -20,25 +20,6 @@ export const createWorkItem = async (
     throw error;
   }
 };
-
-export async function generateCodeSession(
-  orgSlug: string,
-  projectId: string,
-  id: string,
-  provider: string,
-): Promise<WorkItemType> {
-  try {
-    const url = WORK_ITEMS_BASE_URL(orgSlug, projectId);
-    const response = await instance.post<WorkItemType>(
-      `${url}/${id}/generate`,
-      { provider },
-    );
-    return response.data;
-  } catch (error: any) {
-    console.error('[API] generateCodeSession failed:', error);
-    throw error;
-  }
-}
 
 export async function clearCodeSession(
   orgSlug: string,
@@ -61,6 +42,7 @@ export const updateWorkItem = async (
   orgSlug: string,
   projectId: string,
   updatedWorkItem: Partial<WorkItemType>,
+  signal?: AbortSignal,
 ): Promise<WorkItemType> => {
   try {
     if (!updatedWorkItem || !updatedWorkItem.id) {
@@ -72,7 +54,13 @@ export const updateWorkItem = async (
 
     const url = `${WORK_ITEMS_BASE_URL(orgSlug, projectId)}/${id}`;
 
-    const response = await instance.patch<WorkItemType>(url, workItemWithoutId);
+    const response = await instance.patch<WorkItemType>(
+      url,
+      workItemWithoutId,
+      {
+        signal,
+      },
+    );
     return response.data;
   } catch (error) {
     console.error('[API] PATCH request failed:', error);
@@ -93,7 +81,9 @@ export const fetchWorkItems = async (
   currentPage: number;
 }> => {
   try {
-    const url = `${WORK_ITEMS_BASE_URL(orgSlug, projectId)}?page=${page}&limit=${limit}${searchTerm ? `&search=${searchTerm}` : ''}`;
+    const url = `${WORK_ITEMS_BASE_URL(orgSlug, projectId)}?page=${page}&limit=${limit}${
+      searchTerm ? `&search=${searchTerm}` : ''
+    }`;
 
     const response = await instance.get<{
       data: WorkItemType[];

@@ -6,5 +6,5 @@ export const organizationManagementAdapter = createEntityAdapter<
   OrganizationManagementDataType,
   EntityId
 >({
-  selectId: (management) => management.userId,
+  selectId: (management) => management.email,
 });

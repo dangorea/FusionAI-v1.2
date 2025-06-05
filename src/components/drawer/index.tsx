@@ -19,8 +19,10 @@ export function DrawerRenderer({ open, onClose }: DrawerProps) {
         return '/organizations';
       case DrawerOption.Projects:
         return '/projects';
-      case DrawerOption.TextBlocks:
+      case DrawerOption.Knowledge:
         return '/rules';
+      case DrawerOption.Personalities:
+        return '/personality';
       case DrawerOption.Settings:
         return '/settings';
       case DrawerOption.WorkItems:

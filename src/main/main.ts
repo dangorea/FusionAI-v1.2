@@ -5,13 +5,31 @@ import { createWindow, getMainWindow } from './window';
 import { handleDeepLink } from './auth';
 import './ipcHandlers';
 import { AppUpdater } from './updater';
+import { installExtensions } from './extensions';
 
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({
+  path: app.isPackaged
+    ? path.join(process.resourcesPath, 'env.production')
+    : path.resolve(__dirname, '../../.env'),
+});
+
+const CHANNEL = process.env.APP_CHANNEL ?? 'stable';
+const SCHEME =
+  process.env.PROTOCOL_SCHEME ||
+  (CHANNEL === 'beta' ? 'angenai-beta' : 'angenai');
+
+app.setAppUserModelId(process.env.APP_ID!);
+app.setPath(
+  'userData',
+  path.join(
+    app.getPath('appData'),
+    CHANNEL === 'beta' ? 'AngenAI Beta' : 'AngenAI',
+  ),
+);
 
 if (process.env.NODE_ENV === 'production') {
   require('source-map-support').install();
 }
-
 if (
   process.env.NODE_ENV === 'development' ||
   process.env.DEBUG_PROD === 'true'
@@ -20,63 +38,53 @@ if (
 }
 
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'fusionai', privileges: { bypassCSP: true } },
+  { scheme: SCHEME, privileges: { bypassCSP: true } },
 ]);
+
+const gotLock = app.requestSingleInstanceLock();
+if (!gotLock) {
+  app.quit();
+  process.exit(0);
+}
+app.on('second-instance', (_event, argv) => {
+  const deep = argv.find((a) => a.startsWith(`${SCHEME}://`));
+  if (deep) handleDeepLink(deep);
+  const win = getMainWindow();
+  if (win) {
+    win.isMinimized() ? win.restore() : win.focus();
+  }
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('ready', async () => {
-  if (!app.isDefaultProtocolClient('fusionai')) {
-    if (process.env.NODE_ENV === 'development') {
-      const gotProtocol = app.setAsDefaultProtocolClient(
-        'fusionai',
-        process.execPath,
-        [path.resolve(process.argv[1])],
-      );
-      console.log('Protocol registration in development:', gotProtocol);
-    } else {
-      app.setAsDefaultProtocolClient('fusionai');
+app
+  .whenReady()
+  .then(async () => {
+    app.setAsDefaultProtocolClient(SCHEME);
+
+    if (
+      process.env.NODE_ENV === 'development' ||
+      process.env.DEBUG_PROD === 'true'
+    ) {
+      await installExtensions();
     }
-  }
 
-  await createWindow();
+    await createWindow();
 
-  const mainWindow = getMainWindow();
-  if (mainWindow) {
-    mainWindow.webContents.openDevTools();
-  }
+    const firstDeep = process.argv.find((a) => a.startsWith(`${SCHEME}://`));
+    if (firstDeep) handleDeepLink(firstDeep);
 
-  const deepLinkArg = process.argv.find((arg) => arg.startsWith('fusionai://'));
-  if (deepLinkArg) {
-    handleDeepLink(deepLinkArg);
-  }
+    new AppUpdater();
+  })
+  .catch(console.error);
 
-  new AppUpdater();
-});
-
-app.on('open-url', (event, url) => {
-  event.preventDefault();
-  console.log('open-url event received:', url);
+app.on('open-url', (evt, url) => {
+  evt.preventDefault();
   handleDeepLink(url);
 });
 
-app.on('second-instance', (event, argv) => {
-  const deepLinkUrl = argv.find((arg) => arg.startsWith('fusionai://'));
-  if (deepLinkUrl) {
-    console.log('second-instance deep link received:', deepLinkUrl);
-    handleDeepLink(deepLinkUrl);
-  }
-  const mainWindow = getMainWindow();
-  if (mainWindow) {
-    if (mainWindow.isMinimized()) mainWindow.restore();
-    mainWindow.focus();
-  }
-});
-
 app.on('activate', async () => {
-  if (getMainWindow() === null) {
-    await createWindow();
-  }
+  if (getMainWindow() === null) await createWindow();
 });

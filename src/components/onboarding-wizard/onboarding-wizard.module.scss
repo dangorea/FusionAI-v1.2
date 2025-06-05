@@ -1,0 +1,45 @@
+:global {
+  .ant-steps-horizontal .ant-steps-item-title::after {
+    top: 18px !important;
+  }
+}
+
+.modal-container {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 16px 12px;
+}
+
+.logo {
+  width: 5rem;
+  height: 5rem;
+}
+
+.main-title {
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 16px 0 0 0;
+}
+
+.sub-title {
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.steps {
+  margin-bottom: 32px;
+  width: 352px;
+}
+
+.steps-item {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+}

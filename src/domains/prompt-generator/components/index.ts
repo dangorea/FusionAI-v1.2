@@ -1,4 +1,5 @@
-export * from './code-viewer';
+export type { CodeViewerProps } from './code-viewer';
+export { CodeViewer } from './code-viewer';
 export * from './task-description';
 export * from './sidebar';
 export * from './history-panel';
@@ -6,3 +7,5 @@ export * from './task-description-header';
 export * from './task-description-footer';
 export * from './content-area';
 export * from './loading';
+export * from './file-tree-panel';
+export * from './image-upload';

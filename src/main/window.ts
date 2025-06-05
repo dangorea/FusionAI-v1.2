@@ -1,4 +1,5 @@
-import { app, BrowserWindow, shell } from 'electron';
+import { app, BrowserWindow, nativeImage, shell, Tray } from 'electron';
+
 import path from 'path';
 import { installExtensions } from './extensions';
 import { resolveHtmlPath } from './util';
@@ -6,27 +7,54 @@ import MenuBuilder from './menu';
 import { AppUpdater } from './updater';
 
 let mainWindow: BrowserWindow | null = null;
+let tray: Tray;
+
+const RESOURCES_PATH = app.isPackaged
+  ? path.join(process.resourcesPath, 'assets')
+  : path.join(__dirname, '../../assets');
+
+const getAssetPath = (...paths: string[]): string =>
+  path.join(RESOURCES_PATH, ...paths);
+
+function createTray() {
+  const baseIcon = nativeImage.createFromPath(getAssetPath('tray-icon.png'));
+  const retinaBuffer = nativeImage
+    .createFromPath(getAssetPath('tray-icon@2x.png'))
+    .toPNG();
+
+  baseIcon.addRepresentation({
+    scaleFactor: 2,
+    width: 16,
+    height: 16,
+    buffer: retinaBuffer,
+  });
+
+  tray = new Tray(baseIcon);
+  tray.setToolTip('AngenAI');
+}
 
 export async function createWindow() {
   const isDebug =
     process.env.NODE_ENV === 'development' || process.env.DEBUG_PROD === 'true';
 
+  if (process.platform === 'darwin') {
+    // const dockIcon = nativeImage
+    // .createFromPath(getAssetPath('icon.png'))
+    // .resize({ width: 32, height: 32 });
+    // app.dock.setIcon(dockIcon);
+  }
+
   if (isDebug) {
     await installExtensions();
   }
-
-  const RESOURCES_PATH = app.isPackaged
-    ? path.join(process.resourcesPath, 'assets')
-    : path.join(__dirname, '../../assets');
-
-  const getAssetPath = (...paths: string[]): string =>
-    path.join(RESOURCES_PATH, ...paths);
 
   mainWindow = new BrowserWindow({
     show: false,
     width: 1600,
     height: 900,
-    icon: getAssetPath('icon.png'),
+    minWidth: 750,
+    minHeight: 700,
+    // icon: getAssetPath('icon.png'),
     webPreferences: {
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
@@ -36,20 +64,8 @@ export async function createWindow() {
     },
   });
 
-  if (isDebug) {
-    mainWindow.webContents.once('dom-ready', async () => {
-      try {
-        const {
-          default: installExtension,
-          REDUX_DEVTOOLS,
-          REACT_DEVELOPER_TOOLS,
-        } = await import('electron-devtools-installer');
-        await installExtension([REDUX_DEVTOOLS, REACT_DEVELOPER_TOOLS]);
-        console.log('Extensions installed');
-      } catch (error) {
-        console.log('Error installing extensions:', error);
-      }
-    });
+  if (mainWindow) {
+    mainWindow.setVisibleOnAllWorkspaces(false);
   }
 
   mainWindow.loadURL(resolveHtmlPath('index.html'));
@@ -69,17 +85,26 @@ export async function createWindow() {
     mainWindow = null;
   });
 
-  const menuBuilder = new MenuBuilder(mainWindow);
+  // Build and set the application menu
+  const menuBuilder = new MenuBuilder(mainWindow!);
   menuBuilder.buildMenu();
 
-  mainWindow.webContents.setWindowOpenHandler((edata) => {
-    shell.openExternal(edata.url);
+  // Create system tray icon
+  // createTray();
+
+  // Open links in the user's default browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
     return { action: 'deny' };
   });
 
+  // Set up auto-updates
   new AppUpdater();
 }
 
+/**
+ * Get the main BrowserWindow instance.
+ */
 export function getMainWindow() {
   return mainWindow;
 }

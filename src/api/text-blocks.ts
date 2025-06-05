@@ -1,15 +1,40 @@
 import instance, { BASE_URL } from '../services/api';
-import type { RuleType } from '../lib/redux/feature/rules/types';
+import type { TextBlockType } from '../lib/redux/feature/text-blocks/types';
 
 const TEXT_BLOCKS_BASE_URL = (orgSlug: string) =>
   `${BASE_URL}/orgs/${orgSlug}/text-blocks`;
 
-export const readTextBlocks = async (orgSlug: string): Promise<RuleType[]> => {
+export const readTextBlocks = async (
+  orgSlug: string,
+  searchTerm: string,
+  limit?: number,
+  type?: string,
+  page: number = 1,
+  scope: string = 'project_and_organization',
+  projectId?: string,
+): Promise<TextBlockType[]> => {
   try {
     if (!orgSlug || orgSlug === 'default') {
       return [];
     }
-    const url = `${BASE_URL}/orgs/${orgSlug}/text-blocks`;
+
+    let url = `${TEXT_BLOCKS_BASE_URL(orgSlug)}?page=${page}&limit=${limit}`;
+
+    if (searchTerm) {
+      url += `&search=${searchTerm}`;
+    }
+
+    if (type) {
+      url += `&type=${type}`;
+    }
+
+    // Add scope parameter (default to PROJECT_AND_ORGANIZATION if not provided)
+    url += `&scope=${scope}`;
+
+    // Add projectId parameter if provided
+    if (projectId) {
+      url += `&projectId=${projectId}`;
+    }
 
     const response = await instance.get(url);
 
@@ -26,11 +51,11 @@ export const readTextBlocks = async (orgSlug: string): Promise<RuleType[]> => {
 
 export const createTextBlock = async (
   orgSlug: string,
-  newTextBlock: Omit<RuleType, 'id'>,
-): Promise<RuleType> => {
+  newTextBlock: Omit<TextBlockType, 'id'>,
+): Promise<TextBlockType> => {
   try {
     const url = TEXT_BLOCKS_BASE_URL(orgSlug);
-    const response = await instance.post<RuleType>(url, newTextBlock);
+    const response = await instance.post<TextBlockType>(url, newTextBlock);
     return response.data;
   } catch (error) {
     console.error('[API] POST request failed:', error);
@@ -40,12 +65,15 @@ export const createTextBlock = async (
 
 export const updateTextBlock = async (
   orgSlug: string,
-  updatedTextBlock: RuleType,
-): Promise<RuleType> => {
+  updatedTextBlock: TextBlockType,
+): Promise<TextBlockType> => {
   try {
     const { id, ...textBlockWithoutId } = updatedTextBlock;
     const url = `${TEXT_BLOCKS_BASE_URL(orgSlug)}/${id}`;
-    const response = await instance.patch<RuleType>(url, textBlockWithoutId);
+    const response = await instance.patch<TextBlockType>(
+      url,
+      textBlockWithoutId,
+    );
     return response.data;
   } catch (error) {
     console.error('[API] patch request failed:', error);

@@ -1,0 +1,22 @@
+.page-title-container {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 120px;
+  margin-right: 10px;
+}
+
+.title {
+  color: #2a305e;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 120px;
+}
+
+.left-icon {
+  font-size: 10px;
+  color: #2e2e2e;
+}

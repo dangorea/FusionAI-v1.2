@@ -1,6 +1,6 @@
 {
   "name": "fusion-ai",
-  "description": "FusionAI",
+  "description": "AngenAI",
   "keywords": [
     "electron",
     "react",
@@ -22,10 +22,14 @@
     "build:dll": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.dev.dll.ts",
     "build:main": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.main.prod.ts",
     "build:renderer": "cross-env NODE_ENV=production TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.renderer.prod.ts",
-    "postinstall": "ts-node .erb/scripts/check-native-dep.js && electron-builder install-app-deps && npm run build:dll",
+    "postinstall": "ts-node ./.erb/scripts/check-native-dep.js && electron-builder install-app-deps && npm run build:dll",
     "lint": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx",
     "lint:fix": "cross-env NODE_ENV=development eslint . --ext .js,.jsx,.ts,.tsx --fix",
-    "package": "ts-node ./.erb/scripts/clean.js dist && npm run build && electron-builder build --publish never && npm run build:dll",
+    "package": "npm run clean && npm run build && dotenv -e .env -- electron-builder -c electron-builder.config.js --publish never",
+    "package:mac": "npm run clean && npm run build && dotenv -e .env -- electron-builder -c electron-builder.config.js --mac --publish never",
+    "package:windows": "npm run clean && npm run build && dotenv -e .env -- electron-builder -c electron-builder.config.js --win --publish never",
+    "package:linux": "npm run clean && npm run build && dotenv -e .env -- electron-builder -c electron-builder.config.js --linux --publish never",
+    "clean": "ts-node ./.erb/scripts/clean.js dist",
     "rebuild": "electron-rebuild --parallel --types prod,dev,optional --module-dir release/app",
     "prestart": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.main.dev.ts",
     "start": "ts-node ./.erb/scripts/check-port-in-use.js && npm run prestart && npm run start:renderer",
@@ -90,6 +94,13 @@
     "@ant-design/v5-patch-for-react-19": "^1.0.3",
     "@electron/notarize": "^2.3.2",
     "@reduxjs/toolkit": "^2.6.0",
+    "@tiptap/extension-image": "^2.11.7",
+    "@tiptap/extension-link": "^2.11.7",
+    "@tiptap/extension-task-item": "^2.11.7",
+    "@tiptap/extension-task-list": "^2.11.7",
+    "@tiptap/extension-underline": "^2.11.7",
+    "@tiptap/react": "^2.11.7",
+    "@tiptap/starter-kit": "^2.11.7",
     "antd": "^5.24.4",
     "axios": "^1.7.9",
     "chokidar": "^4.0.3",
@@ -103,11 +114,16 @@
     "idb": "^8.0.2",
     "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
+    "markdown-it-task-lists": "^2.1.1",
     "prismjs": "^1.29.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-markdown": "^10.1.0",
     "react-redux": "^9.2.0",
-    "react-router": "^7.2.0"
+    "react-router": "^7.2.0",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
+    "tiptap-markdown": "^0.8.10"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^3.2.5",
@@ -130,12 +146,14 @@
     "@types/diff": "^7.0.1",
     "@types/jest": "^29.5.5",
     "@types/lodash": "^4.17.16",
+    "@types/lodash.debounce": "^4.0.9",
     "@types/node": "20.6.2",
     "@types/path-browserify": "^1.0.3",
     "@types/prismjs": "^1.26.5",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
     "@types/react-test-renderer": "^19.0.0",
+    "@types/showdown": "^2.0.6",
     "@types/webpack-bundle-analyzer": "^4.6.0",
     "@typescript-eslint/eslint-plugin": "^6.7.0",
     "@typescript-eslint/parser": "^6.7.0",
@@ -147,11 +165,12 @@
     "css-loader": "^6.8.1",
     "css-minimizer-webpack-plugin": "^5.0.1",
     "detect-port": "^1.5.1",
+    "dotenv-cli": "^7.1.0",
     "dotenv-webpack": "^8.1.0",
-    "electron": "^31.3.0",
-    "electron-builder": "^25.1.8",
+    "electron": "^36.4.0",
+    "electron-builder": "^26.0.12",
     "electron-devtools-installer": "^4.0.0",
-    "electronmon": "^2.0.2",
+    "electronmon": "^2.0.3",
     "eslint": "^8.49.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-erb": "^4.1.0-0",
@@ -192,112 +211,5 @@
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1",
     "webpack-merge": "^5.9.0"
-  },
-  "build": {
-    "productName": "FusionAI",
-    "appId": "org.erb.FusionAI",
-    "asar": true,
-    "asarUnpack": "**\\*.{node,dll}",
-    "files": [
-      "dist",
-      "node_modules",
-      "package.json"
-    ],
-    "extraFiles": [
-      {
-        "from": ".env",
-        "to": ".env"
-      }
-    ],
-    "protocols": {
-      "name": "FusionAI",
-      "schemes": [
-        "fusionai"
-      ]
-    },
-    "mac": {
-      "sign": ".erb/scripts/notarize.js",
-      "notarize": false,
-      "target": {
-        "target": "default",
-        "arch": [
-          "arm64",
-          "x64"
-        ]
-      },
-      "type": "distribution",
-      "hardenedRuntime": true,
-      "entitlements": "assets/entitlements.mac.plist",
-      "entitlementsInherit": "assets/entitlements.mac.plist",
-      "gatekeeperAssess": false,
-      "extendInfo": {
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLName": "com.fusionai",
-            "CFBundleURLSchemes": [
-              "fusionai"
-            ]
-          }
-        ]
-      }
-    },
-    "dmg": {
-      "contents": [
-        {
-          "x": 130,
-          "y": 220
-        },
-        {
-          "x": 410,
-          "y": 220,
-          "type": "link",
-          "path": "/Applications"
-        }
-      ]
-    },
-    "win": {
-      "target": [
-        "nsis"
-      ]
-    },
-    "linux": {
-      "target": [
-        "AppImage"
-      ],
-      "category": "Development"
-    },
-    "directories": {
-      "app": "release/app",
-      "buildResources": "assets",
-      "output": "release/build"
-    },
-    "extraResources": [
-      "./assets/**"
-    ],
-    "publish": {
-      "provider": "github",
-      "owner": "fusionworks",
-      "repo": "FusionWorks"
-    }
-  },
-  "devEngines": {
-    "runtime": {
-      "name": "node",
-      "version": ">=14.x",
-      "onFail": "error"
-    },
-    "packageManager": {
-      "name": "npm",
-      "version": ">=7.x",
-      "onFail": "error"
-    }
-  },
-  "electronmon": {
-    "patterns": [
-      "!**/**",
-      "src/main/**",
-      ".erb/dll/**"
-    ],
-    "logLevel": "quiet"
   }
 }

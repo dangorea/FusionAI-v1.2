@@ -4,10 +4,18 @@ import type { OrganizationManagementDataType } from '../lib/redux/feature/organi
 const ORGANIZATION_MANAGEMENT_URL = `${BASE_URL}/orgs`;
 
 export const fetchOrganizationMembers = async (
-  slug: string,
+  orgSlug: string,
+  page: number,
+  limit: number,
+  searchTerm: string,
 ): Promise<OrganizationManagementDataType[]> => {
   try {
-    const url = `${ORGANIZATION_MANAGEMENT_URL}/${slug}/members`;
+    if (!orgSlug) {
+      return [];
+    }
+
+    const url = `${ORGANIZATION_MANAGEMENT_URL}/${orgSlug}/members?page=${page}&limit=${limit}${searchTerm ? `&search=${searchTerm}` : ''}`;
+
     const response = await instance.get<OrganizationManagementDataType[]>(url);
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
@@ -56,7 +64,7 @@ export const updateOrganizationMemberRole = async (
 
 export const removeOrganizationMember = async (
   slug: string,
-  data: { userId: string },
+  data: { email: string },
 ): Promise<void> => {
   try {
     const url = `${ORGANIZATION_MANAGEMENT_URL}/${slug}/members`;
@@ -65,4 +73,25 @@ export const removeOrganizationMember = async (
     console.error('[API] DELETE request failed for removing member:', error);
     throw error;
   }
+};
+
+// export const createInvitation = async (
+//   orgSlug: string,
+//   invitationData: { email: string; roles: string[] },
+// ): Promise<InvitationResponseDto> => {
+//   const url = `${BASE_URL}/invitations/${orgSlug}/create`;
+//   const response = await instance.post<InvitationResponseDto>(
+//     url,
+//     invitationData,
+//   );
+//   return response.data;
+// };
+
+export const createInvitation = async (
+  slug: string,
+  invitationData: { email: string; roles: string[] },
+) => {
+  const url = `${BASE_URL}/invitations/${slug}/create`;
+  const response = await instance.post(url, invitationData);
+  return response.data;
 };

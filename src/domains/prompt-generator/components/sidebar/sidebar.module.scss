@@ -1,3 +1,19 @@
+.resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 6px;
+  cursor: ew-resize;
+  z-index: 10;
+  background-color: transparent;
+  border-right: 2px solid #d8dbf4;
+
+  &:hover {
+    border-right: 3px solid #9ba5fd;
+  }
+}
+
 .sider {
   background-color: #ffffff !important;
   border-right: none;
@@ -18,6 +34,7 @@
   display: flex;
   flex-direction: column;
   flex: 1;
+  height: 100%;
   border: 1px solid #d8dbf4;
   border-top-left-radius: 8px;
   border-bottom-left-radius: 8px;
@@ -28,6 +45,7 @@
   margin-top: auto;
   padding: 0 0 16px 0;
   display: flex;
+  height: 8%;
   justify-content: center;
 }
 
@@ -47,7 +65,7 @@
 }
 
 .fileTreeContainer {
-  min-height: 40vh;
+  min-height: 100%;
   max-height: 47vh;
   border: 1px solid #d8dbf4;
   border-top-left-radius: 8px;
@@ -109,17 +127,4 @@
 
 .addPromptBtn {
   margin-bottom: 16px;
-}
-
-@media (max-width: 768px) {
-  .sider {
-    width: 100% !important;
-    border-bottom-left-radius: 0;
-    border-top-left-radius: 8px;
-  }
-
-  .siderInner {
-    height: auto;
-    overflow-y: visible;
-  }
 }

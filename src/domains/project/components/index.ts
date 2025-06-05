@@ -1,3 +1,3 @@
-export * from './table';
-export * from './modal';
-export * from './dropdown';
+export { ProjectTable } from './table';
+export { ProjectModalForm } from './form';
+export { ProjectsDropdown } from './dropdown';

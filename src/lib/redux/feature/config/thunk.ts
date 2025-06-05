@@ -1,16 +1,19 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
-import { getProvider } from '../../../../api/code-generations';
 import type { LLMProvider } from '../../../../types/common';
+import type { LoadProvidersParams } from './types';
+import { getProviders } from '../../../../api/ai-agents';
 
 export const fetchProviders = createAsyncThunk<
   LLMProvider[],
-  void,
+  LoadProvidersParams,
   { rejectValue: string }
->('config/fetchProviders', async (_, { rejectWithValue }) => {
-  try {
-    const providers = await getProvider();
-    return providers;
-  } catch (error: any) {
-    return rejectWithValue(error.message || 'Failed to fetch providers');
-  }
-});
+>(
+  'config/fetchProviders',
+  async ({ orgSlug, projectId }, { rejectWithValue }) => {
+    try {
+      return await getProviders(orgSlug, projectId);
+    } catch (error: any) {
+      return rejectWithValue(error.message || 'Failed to fetch providers');
+    }
+  },
+);

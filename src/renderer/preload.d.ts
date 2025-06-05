@@ -28,12 +28,14 @@ declare global {
         rootPath: string,
       ) => Promise<FileNode>;
       mergeFileTrees: (baseTree: any, compareTree: any) => Promise<FileNode>;
+      deleteFile: (path: string) => Promise<void>;
     };
     env: {
       BASE_URL: string;
       AUTH0_DOMAIN: string;
       AUTH0_CLIENT_ID: string;
       AUTH0_AUDIENCE: string;
+      PROTOCOL_SCHEME: string;
     };
   }
 }

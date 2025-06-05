@@ -1,27 +1,20 @@
-import { useEffect, useState } from 'react';
-import { Layout, notification } from 'antd';
+import React, { useEffect, useState } from 'react';
+import { Layout, Modal } from 'antd';
 import { Outlet, useLocation, useNavigate } from 'react-router';
-import { DrawerRenderer } from '../../../components';
+import { DrawerRenderer, OnboardingWizard } from '../../../components';
 import styles from './main-layout.module.scss';
 import Header from './header';
-import type { WorkItemType } from '../../../domains/work-item/model/types';
-import { WorkItemsModal } from '../../../domains/work-item/components';
-import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
+import { useAppDispatch } from '../../../lib/redux/hook';
 import { setSelectedWorkItem } from '../../../lib/redux/feature/work-items/reducer';
-import { createWorkItemThunk } from '../../../lib/redux/feature/work-items/thunk';
-import { NOTIFICATION_DURATION_LONG } from '../../../utils/notifications';
-import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
-import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
 import { fetchUser } from '../../../lib/redux/feature/user/thunk';
+import { WorkItemModalForm } from '../../../domains/work-item/components';
 
 const { Content } = Layout;
 
 export default function MainLayout() {
   const dispatch = useAppDispatch();
-  const org = useAppSelector(selectSelectedOrganizationEntity);
-  const selectedProjectId = useAppSelector(selectSelectedProjectId);
   const [drawerOpen, setDrawerOpen] = useState<boolean>(false);
-  const [isModalOpen, setModalOpen] = useState<boolean>(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -32,38 +25,9 @@ export default function MainLayout() {
 
   useEffect(() => {
     if (location.pathname === '/') {
-      navigate('/organizations', { replace: true });
+      navigate('/work-items', { replace: true });
     }
   }, [location, navigate]);
-
-  const handleAddWorkItem = async (
-    newItem: Pick<WorkItemType, 'description'>,
-  ) => {
-    try {
-      if (!org?.slug) return;
-      const action = await dispatch(
-        createWorkItemThunk({
-          orgSlug: org.slug,
-          projectId: selectedProjectId || '',
-          description: newItem.description,
-        }),
-      );
-
-      if (createWorkItemThunk.fulfilled.match(action)) {
-        const createdWorkItem = action.payload;
-
-        dispatch(setSelectedWorkItem(createdWorkItem.id));
-        navigate(`/prompt-generator/${createdWorkItem.id}`);
-      }
-
-      setModalOpen(false);
-    } catch (error) {
-      notification.error({
-        message: 'Failed to Add Work Item',
-        duration: NOTIFICATION_DURATION_LONG,
-      });
-    }
-  };
 
   const handleBackToWorkItems = () => {
     navigate('/work-items');
@@ -76,7 +40,7 @@ export default function MainLayout() {
         currentPath={location.pathname}
         onOpenDrawer={setDrawerOpen.bind(null, true)}
         onBackToWorkItems={handleBackToWorkItems}
-        onCreateWorkItem={setModalOpen.bind(null, true)}
+        onCreateWorkItem={setIsModalOpen.bind(null, true)}
       />
 
       <DrawerRenderer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
@@ -84,15 +48,24 @@ export default function MainLayout() {
         <Outlet />
       </Content>
 
-      <WorkItemsModal
-        isModalOpen={isModalOpen}
-        onClose={setModalOpen.bind(null, false)}
-        onCreate={handleAddWorkItem}
-        modalMode="create"
-        onEdit={() => {
-          throw new Error('Function not implemented.');
-        }}
-      />
+      <OnboardingWizard />
+
+      <Modal
+        title="Work Items Submission Form"
+        centered
+        open={isModalOpen}
+        onCancel={setIsModalOpen.bind(null, false)}
+        width={1000}
+        footer={null}
+        maskClosable={false}
+      >
+        <WorkItemModalForm
+          selectedWorkItems={null}
+          setIsModalOpen={setIsModalOpen}
+          currentPage={0}
+          pageSize={0}
+        />
+      </Modal>
     </Layout>
   );
 }

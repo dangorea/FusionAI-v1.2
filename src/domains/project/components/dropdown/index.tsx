@@ -1,78 +1,63 @@
 import { DownOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { Button, Dropdown, Space } from 'antd';
-import { useCallback, useEffect, useState } from 'react';
+import { Dropdown } from 'antd';
+import { useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router';
 import { LocalStorageKeys } from '../../../../utils/localStorageKeys';
 import { useAppDispatch, useAppSelector } from '../../../../lib/redux/hook';
-import { selectAllProjects } from '../../../../lib/redux/feature/projects/selectors';
+import {
+  selectAllProjects,
+  selectSelectedProjectId,
+} from '../../../../lib/redux/feature/projects/selectors';
 import { setSelectedProjectId } from '../../../../lib/redux/feature/projects/reducer';
-import { selectSelectedOrganizationEntity } from '../../../../lib/redux/feature/organization/selectors';
+import styles from './style.module.scss';
 
-interface ProjectsDropdownProps {
-  value?: string;
-  onChange?: (value: string) => void;
-}
-
-export function ProjectsDropdown({ value, onChange }: ProjectsDropdownProps) {
+function ProjectsDropdown() {
   const dispatch = useAppDispatch();
   const projects = useAppSelector(selectAllProjects);
-  const org = useAppSelector(selectSelectedOrganizationEntity);
-  const [currentValue, setCurrentValue] = useState<string | undefined>(value);
+  const selectedProjectId = useAppSelector(selectSelectedProjectId);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const savedProjectId = localStorage.getItem(
-      LocalStorageKeys.SELECTED_PROJECT,
-    );
-    if (savedProjectId) {
-      dispatch(setSelectedProjectId(savedProjectId));
-      setCurrentValue(savedProjectId);
-    }
-  }, [org, dispatch]);
-
-  const loadProjectData = useCallback((projectId: string) => {
-    const projectDirectory = localStorage.getItem(
-      `${projectId}-${LocalStorageKeys.PROJECT_PATHS}`,
-    );
-    const fileTree = localStorage.getItem(
-      `${projectId}-${LocalStorageKeys.PROJECT_FILE_TREES}`,
-    );
-
-    if (projectDirectory) {
-      // setProjectDirectory(projectDirectory);
+    if (selectedProjectId) {
+      localStorage.setItem(
+        LocalStorageKeys.SELECTED_PROJECT,
+        selectedProjectId,
+      );
     } else {
-      // setProjectDirectory(null);
+      localStorage.removeItem(LocalStorageKeys.SELECTED_PROJECT);
     }
-
-    if (fileTree) {
-      // setFileTree(JSON.parse(fileTree));
-    } else {
-      // setFileTree(null);
-    }
-  }, []);
+  }, [selectedProjectId]);
 
   useEffect(() => {
-    if (value) {
-      loadProjectData(value);
+    if (projects.length) {
+      dispatch(setSelectedProjectId(projects[0].id));
+    } else {
+      dispatch(setSelectedProjectId(null));
     }
-  }, [value, loadProjectData]);
+  }, [dispatch, projects]);
 
   const handleMenuClick = (key: string) => {
     dispatch(setSelectedProjectId(key));
-    setCurrentValue(key);
-    localStorage.setItem(LocalStorageKeys.SELECTED_PROJECT, key);
-    if (onChange) {
-      onChange(key);
-    }
+    navigate('/work-items');
   };
 
-  const items: MenuProps['items'] = projects.map((project) => ({
-    label: project.name,
-    key: project.id,
-  }));
+  const items: MenuProps['items'] = useMemo(
+    () =>
+      projects.map((project) => ({
+        label: project.name,
+        key: project.id,
+      })),
+    [projects],
+  );
 
-  const selectedProjectTitle =
-    currentValue &&
-    projects.find((project) => project.id === currentValue)?.name;
+  const selectedProjectName = useMemo(
+    () =>
+      selectedProjectId &&
+      projects.find((project) => project.id === selectedProjectId)?.name,
+    [projects, selectedProjectId],
+  );
 
   return (
     <Dropdown
@@ -84,21 +69,14 @@ export function ProjectsDropdown({ value, onChange }: ProjectsDropdownProps) {
       }}
       trigger={['click']}
     >
-      <Button
-        type="text"
-        aria-label="Select a project"
-        style={{
-          background: 'none',
-          border: 'none',
-          cursor: 'pointer',
-          padding: 0,
-        }}
-      >
-        <Space>
-          {selectedProjectTitle || 'Select a Project'}
-          <DownOutlined />
-        </Space>
-      </Button>
+      <div className={styles['dropdown-container']}>
+        <div className={styles['dropdown-selected']}>
+          {selectedProjectName || 'Select a Project'}
+        </div>
+        <DownOutlined style={{ fontSize: 10, marginTop: 4, marginLeft: 2 }} />
+      </div>
     </Dropdown>
   );
 }
+
+export { ProjectsDropdown };

@@ -22,6 +22,6 @@ export const selectSelectedManagement = createSelector(
 
 export const selectSelectedManagementEntity = createSelector(
   [selectSelectedManagement, selectManagementEntities],
-  (selectedUserId, entities) =>
-    selectedUserId ? entities[selectedUserId] : undefined,
+  (selectedEmail, entities) =>
+    selectedEmail ? entities[selectedEmail] : undefined,
 );

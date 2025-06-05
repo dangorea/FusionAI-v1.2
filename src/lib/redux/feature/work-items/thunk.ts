@@ -5,19 +5,14 @@ import type {
   DeleteWorkItemParams,
   LoadWorkItemsParams,
   LoadWorkItemsResponse,
-  UpdateWorkItemParams,
 } from './types';
 import {
-  clearCodeSession,
   createWorkItem as createWorkItemApi,
   deleteWorkItem as deleteWorkItemApi,
   fetchWorkItems,
-  generateCodeSession,
   updateWorkItem,
 } from '../../../../api/work-items';
 import type { WorkItemType } from '../../../../domains/work-item/model/types';
-import type { RootState } from '../../store';
-import { clearCodeGeneration } from '../code-generation/reducer';
 
 export const loadWorkItemsThunk = createAsyncThunk<
   LoadWorkItemsResponse,
@@ -29,14 +24,7 @@ export const loadWorkItemsThunk = createAsyncThunk<
     { rejectWithValue },
   ) => {
     try {
-      const response = await fetchWorkItems(
-        orgSlug,
-        projectId,
-        searchTerm,
-        limit,
-        page,
-      );
-      return response;
+      return await fetchWorkItems(orgSlug, projectId, searchTerm, limit, page);
     } catch (error: any) {
       console.error('Error loading work items:', error);
       return rejectWithValue(error);
@@ -53,7 +41,6 @@ export const createWorkItemThunk = createAsyncThunk<
     try {
       return await createWorkItemApi(orgSlug, projectId, {
         description,
-        projectId,
       });
     } catch (error: any) {
       console.error('Error creating work item:', error);
@@ -64,12 +51,22 @@ export const createWorkItemThunk = createAsyncThunk<
 
 export const updateWorkItemThunk = createAsyncThunk<
   WorkItemType,
-  UpdateWorkItemParams
+  {
+    orgSlug: string;
+    projectId: string;
+    workItem: Partial<WorkItemType>;
+    signal?: AbortSignal;
+  }
 >(
   'workItems/updateWorkItem',
-  async ({ orgSlug, projectId, workItem }, { rejectWithValue }) => {
+  async ({ orgSlug, projectId, workItem, signal }, { rejectWithValue }) => {
     try {
-      const updatedItem = await updateWorkItem(orgSlug, projectId, workItem);
+      const updatedItem = await updateWorkItem(
+        orgSlug,
+        projectId,
+        workItem,
+        signal,
+      );
       return updatedItem;
     } catch (error: any) {
       console.error('Error updating work item:', error);
@@ -94,40 +91,6 @@ export const deleteWorkItemThunk = createAsyncThunk<
     } catch (error: any) {
       console.error('Error deleting work item:', error);
       return rejectWithValue(error);
-    }
-  },
-);
-
-export const updateCodeSession = createAsyncThunk<
-  WorkItemType,
-  { orgSlug: string; projectId: string; id: string; provider: string }, // <-- Added provider
-  { state: RootState }
->(
-  'workItems/updateCodeSession',
-  async ({ orgSlug, projectId, id, provider }, { rejectWithValue }) => {
-    try {
-      return await generateCodeSession(orgSlug, projectId, id, provider); // <-- Pass provider here
-    } catch (error: any) {
-      console.error('Error updating code session:', error);
-      return rejectWithValue(error);
-    }
-  },
-);
-
-export const clearCodeSessionThunk = createAsyncThunk<
-  WorkItemType,
-  { orgSlug: string; projectId: string; id: string },
-  { rejectValue: string }
->(
-  'workItems/clearCodeSession',
-  async ({ orgSlug, projectId, id }, { dispatch, rejectWithValue }) => {
-    try {
-      const updatedWorkItem = await clearCodeSession(orgSlug, projectId, id);
-      dispatch(clearCodeGeneration());
-      return updatedWorkItem as WorkItemType;
-    } catch (error: any) {
-      console.error('Error clearing code session:', error);
-      return rejectWithValue(error.message);
     }
   },
 );

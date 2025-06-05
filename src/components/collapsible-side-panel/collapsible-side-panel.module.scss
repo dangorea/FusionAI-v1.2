@@ -1,0 +1,78 @@
+.resizer {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+  z-index: 10;
+  background-color: transparent;
+}
+
+.animation {
+  transition: width 0.3s ease-in-out;
+}
+
+.collapsibleSidePanelContainer {
+  overflow: hidden;
+  will-change: width;
+  border: 1px solid #d8dbf4;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+
+  &.leftResizable .resizer {
+    right: 0;
+  }
+
+  &.rightResizable .resizer {
+    left: 0;
+  }
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  padding: 12px 16.8px;
+  border-bottom: 1px solid #d8dbf4;
+  cursor: pointer;
+  overflow: hidden;
+}
+
+.headerContentWrapper {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.iconContainer {
+  flex: 0 0 auto;
+}
+
+.headerTextContainer {
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 0.3s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.collapsedText {
+  max-width: 0;
+  opacity: 0;
+}
+
+.arrowContainer {
+  flex: 0 0 auto;
+}
+
+.headerText {
+  margin: 0 8px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.panelContent {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 0;
+}

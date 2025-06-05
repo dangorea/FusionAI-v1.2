@@ -1,0 +1,16 @@
+.dropdown-container {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.dropdown-selected {
+  color: #2A305E;
+  word-break: normal;
+  overflow-wrap: normal;
+  white-space: nowrap;
+  font-size: 15px;
+}

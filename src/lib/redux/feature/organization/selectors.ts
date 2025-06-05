@@ -21,6 +21,6 @@ export const selectSelectedOrganizationEntity = createSelector(
   [selectAllOrganizations, selectCurrentOrganizationId],
   (organizations, currentId) => {
     if (!currentId) return null;
-    return organizations.find((org) => org._id === currentId) ?? null;
+    return organizations.find((org) => org.id === currentId) ?? null;
   },
 );

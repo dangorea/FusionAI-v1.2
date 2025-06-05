@@ -8,3 +8,9 @@ type Provider = {
 export interface ConfigState {
   provider: Provider;
 }
+
+export interface LoadProvidersParams {
+  orgSlug: string;
+  projectId: string;
+}
+

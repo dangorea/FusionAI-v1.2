@@ -3,14 +3,18 @@ import type { OrganizationType } from '../domains/organization/model/types';
 
 const ORGANIZATION_BLOCKS_URL = `${BASE_URL}/orgs`;
 
-export const readOrganizationBlocks = async (): Promise<OrganizationType[]> => {
+export const readOrganizationBlocks = async (
+  page: number,
+  limit: number,
+  searchTerm?: string,
+): Promise<OrganizationType[]> => {
   try {
     await new Promise((resolve) => {
       setTimeout(resolve, 1000);
     });
-    const response = await instance.get<OrganizationType[]>(
-      ORGANIZATION_BLOCKS_URL,
-    );
+    const url = `${ORGANIZATION_BLOCKS_URL}?page=${page}&limit=${limit}${searchTerm ? `&search=${searchTerm}` : ''}`;
+
+    const response = await instance.get<OrganizationType[]>(url);
     return Array.isArray(response.data) ? response.data : [];
   } catch (error) {
     console.error('[API] GET request failed:', error);
@@ -34,7 +38,7 @@ export const createOrganizationBlock = async (
 };
 
 export const updateOrganizationBlock = async (
-  updatedOrganizationBlock: OrganizationType,
+  updatedOrganizationBlock: Partial<OrganizationType>,
   previousSlug: string,
 ): Promise<OrganizationType> => {
   try {
@@ -61,3 +65,11 @@ export const deleteOrganizationBlock = async (slug: string): Promise<void> => {
     throw error;
   }
 };
+
+export async function checkSlugAvailable(slug: string): Promise<boolean> {
+  const { data } = await instance.get<{ available: boolean }>(
+    '/orgs/check-slug',
+    { params: { slug } },
+  );
+  return data.available;
+}

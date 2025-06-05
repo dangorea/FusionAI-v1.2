@@ -1,13 +1,24 @@
 import { createAsyncThunk } from '@reduxjs/toolkit';
 import { notification } from 'antd';
 import { fetchOrganizationMembers } from '../../../../api/organization-management';
+import type { OrganizationManagementDataType } from './types';
 
-export const fetchOrganizationManagements = createAsyncThunk(
+export const fetchOrganizationManagements = createAsyncThunk<
+  OrganizationManagementDataType[],
+  {
+    orgSlug: string;
+    page: number;
+    limit: number;
+    searchTerm?: string;
+  }
+>(
   'orgManagement/fetchOrganizationManagements',
-  async (slug: string, { rejectWithValue }) => {
+  async (
+    { orgSlug, page = 1, limit = 10, searchTerm = '' },
+    { rejectWithValue },
+  ) => {
     try {
-      const managements = await fetchOrganizationMembers(slug);
-      return managements;
+      return await fetchOrganizationMembers(orgSlug, page, limit, searchTerm);
     } catch (error: any) {
       console.error('[Thunk] Failed to fetch organization managements:', error);
       notification.error({

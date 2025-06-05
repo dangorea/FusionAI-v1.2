@@ -3,11 +3,14 @@ import organizationReducer from './feature/organization/reducer';
 import organizationManagementReducer from './feature/organization-management/reducer';
 import userReducer from './feature/user/reducer';
 import projectsReducer from './feature/projects/reducer';
-import rulesReducer from './feature/rules/reducer';
+import textBlockReducer from './feature/text-blocks/reducer';
 import workItemsReducer from './feature/work-items/reducer';
 import configReducer from './feature/config/reducer';
 import authReducer from './feature/auth/reducer';
-import codeGenerationReducer from './feature/code-generation/reducer';
+import artifactReducer from './feature/artifacts/reducer';
+import contextReducer from './feature/context/reducer';
+import invitationsReducer from './feature/invitations/reducer';
+import imagesReducer from './feature/images/reducer';
 
 export const makeStore = () => {
   return configureStore({
@@ -16,11 +19,14 @@ export const makeStore = () => {
       organizationManagement: organizationManagementReducer,
       user: userReducer,
       projects: projectsReducer,
-      rules: rulesReducer,
+      textBlock: textBlockReducer,
       workItems: workItemsReducer,
       auth: authReducer,
       config: configReducer,
-      codeGeneration: codeGenerationReducer,
+      artifact: artifactReducer,
+      context: contextReducer,
+      invitations: invitationsReducer,
+      images: imagesReducer,
     },
     // middleware: (getDefaultMiddleware) =>
     //   getDefaultMiddleware().concat(axiosTokenMiddleware),

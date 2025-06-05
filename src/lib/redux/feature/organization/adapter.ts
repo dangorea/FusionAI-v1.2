@@ -6,5 +6,5 @@ export const organizationAdapter = createEntityAdapter<
   OrganizationType,
   EntityId
 >({
-  selectId: (block) => block._id!,
+  selectId: (block) => block.id,
 });

@@ -1,34 +1,29 @@
-import React, { useEffect, useState } from 'react';
-import { Button, notification } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router';
-import { WorkItemsModal, WorkItemTable } from '../components';
+import type { Key } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { notification } from 'antd';
+import { WorkItemModalForm, WorkItemTable } from '../components';
 import { NOTIFICATION_DURATION_LONG } from '../../../utils/notifications';
 import { useAppDispatch, useAppSelector } from '../../../lib/redux/hook';
 import {
-  createWorkItemThunk,
   deleteWorkItemThunk,
   loadWorkItemsThunk,
-  updateWorkItemThunk,
 } from '../../../lib/redux/feature/work-items/thunk';
-import { setSelectedWorkItem } from '../../../lib/redux/feature/work-items/reducer';
 import { selectAllWorkItems } from '../../../lib/redux/feature/work-items/selectors';
-
 import { selectSelectedProjectId } from '../../../lib/redux/feature/projects/selectors';
 import { selectSelectedOrganizationEntity } from '../../../lib/redux/feature/organization/selectors';
+import { LayoutContainer, CommonToolbar } from '../../../components';
 import type { WorkItemType } from '../model/types';
-import styles from '../../organization/ui/organization-management.module.scss';
 
 export function WorkItems() {
   const dispatch = useAppDispatch();
-  const navigate = useNavigate();
   const selectedProjectId = useAppSelector(selectSelectedProjectId);
   const allWorkItems = useAppSelector(selectAllWorkItems);
   const org = useAppSelector(selectSelectedOrganizationEntity);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [isModalOpen, setModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState<'create' | 'edit' | null>(null);
-  const [editingItemIds, setEditingItemIds] = useState<string[]>([]);
+
+  const [selectedWorkItems, setSelectedWorkItems] = useState<WorkItemType[]>(
+    [],
+  );
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
@@ -49,7 +44,6 @@ export function WorkItems() {
       .unwrap()
       .then((response) => {
         setTotal(response.totalCount);
-        return response;
       })
       .catch((error) => {
         notification.error({
@@ -58,17 +52,21 @@ export function WorkItems() {
           duration: NOTIFICATION_DURATION_LONG,
         });
       });
-  }, [
-    selectedProjectId,
-    currentPage,
-    pageSize,
-    searchTerm,
-    dispatch,
-    org?.slug,
-  ]);
+  }, [selectedProjectId, currentPage, pageSize, searchTerm, dispatch, org]);
 
-  const handleDeleteWorkItem = async () => {
-    if (selectedRowKeys.length === 0) {
+  const selectedWorkItemsIds = useMemo(() => {
+    return selectedWorkItems.map((workItem) => workItem.id);
+  }, [selectedWorkItems]);
+
+  const handleSelectChange = useCallback(
+    (_: Key[], workItems: WorkItemType[]) => {
+      setSelectedWorkItems(workItems);
+    },
+    [],
+  );
+
+  const handleDeleteWorkItem = useCallback(async () => {
+    if (selectedWorkItems.length === 0) {
       notification.error({
         message: 'No items selected for deletion',
         duration: NOTIFICATION_DURATION_LONG,
@@ -78,7 +76,7 @@ export function WorkItems() {
 
     try {
       await Promise.all(
-        selectedRowKeys.map((id) =>
+        selectedWorkItemsIds.map((id) =>
           dispatch(
             deleteWorkItemThunk({
               orgSlug: org?.slug || '',
@@ -99,7 +97,16 @@ export function WorkItems() {
         }),
       );
 
-      setSelectedRowKeys([]);
+      await dispatch(
+        loadWorkItemsThunk({
+          page: currentPage,
+          limit: pageSize,
+          orgSlug: org?.slug || '',
+          projectId: selectedProjectId || '',
+        }),
+      );
+
+      setSelectedWorkItems([]);
       notification.success({ message: 'Selected Work Items Deleted' });
     } catch (error: any) {
       notification.error({
@@ -108,185 +115,54 @@ export function WorkItems() {
         duration: NOTIFICATION_DURATION_LONG,
       });
     }
-  };
+  }, [
+    currentPage,
+    dispatch,
+    org,
+    pageSize,
+    searchTerm,
+    selectedProjectId,
+    selectedWorkItems,
+    selectedWorkItemsIds,
+  ]);
 
-  const openEditModal = (workItemId?: string) => {
-    if (workItemId) {
-      setEditingItemIds([workItemId]);
-      setModalMode('edit');
-      setModalOpen(true);
-      return;
-    }
-
-    if (selectedRowKeys.length === 0) {
-      notification.error({ message: 'No items selected to edit' });
-      return;
-    }
-
-    setEditingItemIds(selectedRowKeys.map(String));
-    setModalMode('edit');
-    setModalOpen(true);
-  };
-
-  const handleAddWorkItem = async (
-    newItem: Pick<WorkItemType, 'description'>,
-  ) => {
-    try {
-      if (!org?.slug) return;
-      const action = await dispatch(
-        createWorkItemThunk({
-          orgSlug: org.slug,
-          projectId: selectedProjectId || '',
-          description: newItem.description,
-        }),
-      );
-
-      if (createWorkItemThunk.fulfilled.match(action)) {
-        const createdWorkItem = action.payload;
-        notification.success({
-          message: 'Work Item Added',
-          duration: NOTIFICATION_DURATION_LONG,
-        });
-        setModalOpen(false);
-        setModalMode(null);
-
-        dispatch(setSelectedWorkItem(createdWorkItem.id));
-
-        dispatch(
-          loadWorkItemsThunk({
-            page: currentPage,
-            limit: pageSize,
-            searchTerm,
-            orgSlug: org.slug,
-            projectId: selectedProjectId || '',
-          }),
-        );
-      } else {
-        notification.error({
-          message: 'Failed to Add Work Item',
-          duration: NOTIFICATION_DURATION_LONG,
-        });
-      }
-    } catch (error) {
-      notification.error({
-        message: 'Failed to Add Work Item',
-        duration: NOTIFICATION_DURATION_LONG,
-      });
-    }
-  };
-
-  const handleUpdateWorkItems = async (
-    updatedFields: Pick<WorkItemType, 'description'>,
-  ) => {
-    try {
-      if (!selectedProjectId || !org?.slug) return;
-
-      await Promise.all(
-        editingItemIds.map((id) =>
-          dispatch(
-            updateWorkItemThunk({
-              orgSlug: org.slug,
-              projectId: selectedProjectId,
-              workItem: { id, description: updatedFields.description },
-            }),
-          ),
-        ),
-      );
-
-      await dispatch(
-        loadWorkItemsThunk({
-          page: currentPage,
-          limit: pageSize,
-          searchTerm,
-          orgSlug: org.slug,
-          projectId: selectedProjectId,
-        }),
-      );
-
-      notification.success({
-        message: `Successfully updated ${editingItemIds.length} Work Item(s)`,
-      });
-
-      setEditingItemIds([]);
-      setModalOpen(false);
-      setModalMode(null);
-      setSelectedRowKeys([]);
-    } catch (error: any) {
-      notification.error({
-        message: 'Failed to Update Work Items',
-        description: error.message,
-        duration: NOTIFICATION_DURATION_LONG,
-      });
-    }
-  };
-
-  const onSelectChange = (selectedKeys: React.Key[]) => {
-    setSelectedRowKeys(selectedKeys);
-  };
-
-  const handleRowClick = (record: WorkItemType) => {
-    dispatch(setSelectedWorkItem(record.id));
-    navigate(`/prompt-generator/${record.id}`);
-  };
-
-  const handlePageChange = (page: number, size: number) => {
+  const handlePageChange = useCallback((page: number, size: number) => {
     setCurrentPage(page);
     setPageSize(size);
-  };
+  }, []);
 
-  const handleSearch = (value: string) => {
+  const handleSearch = useCallback((value: string) => {
     setSearchTerm(value);
     setCurrentPage(1);
-  };
+  }, []);
 
   return (
-    <div className={styles.componentRoot}>
-      <div className={styles.buttonContainer}>
-        <Button
-          icon={<PlusOutlined />}
-          type="text"
-          onClick={() => {
-            setModalMode('create');
-            setModalOpen(true);
-          }}
+    <LayoutContainer>
+      <CommonToolbar
+        title="Work Items Submission Form"
+        selectedItems={selectedWorkItems}
+        onDelete={handleDeleteWorkItem}
+        open={isModalOpen}
+        setOpen={setIsModalOpen}
+      >
+        <WorkItemModalForm
+          selectedWorkItems={selectedWorkItems}
+          setIsModalOpen={setIsModalOpen}
+          currentPage={currentPage}
+          pageSize={pageSize}
         />
-        <Button
-          type="text"
-          icon={<EditOutlined />}
-          onClick={() => openEditModal()}
-        />
-        <Button
-          type="text"
-          icon={<DeleteOutlined />}
-          onClick={handleDeleteWorkItem}
-        />
-      </div>
+      </CommonToolbar>
 
       <WorkItemTable
         workItems={allWorkItems}
-        selectedRowKeys={selectedRowKeys}
-        onSelectChange={onSelectChange}
-        onRowClick={handleRowClick}
+        selectedRowKeys={selectedWorkItemsIds}
+        onSelectChange={handleSelectChange}
         currentPage={currentPage}
         pageSize={pageSize}
         total={total}
         onPageChange={handlePageChange}
         onSearch={handleSearch}
       />
-
-      <WorkItemsModal
-        isModalOpen={isModalOpen}
-        modalMode={modalMode}
-        editingItemIds={editingItemIds}
-        allWorkItems={allWorkItems}
-        onClose={() => {
-          setModalOpen(false);
-          setModalMode(null);
-          setEditingItemIds([]);
-        }}
-        onCreate={handleAddWorkItem}
-        onEdit={handleUpdateWorkItems}
-      />
-    </div>
+    </LayoutContainer>
   );
 }

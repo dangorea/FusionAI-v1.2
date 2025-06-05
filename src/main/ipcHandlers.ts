@@ -1,16 +1,16 @@
+import type { WebContents } from 'electron';
 import { dialog, ipcMain, shell } from 'electron';
 import type { FSWatcher } from 'chokidar';
 import chokidar from 'chokidar';
 import path from 'path';
 import fs from 'fs';
 import { getMainWindow } from './window';
-import { openAuthWindow, silentTokenRenew } from './auth';
+import { openAuthWindow } from './auth';
 import {
   buildFileTreeFromMapping,
   getFileTree,
   mergeComparisonTrees,
 } from './fileTree';
-import WebContents = Electron.WebContents;
 
 ipcMain.on('ipc-example', async (event, arg) => {
   const msgTemplate = (pingPong: string) => `IPC test: ${pingPong}`;
@@ -20,10 +20,6 @@ ipcMain.on('ipc-example', async (event, arg) => {
 
 ipcMain.handle('openAuthWindow', async (_event, authUrl: string) => {
   openAuthWindow(authUrl);
-});
-
-ipcMain.handle('silentTokenRenew', async (_event, authUrl: string) => {
-  return silentTokenRenew(authUrl);
 });
 
 ipcMain.handle('select-directory', async () => {
@@ -66,7 +62,7 @@ function createFileWatcher(filePath: string, sender: WebContents) {
   }
 
   try {
-    const watcher = fs.watch(filePath, { encoding: 'utf-8' }, (_eventType) => {
+    const watcher = fs.watch(filePath, { encoding: 'utf-8' }, () => {
       let content = '';
       try {
         content = fs.readFileSync(filePath, 'utf-8');
@@ -88,7 +84,7 @@ function createFileWatcher(filePath: string, sender: WebContents) {
   }
 }
 
-function removeFileWatcher(filePath: string, sender: Electron.WebContents) {
+function removeFileWatcher(filePath: string, sender: WebContents) {
   const entry = fileWatchers[filePath];
   if (!entry) return;
 
@@ -156,6 +152,10 @@ ipcMain.handle('watch-directory', async (_event, rootPath: string) => {
       ignored: ignoredPattern,
       usePolling: true,
       interval: 1000,
+      awaitWriteFinish: {
+        stabilityThreshold: 500,
+        pollInterval: 100,
+      },
     });
 
     // @ts-ignore
@@ -203,6 +203,18 @@ ipcMain.handle(
     }
   },
 );
+
+ipcMain.handle('delete-file', async (_event, filePath: string) => {
+  try {
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    return true;
+  } catch (error) {
+    console.error('Error deleting file:', filePath, error);
+    throw error;
+  }
+});
 
 ipcMain.handle(
   'build-generated-file-tree',

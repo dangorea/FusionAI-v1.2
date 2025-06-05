@@ -1,13 +1,19 @@
 import instance, { BASE_URL } from '../services/api';
 import type { ProjectType } from '../domains/project/model/type';
 
-export const readProjects = async (orgSlug: string): Promise<ProjectType[]> => {
+export const readProjects = async (
+  orgSlug: string,
+  page: number,
+  limit: number,
+  searchTerm: string,
+): Promise<ProjectType[]> => {
   try {
     if (!orgSlug) {
       return [];
     }
 
-    const url = `${BASE_URL}/orgs/${orgSlug}/projects`;
+    const url = `${BASE_URL}/orgs/${orgSlug}/projects?page=${page}&limit=${limit}${searchTerm ? `&search=${searchTerm}` : ''}`;
+
     const response = await instance.get(url);
 
     if (!response.data || !Array.isArray(response.data)) {
@@ -36,7 +42,7 @@ export const createProject = async (
 
 export const updateProject = async (
   orgSlug: string,
-  updatedProject: Pick<ProjectType, 'id' | 'name' | 'description'>,
+  updatedProject: Partial<Pick<ProjectType, 'id' | 'name' | 'description'>>,
 ): Promise<ProjectType> => {
   try {
     const { id, ...projectWithoutId } = updatedProject;

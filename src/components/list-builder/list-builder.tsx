@@ -1,6 +1,8 @@
 import type { CSSProperties, ReactNode } from 'react';
 import React, { useEffect, useRef, useState } from 'react';
-import { List, Typography } from 'antd';
+import { Checkbox, List, Typography } from 'antd';
+
+import styles from './list-builder.module.scss';
 
 const { Title } = Typography;
 
@@ -9,6 +11,7 @@ export interface ListOption {
   label: ReactNode;
   value: string;
   icon?: ReactNode;
+  content?: string;
 }
 
 export interface ListBuilderProps {
@@ -21,8 +24,10 @@ export interface ListBuilderProps {
   loadMoreThreshold?: number;
   containerStyle?: CSSProperties;
   onOptionClick?: (option: ListOption) => void;
+  onLabelClick?: (option: ListOption) => void;
   selectionType?: 'single' | 'multiple';
   selectedKeys?: string[];
+  useCheckboxes?: boolean;
 }
 
 export function ListBuilder({
@@ -33,10 +38,12 @@ export function ListBuilder({
   globalOptionIcon,
   lazyLoad = false,
   loadMoreThreshold = 20,
-  containerStyle,
+  containerStyle = {},
   onOptionClick,
+  onLabelClick,
   selectionType = 'single',
   selectedKeys,
+  useCheckboxes = false,
 }: ListBuilderProps) {
   const [displayedOptions, setDisplayedOptions] = useState<ListOption[]>(
     lazyLoad ? options.slice(0, loadMoreThreshold) : options,
@@ -60,7 +67,6 @@ export function ListBuilder({
 
   useEffect(() => {
     if (!lazyLoad) return;
-
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (entry.isIntersecting) {
@@ -68,11 +74,9 @@ export function ListBuilder({
         }
       });
     });
-
     if (observerRef.current) {
       observer.observe(observerRef.current);
     }
-
     return () => {
       if (observerRef.current) {
         observer.unobserve(observerRef.current);
@@ -86,7 +90,7 @@ export function ListBuilder({
     );
   }, [options, lazyLoad, loadMoreThreshold]);
 
-  const handleItemClick = (item: ListOption) => {
+  const handleCheckboxChange = (item: ListOption) => {
     let newSelectedKeys: string[];
     if (selectionType === 'multiple') {
       if (finalSelectedKeys.includes(item.key)) {
@@ -103,57 +107,145 @@ export function ListBuilder({
     onOptionClick?.(item);
   };
 
+  const handleLabelContainerClick = (item: ListOption) => {
+    onLabelClick?.(item);
+  };
+
+  const containerClassNames = [styles.listBuilderContainer];
+  const finalContainerStyle = { ...containerStyle };
+
   return (
-    <div style={{ ...containerStyle, overflowY: 'auto' }}>
+    <div className={containerClassNames.join(' ')} style={finalContainerStyle}>
       {headerTitle && (
-        <div
-          style={{
-            backgroundColor: '#EFF0FB',
-            marginBottom: 16,
-            padding: '8px',
-            textAlign: 'center',
-            borderTopLeftRadius: '8px',
-          }}
-        >
-          {headerIcon && headerIconPosition === 'left' && (
-            <span style={{ marginRight: 8 }}>{headerIcon}</span>
-          )}
-          <Title level={4} style={{ margin: 0, display: 'inline-block' }}>
-            {headerTitle}
-          </Title>
+        <div className={styles.headerContainer}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+            }}
+          >
+            {headerIcon && headerIconPosition === 'left' && (
+              <span style={{ marginRight: 8 }}>{headerIcon}</span>
+            )}
+            <Title level={4} className={styles.headerTitle}>
+              {headerTitle}
+            </Title>
+          </div>
           {headerIcon && headerIconPosition === 'right' && (
             <span style={{ marginLeft: 8 }}>{headerIcon}</span>
           )}
         </div>
       )}
+
       <List
         grid={{ gutter: 4, column: 1 }}
         dataSource={lazyLoad ? displayedOptions : options}
-        style={{ padding: '0 10px' }}
+        className={styles.listItemContainer}
         renderItem={(item: ListOption) => {
           const isSelected = finalSelectedKeys.includes(item.key);
-          const itemStyle = {
-            cursor: 'pointer',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            backgroundColor: isSelected ? '#e6f7ff' : '#EFF0FB',
-          };
-
+          if (useCheckboxes) {
+            return (
+              <List.Item
+                role="button"
+                tabIndex={0}
+                className={[
+                  styles.listItem,
+                  isSelected ? styles.selectedItem : '',
+                  styles.checkboxModeListItem,
+                ].join(' ')}
+                onClick={handleLabelContainerClick.bind(null, item)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleLabelContainerClick(item);
+                  }
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                  <Checkbox
+                    checked={isSelected}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={handleCheckboxChange.bind(null, item)}
+                  />
+                  <div className={styles.labelContainer}>
+                    {item.icon ? (
+                      <span className={styles.iconMarginRight}>
+                        {item.icon}
+                      </span>
+                    ) : (
+                      globalOptionIcon && (
+                        <span className={styles.iconMarginRight}>
+                          {globalOptionIcon}
+                        </span>
+                      )
+                    )}
+                    <span className={styles['list-item-text']}>
+                      {item.label}
+                    </span>
+                  </div>
+                </div>
+              </List.Item>
+            );
+          }
           return (
-            <List.Item onClick={() => handleItemClick(item)} style={itemStyle}>
+            <List.Item
+              role="button"
+              tabIndex={0}
+              className={[
+                styles.listItem,
+                isSelected ? styles.selectedItem : '',
+              ].join(' ')}
+              onClick={() => {
+                let newSelectedKeys: string[];
+                if (selectionType === 'multiple') {
+                  if (finalSelectedKeys.includes(item.key)) {
+                    newSelectedKeys = finalSelectedKeys.filter(
+                      (key) => key !== item.key,
+                    );
+                  } else {
+                    newSelectedKeys = [...finalSelectedKeys, item.key];
+                  }
+                } else {
+                  newSelectedKeys = [item.key];
+                }
+                if (!selectedKeys) {
+                  setInternalSelectedKeys(newSelectedKeys);
+                }
+                onOptionClick?.(item);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  let newSelectedKeys: string[];
+                  if (selectionType === 'multiple') {
+                    if (finalSelectedKeys.includes(item.key)) {
+                      newSelectedKeys = finalSelectedKeys.filter(
+                        (key) => key !== item.key,
+                      );
+                    } else {
+                      newSelectedKeys = [...finalSelectedKeys, item.key];
+                    }
+                  } else {
+                    newSelectedKeys = [item.key];
+                  }
+                  if (!selectedKeys) {
+                    setInternalSelectedKeys(newSelectedKeys);
+                  }
+                  onOptionClick?.(item);
+                }
+              }}
+            >
               {item.icon ? (
-                <span style={{ marginRight: 8 }}>{item.icon}</span>
+                <span className={styles.iconMarginRight}>{item.icon}</span>
               ) : (
                 globalOptionIcon && (
-                  <span style={{ marginRight: 8 }}>{globalOptionIcon}</span>
+                  <span className={styles.iconMarginRight}>
+                    {globalOptionIcon}
+                  </span>
                 )
               )}
-
-              {typeof item.label === 'string' ? (
-                <span>{item.label}</span>
-              ) : (
-                item.label
-              )}
+              <span className={styles['list-item-text']}>{item.label}</span>
             </List.Item>
           );
         }}

@@ -1,7 +1,7 @@
 import type { EntityId } from '@reduxjs/toolkit';
 
 export interface OrganizationManagementDataType {
-  userId: string;
+  email: string;
   roles: string[];
 }
 

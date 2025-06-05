@@ -21,7 +21,7 @@ const orgManagementSlice = createSlice({
       state,
       action: PayloadAction<OrganizationManagementDataType | null>,
     ) {
-      state.selectedManagement = action.payload ? action.payload.userId : null;
+      state.selectedManagement = action.payload ? action.payload.email : null;
     },
     addOrganizationManagement: organizationManagementAdapter.addOne,
     setOrganizationManagements: organizationManagementAdapter.setAll,

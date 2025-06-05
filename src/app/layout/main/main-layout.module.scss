@@ -3,25 +3,6 @@
   display: flex;
 }
 
-.header {
-  display: flex;
-  padding: 0 10px;
-  background-color: var(--app-color-itemBackground);
-
-  .burgerBtn {
-    margin: 16px;
-    border: none;
-
-    svg {
-      transition: fill 0.3s ease;
-
-      &:hover {
-        fill: var(--app-color-iconHover);
-      }
-    }
-  }
-}
-
 .content {
   flex: 1;
   width: 100%;

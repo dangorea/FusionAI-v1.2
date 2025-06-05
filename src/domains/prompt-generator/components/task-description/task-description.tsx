@@ -7,24 +7,11 @@ import React, {
   useState,
 } from 'react';
 import { Button, Input } from 'antd';
-import { SendOutlined } from '@ant-design/icons';
+import { EditOutlined, PictureOutlined, SendOutlined } from '@ant-design/icons';
 import type { DropdownRef } from '../../../../components';
 import { Dropdown, VoiceInput } from '../../../../components';
 import './task-description.module.scss';
 import type { DropdownOption } from '../../../../components/dropdown/dropdown';
-
-export interface TaskDescriptionInputProps {
-  onSend?: (content: string) => void;
-  onContentChange?: (content: string) => void;
-  mode?: 'big' | 'small';
-  preview?: boolean;
-  style?: CSSProperties;
-  dropdownRef?: Ref<DropdownRef>;
-  onDropdownChange?: (value: string | string[]) => void;
-  disableSend?: boolean;
-  dropdownOptions?: DropdownOption[];
-  defaultDropdownValue?: string;
-}
 
 export interface TaskDescriptionInputRef {
   addExtraContent: (extra: string) => void;
@@ -32,17 +19,50 @@ export interface TaskDescriptionInputRef {
   setContent: (value: string) => void;
 }
 
+export interface TaskDescriptionInputProps {
+  onSend?: (content: string) => void;
+  onContentChange?: (content: string) => void;
+  mode?: 'big' | 'small';
+  preview?: boolean;
+  style?: CSSProperties;
+  dropdownProviderRef?: Ref<DropdownRef>;
+  onDropdownProviderChange?: (value: string | string[]) => void;
+  disableSend?: boolean;
+  dropdownOptions?: DropdownOption[];
+  defaultDropdownValue?: string;
+  personalityOptions?: DropdownOption[];
+  personalityDefaultDropDownValue?: string | string[];
+  onPersonalityChange?: (value: string | string[]) => void;
+  personalityDropdownRef?: Ref<DropdownRef>;
+  onEdit?: () => void;
+  onMount?: (api: TaskDescriptionInputRef) => void;
+  onImagesButtonClick?: () => void;
+}
+
 export const TaskDescription = forwardRef(
   (props: TaskDescriptionInputProps, ref) => {
     const {
       onSend,
       onContentChange,
+      onEdit,
       mode = 'big',
       preview = false,
       style,
+      onMount,
+      dropdownProviderRef,
+      personalityDropdownRef,
+      onDropdownProviderChange,
+      disableSend,
+      dropdownOptions,
+      defaultDropdownValue,
+      personalityOptions = [],
+      onPersonalityChange,
+      personalityDefaultDropDownValue,
+      onImagesButtonClick,
     } = props;
 
-    const [content, setContent] = useState('');
+    const [content, setContent] = useState<string>('');
+
     const containerRef = useRef<HTMLDivElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -60,17 +80,21 @@ export const TaskDescription = forwardRef(
       return () => observer.disconnect();
     }, [preview, mode]);
 
-    useImperativeHandle(
-      ref,
-      () => ({
-        addExtraContent: (extra: string) => {
-          setContent((prev) => (prev ? `${prev}${extra}` : extra));
-        },
-        getContent: () => content,
-        setContent: (value: string) => setContent(value),
-      }),
-      [content],
-    );
+    const api: TaskDescriptionInputRef = {
+      addExtraContent: (extra: string) => {
+        setContent((prev) => (prev ? `${prev}${extra}` : extra));
+      },
+      getContent: () => content,
+      setContent: (value: string) => setContent(value),
+    };
+
+    useImperativeHandle(ref, () => api, [api]);
+
+    useEffect(() => {
+      if (onMount) {
+        onMount(api);
+      }
+    }, []);
 
     const handleSend = () => {
       if (onSend) {
@@ -116,12 +140,17 @@ export const TaskDescription = forwardRef(
       onContentChange?.(`${content} ${text}`);
     };
 
+    const handlePersonalityChange = (value: string | string[]) => {
+      onPersonalityChange?.(value);
+    };
+
     if (mode === 'small') {
       return (
         <div
           style={{
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: preview ? 'row' : 'column',
+            alignItems: preview ? 'center' : undefined,
             padding: '8px 16px',
             backgroundColor: '#EFF0FB',
             borderRadius: '8px',
@@ -145,6 +174,17 @@ export const TaskDescription = forwardRef(
               lineHeight: '1.4',
             }}
           />
+          {preview ? (
+            <Button
+              type="text"
+              size="large"
+              icon={<EditOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.();
+              }}
+            />
+          ) : null}
           {!preview && (
             <div
               style={{
@@ -154,13 +194,48 @@ export const TaskDescription = forwardRef(
                 justifyContent: 'space-between',
               }}
             >
-              <Dropdown
-                ref={props.dropdownRef}
-                options={props.dropdownOptions ?? []}
-                defaultValue={props.defaultDropdownValue}
-                onChange={props.onDropdownChange}
-              />
               <div style={{ display: 'flex', flexDirection: 'row' }}>
+                <Dropdown
+                  ref={dropdownProviderRef}
+                  options={dropdownOptions ?? []}
+                  defaultValue={defaultDropdownValue}
+                  onChange={onDropdownProviderChange}
+                />
+                <Dropdown
+                  ref={personalityDropdownRef}
+                  options={personalityOptions ?? []}
+                  defaultValue={personalityDefaultDropDownValue}
+                  fallbackOption={{
+                    value: '__fallback__',
+                    label: 'Choose a personality',
+                  }}
+                  buttonOptions={[
+                    {
+                      value: '__create__',
+                      label: 'Create a personality',
+                      onClick: () => {
+                        // your custom action here
+                        console.log('Create a personality clicked');
+                      },
+                    },
+                  ]}
+                  onChange={handlePersonalityChange}
+                  dropDownStyle={{
+                    width: '10%',
+                  }}
+                  multiSelect
+                />
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'row' }}>
+                {onImagesButtonClick && (
+                  <Button
+                    icon={<PictureOutlined />}
+                    onClick={onImagesButtonClick}
+                    style={{ marginRight: 8 }}
+                  >
+                    Images
+                  </Button>
+                )}
                 <VoiceInput
                   onTranscriptionComplete={handleVoiceTranscription}
                 />
@@ -169,7 +244,7 @@ export const TaskDescription = forwardRef(
                   shape="circle"
                   icon={<SendOutlined />}
                   onClick={handleSend}
-                  disabled={props.disableSend}
+                  disabled={disableSend}
                   style={{ marginLeft: 8 }}
                 />
               </div>
@@ -243,20 +318,55 @@ export const TaskDescription = forwardRef(
               borderTop: 'none',
             }}
           >
-            <Dropdown
-              ref={props.dropdownRef}
-              options={props.dropdownOptions ?? []}
-              defaultValue={props.defaultDropdownValue}
-              onChange={props.onDropdownChange}
-            />
             <div style={{ display: 'flex', flexDirection: 'row' }}>
+              <Dropdown
+                ref={dropdownProviderRef}
+                options={dropdownOptions ?? []}
+                defaultValue={defaultDropdownValue}
+                onChange={onDropdownProviderChange}
+              />
+              <Dropdown
+                ref={personalityDropdownRef}
+                options={personalityOptions ?? []}
+                defaultValue={personalityDefaultDropDownValue}
+                fallbackOption={{
+                  value: '__fallback__',
+                  label: 'Choose a personality',
+                }}
+                buttonOptions={[
+                  {
+                    value: '__create__',
+                    label: 'Create a personality',
+                    onClick: () => {
+                      // your custom action here
+                      console.log('Create a personality clicked');
+                    },
+                  },
+                ]}
+                onChange={handlePersonalityChange}
+                dropDownStyle={{
+                  width: '10%',
+                }}
+                multiSelect
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'row' }}>
+              {onImagesButtonClick && (
+                <Button
+                  icon={<PictureOutlined />}
+                  onClick={onImagesButtonClick}
+                  style={{ marginRight: 8 }}
+                >
+                  Images
+                </Button>
+              )}
               <VoiceInput onTranscriptionComplete={handleVoiceTranscription} />
               <Button
                 type="primary"
                 shape="circle"
                 icon={<SendOutlined />}
                 onClick={handleSend}
-                disabled={props.disableSend}
+                disabled={disableSend}
                 style={{ marginLeft: 8 }}
               />
             </div>

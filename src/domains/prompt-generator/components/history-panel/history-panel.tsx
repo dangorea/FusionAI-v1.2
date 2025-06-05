@@ -1,68 +1,64 @@
 import React from 'react';
-import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
-import { Button } from 'antd';
+import { HistoryOutlined } from '@ant-design/icons';
 import type { ListOption } from '../../../../components';
-import { ListBuilder, SlidePanel } from '../../../../components';
+import { CollapsibleSidePanel, ListBuilder } from '../../../../components';
 import styles from './history-panel.module.scss';
 
 interface HistoryPanelProps {
   historyOptions: ListOption[];
   handleHistoryOptionClick: (option: ListOption) => void;
   selectedHistoryId: string | null;
-  onEditFirstItem?: () => void;
+  workItemId?: string;
 }
 
 export function HistoryPanel({
   historyOptions,
   handleHistoryOptionClick,
   selectedHistoryId,
-  onEditFirstItem,
+  workItemId,
 }: HistoryPanelProps) {
-  const decoratedOptions = historyOptions.map((opt, index) => {
-    if (index === 0 && onEditFirstItem) {
-      return {
-        ...opt,
-        label: (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}
-          >
-            <span>{opt.label}</span>
-            <Button
-              type="text"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={(event) => {
-                event.stopPropagation();
-                onEditFirstItem();
-              }}
-            />
-          </div>
-        ),
-      };
-    }
-    return opt;
-  });
-
-  const panelContent = (
-    <div className={styles['history-container']}>
-      <ListBuilder
-        headerTitle="History"
-        options={decoratedOptions}
-        headerIcon={<HistoryOutlined />}
-        onOptionClick={handleHistoryOptionClick}
-        selectedKeys={selectedHistoryId ? [selectedHistoryId] : []}
-        selectionType="single"
-      />
+  const headerContent = (
+    <div
+      style={{
+        display: 'flex',
+        gap: '5px',
+        alignItems: 'center',
+      }}
+    >
+      <span>History</span>
     </div>
   );
 
   return (
-    <SlidePanel direction="right" panelWidth="10%" defaultOpen>
-      {panelContent}
-    </SlidePanel>
+    <CollapsibleSidePanel
+      collapseDirection="right"
+      responsiveThreshold={1260}
+      collapsedWidth="60px"
+      header={headerContent}
+      extraHeaderIcon={
+        <HistoryOutlined
+          style={{
+            color: '#7B85DA',
+          }}
+        />
+      }
+      className={`${styles.historyPanelContainer}`}
+      headerClassName={styles.fileTreePanelHeader}
+      style={{ height: '100%' }}
+    >
+      <ListBuilder
+        key={`history-panel-list-builder-${workItemId}`}
+        containerStyle={{
+          width: '100%',
+          height: '100%',
+          overflowX: 'hidden',
+          border: 'none',
+        }}
+        options={historyOptions}
+        onOptionClick={handleHistoryOptionClick}
+        selectedKeys={selectedHistoryId ? [selectedHistoryId] : []}
+        selectionType="single"
+      />
+    </CollapsibleSidePanel>
   );
 }

@@ -38,68 +38,71 @@ export interface FileTreeProps {
   style?: React.CSSProperties;
 }
 
-function collectChangedPathKeys(node: FileNode): string[] {
-  let keys: string[] = [];
-  if (node.children && node.children.length > 0) {
-    let descendantHasChange = false;
+function findBaseNodeByPath(node: FileNode, path: string): FileNode | null {
+  if (node.path === path) return node;
+  if (node.children) {
     for (const child of node.children) {
-      if (!child.children || child.children.length === 0) {
-        if (child.changeType) {
-          descendantHasChange = true;
-        }
-      } else {
-        const childKeys = collectChangedPathKeys(child);
-        if (childKeys.length > 0) {
-          descendantHasChange = true;
-          keys = keys.concat(childKeys);
-        }
-      }
-    }
-    if (descendantHasChange) {
-      keys.push(node.path);
+      const result = findBaseNodeByPath(child, path);
+      if (result) return result;
     }
   }
-  return keys;
+  return null;
 }
 
 function toAntDataNode(
   node: FileNode,
   showModifiedOnly: boolean,
+  baseTree?: FileNode,
 ): DataNode | null {
-  const isLeaf = !node.children || node.children.length === 0;
-  const effectiveChange = node.changeType;
-
-  let childNodes: DataNode[] = [];
-  if (node.children && node.children.length > 0) {
-    childNodes = node.children
-      .map((child) => toAntDataNode(child, showModifiedOnly))
-      .filter(Boolean) as DataNode[];
+  let enrichedChildren = node.children;
+  const baseNode: FileNode | null = baseTree
+    ? findBaseNodeByPath(baseTree, node.path)
+    : null;
+  if (
+    enrichedChildren === undefined &&
+    baseNode &&
+    baseNode.children !== undefined
+  ) {
+    enrichedChildren = baseNode.children;
   }
 
-  const hasNoChange = !effectiveChange && childNodes.length === 0;
-  if (showModifiedOnly && hasNoChange) {
+  const isFolder = baseNode
+    ? baseNode.children !== undefined
+    : Array.isArray(enrichedChildren) && enrichedChildren.length > 0;
+  const isLeaf = !isFolder;
+
+  if (showModifiedOnly && isLeaf && !node.changeType) {
     return null;
   }
 
-  let icon: React.ReactNode = isLeaf ? <FileOutlined /> : <FolderFilled />;
-  if (isLeaf && effectiveChange === 'deleted') {
-    icon = <DeleteOutlined style={{ color: 'red' }} />;
-  } else if (isLeaf) {
-    const ext = node.name.split('.').pop()?.toLowerCase();
-    if (ext === 'js' || ext === 'jsx' || ext === 'ts' || ext === 'tsx') {
-      icon = <CodeOutlined />;
-    } else if (ext === 'md' || ext === 'json') {
-      icon = <FileTextOutlined />;
+  let childNodes: DataNode[] = [];
+  if (enrichedChildren) {
+    childNodes = enrichedChildren
+      .map((child) => toAntDataNode(child, showModifiedOnly, baseTree))
+      .filter(Boolean) as DataNode[];
+  }
+
+  let icon: React.ReactNode = isFolder ? <FolderFilled /> : <FileOutlined />;
+  if (isLeaf) {
+    if (node.changeType === 'deleted') {
+      icon = <DeleteOutlined style={{ color: 'red' }} />;
+    } else {
+      const ext = node.name.split('.').pop()?.toLowerCase();
+      if (ext === 'js' || ext === 'jsx' || ext === 'ts' || ext === 'tsx') {
+        icon = <CodeOutlined />;
+      } else if (ext === 'md' || ext === 'json') {
+        icon = <FileTextOutlined />;
+      }
     }
   }
 
   const textStyle: React.CSSProperties = { marginLeft: 4 };
   if (isLeaf) {
-    if (effectiveChange === 'modified') {
+    if (node.changeType === 'modified') {
       textStyle.color = '#d6b600';
-    } else if (effectiveChange === 'added') {
+    } else if (node.changeType === 'added') {
       textStyle.color = 'green';
-    } else if (effectiveChange === 'deleted') {
+    } else if (node.changeType === 'deleted') {
       textStyle.color = 'red';
     }
   }
@@ -121,33 +124,58 @@ function toAntDataNode(
 
   return {
     key: node.path,
-    title: !isLeaf ? (
+    title: isFolder ? (
       <div className="directory-node">{titleContent}</div>
     ) : (
       titleContent
     ),
-    isLeaf,
-    selectable: isLeaf,
+    selectable: true,
     children: childNodes,
+    isLeaf,
   };
 }
 
-function findPathInTree(
-  nodes: DataNode[],
-  targetKey: React.Key,
-): string[] | null {
-  for (const node of nodes) {
-    if (node.key === targetKey) {
-      return [String(node.key)];
-    }
-    if (node.children) {
-      const childPath = findPathInTree(node.children, targetKey);
-      if (childPath) {
-        return [String(node.key), ...childPath];
+function mergeTrees(base: FileNode, gen: FileNode): FileNode {
+  const merged: FileNode = { ...gen };
+  const baseChildren = base.children || [];
+  const genChildren = gen.children || [];
+
+  if (baseChildren.length || genChildren.length) {
+    const baseMap = new Map<string, FileNode>();
+    baseChildren.forEach((child) => baseMap.set(child.path, child));
+
+    const mergedChildrenMap = new Map<string, FileNode>();
+    genChildren.forEach((child) => {
+      if (baseMap.has(child.path)) {
+        const mergedChild = mergeTrees(baseMap.get(child.path)!, child);
+        mergedChildrenMap.set(child.path, mergedChild);
+      } else {
+        mergedChildrenMap.set(child.path, child);
       }
-    }
+    });
+
+    baseChildren.forEach((bChild) => {
+      if (!mergedChildrenMap.has(bChild.path)) {
+        mergedChildrenMap.set(bChild.path, bChild);
+      }
+    });
+    merged.children = Array.from(mergedChildrenMap.values());
   }
-  return null;
+  return merged;
+}
+
+function filterModifiedOnly(node: FileNode, isRoot = false): FileNode | null {
+  if (!node.children || node.children.length === 0) {
+    return node.changeType ? node : null;
+  }
+  const filteredChildren = node.children
+    .map((child) => filterModifiedOnly(child))
+    .filter((child): child is FileNode => child !== null);
+
+  if (filteredChildren.length > 0 || isRoot) {
+    return { ...node, children: filteredChildren };
+  }
+  return node.changeType ? { ...node, children: [] } : null;
 }
 
 interface FolderTitleProps {
@@ -190,10 +218,11 @@ export function FileTree({
   style,
 }: FileTreeProps) {
   const [loading, setLoading] = useState(false);
-  const [renderTree, setRenderTree] = useState<FileNode | null>(null);
+  const [localRenderTree, setLocalRenderTree] = useState<FileNode | null>(null);
   const [checkedKeys, setCheckedKeys] = useState<React.Key[]>([]);
   const [selectedKeys, setSelectedKeys] = useState<React.Key[]>([]);
   const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([]);
+  const [autoExpandedOnce, setAutoExpandedOnce] = useState(false);
   const [showModifiedOnly, setShowModifiedOnly] = useState<boolean>(true);
 
   useEffect(() => {
@@ -202,119 +231,144 @@ export function FileTree({
     }
   }, [initialCheckedKeys]);
 
-  useEffect(() => {
+  const computedRenderTree = useMemo(() => {
     if (fileSets && fileSets.length > 0) {
       if (fileSets.length === 2) {
-        window.fileAPI
-          .mergeFileTrees(fileSets[0].tree, fileSets[1].tree)
-          .then((merged: FileNode) => setRenderTree(merged))
-          .catch((err: any) => {
-            console.error('Error merging file trees:', err);
-            notification.error({
-              message: 'Error merging file trees',
-              description: String(err),
-            });
-          });
-      } else {
-        setRenderTree(fileSets[0].tree);
+        const mergedTree = mergeTrees(fileSets[0].tree, fileSets[1].tree);
+        return showModifiedOnly
+          ? filterModifiedOnly(mergedTree, true)
+          : mergedTree;
       }
+      return fileSets[0].tree;
+    }
+    return null;
+  }, [fileSets, showModifiedOnly]);
+
+  useEffect(() => {
+    if (computedRenderTree) {
+      setLocalRenderTree(computedRenderTree);
     } else if (projectPath) {
       setLoading(true);
       window?.fileAPI
         .getFileTree(projectPath)
-        .then((tree: FileNode) => setRenderTree(tree))
+        .then((tree: FileNode) => setLocalRenderTree(tree))
         .catch((err: any) => {
           console.error('Error loading file tree:', err);
           notification.error({
             message: 'Failed to load file tree',
             description: String(err),
           });
-          return err;
         })
         .finally(() => setLoading(false));
     }
-  }, [fileSets, projectPath]);
+  }, [computedRenderTree, projectPath]);
 
   const treeData = useMemo(() => {
-    if (!renderTree) return [];
+    if (!localRenderTree) return [];
     const dataNode = toAntDataNode(
-      renderTree,
+      localRenderTree,
       fileSets && fileSets.length === 2 ? showModifiedOnly : false,
+      fileSets && fileSets.length >= 1 ? fileSets[0].tree : undefined,
     );
     return dataNode ? [dataNode] : [];
-  }, [renderTree, fileSets, showModifiedOnly]);
+  }, [localRenderTree, fileSets, showModifiedOnly]);
 
-  const autoExpandedKeys = useMemo(() => {
-    if (!renderTree) return [];
-    const keysSet = new Set<string>([renderTree.path]);
-    if (fileSets && fileSets.length === 2) {
-      const changedKeys = collectChangedPathKeys(renderTree);
-      changedKeys.forEach((key) => keysSet.add(key));
-    }
-    return Array.from(keysSet);
-  }, [renderTree, fileSets]);
+  const nodeMapping = useMemo(() => {
+    const map = new Map<string, DataNode>();
+    const traverse = (node: DataNode) => {
+      map.set(String(node.key), node);
+      if (node.children) {
+        node.children.forEach(traverse);
+      }
+    };
+    treeData.forEach(traverse);
+    return map;
+  }, [treeData]);
+
+  useEffect(() => {
+    setAutoExpandedOnce(false);
+  }, [fileSets?.[1]]);
 
   useEffect(() => {
     if (!treeData.length) return;
-
-    if (selectedKeys.length === 0) {
-      if (fileSets && fileSets.length === 2) {
-        const defaultExpanded = new Set<string>();
-        defaultExpanded.add(String(treeData[0].key));
-        autoExpandedKeys.forEach((k) => defaultExpanded.add(k));
-        const newExpandedKeys = Array.from(defaultExpanded);
-        setExpandedKeys((prev) => {
-          if (
-            prev.length !== newExpandedKeys.length ||
-            !newExpandedKeys.every((k) => prev.includes(k))
-          ) {
-            return newExpandedKeys;
+    if (fileSets && fileSets.length === 2 && !autoExpandedOnce) {
+      const gatherAllFolderKeys = (nodes: DataNode[]): string[] => {
+        let keys: string[] = [];
+        nodes.forEach((node) => {
+          if (!node.isLeaf) {
+            keys.push(String(node.key));
+            if (node.children) {
+              keys = keys.concat(gatherAllFolderKeys(node.children));
+            }
           }
-          return prev;
         });
-      } else if (expandedKeys.length === 0) {
-        setExpandedKeys([String(treeData[0].key)]);
-      }
-      return;
-    }
-
-    setExpandedKeys((prevExpanded) => {
-      const newExpanded = new Set(prevExpanded);
-      newExpanded.add(String(treeData[0].key));
-      autoExpandedKeys.forEach((k) => newExpanded.add(k));
-      selectedKeys.forEach((selectedKey) => {
-        const path = findPathInTree(treeData, selectedKey);
-        if (path) {
-          path.forEach((k) => newExpanded.add(k));
+        return keys;
+      };
+      const gatherFolderKeysFromFileNode = (node: FileNode): string[] => {
+        let keys: string[] = [];
+        if (node.children && node.children.length > 0) {
+          keys.push(node.path);
+          for (const child of node.children) {
+            keys = keys.concat(gatherFolderKeysFromFileNode(child));
+          }
         }
-      });
-      const newExpandedKeys = Array.from(newExpanded);
-      if (
-        prevExpanded.length !== newExpandedKeys.length ||
-        !newExpandedKeys.every((k) => prevExpanded.includes(k))
-      ) {
-        return newExpandedKeys;
-      }
-      return prevExpanded;
-    });
-  }, [treeData, selectedKeys, autoExpandedKeys, fileSets]);
+        return keys;
+      };
+
+      const mergedFolderKeys = gatherAllFolderKeys(treeData);
+      const genFolderKeys =
+        fileSets && fileSets.length === 2
+          ? gatherFolderKeysFromFileNode(fileSets[1].tree)
+          : [];
+      const allKeysSet = new Set([...mergedFolderKeys, ...genFolderKeys]);
+      setExpandedKeys(Array.from(allKeysSet));
+      setAutoExpandedOnce(true);
+    } else if (expandedKeys.length === 0 && treeData.length > 0) {
+      setExpandedKeys([String(treeData[0].key)]);
+    }
+  }, [treeData, autoExpandedOnce, fileSets, expandedKeys.length]);
 
   useEffect(() => {
-    const validLeafKeys = new Set<string>();
-    const gatherLeafKeys = (nodes: DataNode[]) => {
+    const validKeysSet = new Set<string>();
+    const gatherKeys = (nodes: DataNode[]) => {
       nodes.forEach((node) => {
-        if (node.isLeaf) {
-          validLeafKeys.add(String(node.key));
-        }
-        if (node.children) {
-          gatherLeafKeys(node.children);
-        }
+        validKeysSet.add(String(node.key));
+        if (node.children) gatherKeys(node.children);
       });
     };
-    gatherLeafKeys(treeData);
+    gatherKeys(treeData);
+    setCheckedKeys((prev) => prev.filter((k) => validKeysSet.has(String(k))));
+    setSelectedKeys((prev) => prev.filter((k) => validKeysSet.has(String(k))));
+  }, [treeData]);
 
-    setCheckedKeys((prev) => prev.filter((k) => validLeafKeys.has(String(k))));
-    setSelectedKeys((prev) => prev.filter((k) => validLeafKeys.has(String(k))));
+  const validKeys = useMemo(() => {
+    const keys = new Set<string>();
+    const gatherValidKeys = (nodes: DataNode[]) => {
+      nodes.forEach((node) => {
+        keys.add(String(node.key));
+        if (node.children) gatherValidKeys(node.children);
+      });
+    };
+    gatherValidKeys(treeData);
+    return keys;
+  }, [treeData]);
+
+  const leafMapping = useMemo(() => {
+    const mapping: Record<string, React.Key[]> = {};
+    const computeLeafKeys = (node: DataNode) => {
+      if (node.isLeaf) {
+        mapping[String(node.key)] = [node.key];
+      } else if (node.children) {
+        let leaves: React.Key[] = [];
+        node.children.forEach((child) => {
+          computeLeafKeys(child);
+          leaves = leaves.concat(mapping[String(child.key)] || []);
+        });
+        mapping[String(node.key)] = leaves;
+      }
+    };
+    treeData.forEach((node) => computeLeafKeys(node));
+    return mapping;
   }, [treeData]);
 
   const handleCheck = useCallback(
@@ -326,35 +380,63 @@ export function FileTree({
       const checkedArr = Array.isArray(checkedValue)
         ? checkedValue
         : checkedValue.checked;
+      let newCheckedKeys: React.Key[] = [];
 
-      const leafKeys: string[] = [];
-      const traverse = (nodes: DataNode[]) => {
-        nodes.forEach((node) => {
-          if (node.isLeaf && checkedArr.includes(node.key)) {
-            leafKeys.push(String(node.key));
+      if (
+        fileSets &&
+        fileSets.length === 2 &&
+        showModifiedOnly &&
+        treeData.length > 0
+      ) {
+        for (const key of checkedArr) {
+          const node = nodeMapping.get(String(key));
+          if (node) {
+            if (!node.isLeaf) {
+              const leaves = leafMapping[String(node.key)] || [];
+              newCheckedKeys.push(...leaves);
+            } else {
+              newCheckedKeys.push(key);
+            }
           }
-          if (node.children) {
-            traverse(node.children);
-          }
-        });
-      };
-      traverse(treeData);
+        }
+        newCheckedKeys = Array.from(
+          new Set(newCheckedKeys.filter((k) => validKeys.has(String(k)))),
+        );
+      } else {
+        newCheckedKeys = checkedArr;
+      }
+      setCheckedKeys(newCheckedKeys);
 
-      setCheckedKeys(leafKeys);
-      onFileSelectionChange?.(leafKeys);
+      const leafKeysSet = new Set<string>();
+      for (const key of newCheckedKeys) {
+        const node = nodeMapping.get(String(key));
+        if (node && node.isLeaf) {
+          leafKeysSet.add(String(node.key));
+        }
+      }
+      onFileSelectionChange?.(Array.from(leafKeysSet));
     },
-    [treeData, onFileSelectionChange],
+    [
+      onFileSelectionChange,
+      treeData,
+      fileSets,
+      showModifiedOnly,
+      validKeys,
+      leafMapping,
+      nodeMapping,
+    ],
   );
 
   const handleSelect = useCallback(
-    (selectedArr: React.Key[]) => {
-      if (selectedArr.length === 0 && selectedKeys.length === 1) {
-        return;
+    (selectedArr: React.Key[], info: any) => {
+      if (info.node.isLeaf) {
+        setSelectedKeys([info.node.key]);
+        onSingleSelect?.(String(info.node.key));
+      } else {
+        setSelectedKeys(selectedArr);
       }
-      setSelectedKeys(selectedArr);
-      onSingleSelect?.(selectedArr.length === 1 ? String(selectedArr[0]) : '');
     },
-    [onSingleSelect, selectedKeys],
+    [onSingleSelect],
   );
 
   const handleExpand = useCallback((keys: React.Key[]) => {
@@ -384,6 +466,7 @@ export function FileTree({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
+        minHeight: 0,
         ...style,
       }}
     >
@@ -406,8 +489,7 @@ export function FileTree({
           <span style={{ marginLeft: 8 }}>Show only changed files</span>
         </div>
       )}
-
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div style={{ flex: 1, overflow: 'auto', minHeight: 0 }}>
         <style>{`
           .ant-tree-switcher {
             display: flex !important;
@@ -422,7 +504,6 @@ export function FileTree({
             color: inherit !important;
           }
         `}</style>
-
         <Tree
           checkable
           treeData={treeData}
@@ -438,7 +519,7 @@ export function FileTree({
                 <FolderTitle nodeData={nodeData} toggleExpand={toggleExpand} />
               );
             }
-            return nodeData.title as Iterable<ReactNode>;
+            return nodeData.title as ReactNode;
           }}
         />
       </div>

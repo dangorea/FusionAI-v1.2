@@ -1,25 +1,34 @@
 import type { Ref } from 'react';
 import React from 'react';
-import { TaskDescription } from '../task-description';
+import {
+  TaskDescription,
+  type TaskDescriptionInputRef,
+} from '../task-description';
 import styles from '../../ui/task-description.module.scss';
 import type { DropdownRef } from '../../../../components';
 import { useAppDispatch, useAppSelector } from '../../../../lib/redux/hook';
 import {
+  selectDefaultProvider,
   selectProviders,
   selectSelectedProviderEntity,
 } from '../../../../lib/redux/feature/config/selectors';
 import { setSelectedProvider } from '../../../../lib/redux/feature/config/reducer';
+import type { DropdownOption } from '../../../../components/dropdown/dropdown';
 
 interface TaskDescriptionFooterProps {
   codeGenExists: boolean;
-  dropdownRef: Ref<DropdownRef>;
+  dropdownProviderRef: Ref<DropdownRef>;
+  personalityDropdownRef?: Ref<DropdownRef>;
   handleSend: () => void;
   updateWorkItemDebounced: (value: string) => void;
   disableSend: boolean;
+  personalities?: DropdownOption[];
+  onImagesButtonClick?: () => void;
+  personalityDefaultDropDownValue?: string | string[];
 }
 
 export const TaskDescriptionFooter = React.forwardRef<
-  any,
+  TaskDescriptionInputRef | null,
   TaskDescriptionFooterProps
 >(
   (
@@ -27,8 +36,12 @@ export const TaskDescriptionFooter = React.forwardRef<
       codeGenExists,
       handleSend,
       updateWorkItemDebounced,
-      dropdownRef,
+      dropdownProviderRef,
+      personalityDropdownRef,
       disableSend,
+      personalities,
+      onImagesButtonClick,
+      personalityDefaultDropDownValue,
     },
     ref,
   ) => {
@@ -38,25 +51,35 @@ export const TaskDescriptionFooter = React.forwardRef<
       value: provider.id,
     }));
     const selectedProvider = useAppSelector(selectSelectedProviderEntity);
+    const defaultProvider = useAppSelector(selectDefaultProvider);
 
     const handleProviderChange = (value: string | string[]) => {
       dispatch(setSelectedProvider(value as string));
     };
 
+    const defaultDropdownValue =
+      selectedProvider?.id ||
+      (defaultProvider ? defaultProvider.id : '') ||
+      (providers.length > 0 ? providers[0].value : '');
+
     return (
       <div className={styles.reservedTaskDescBottom}>
         <TaskDescription
           ref={ref}
-          dropdownRef={dropdownRef}
+          dropdownProviderRef={dropdownProviderRef}
+          personalityDropdownRef={personalityDropdownRef}
+          personalityDefaultDropDownValue={personalityDefaultDropDownValue}
           onSend={handleSend}
           mode="small"
           dropdownOptions={providers}
-          defaultDropdownValue={selectedProvider?.id ?? providers[3].value}
+          defaultDropdownValue={defaultDropdownValue}
           disableSend={disableSend}
-          onDropdownChange={handleProviderChange}
+          onDropdownProviderChange={handleProviderChange}
+          personalityOptions={personalities}
           onContentChange={(value) => {
             updateWorkItemDebounced(value);
           }}
+          onImagesButtonClick={onImagesButtonClick}
           style={{
             visibility: codeGenExists ? 'visible' : 'hidden',
             width: '100%',

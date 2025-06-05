@@ -7,3 +7,8 @@ export const selectCurrentUser = createSelector(
   selectUserState,
   (userState) => userState.user,
 );
+
+export const selectIsOnboarded = createSelector(
+  selectUserState,
+  (userState) => userState.user?.isOnboarded,
+);

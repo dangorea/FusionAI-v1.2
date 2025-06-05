@@ -5,6 +5,7 @@ export type Channels =
   | 'ipc-example'
   | 'openExternal'
   | 'auth-callback'
+  | 'openAuthWindow'
   | 'file-changed'
   | 'file-tree-updated';
 
@@ -14,7 +15,7 @@ const electronHandler = {
       ipcRenderer.send(channel, ...args);
     },
     openExternal: (url: string) => ipcRenderer.invoke('openExternal', url),
-    invoke: (channel: string, ...args: unknown[]) =>
+    invoke: (channel: Channels, ...args: unknown[]) =>
       ipcRenderer.invoke(channel, ...args),
     onAuthCallback(callback: (code: string) => void) {
       const listener = (_event: IpcRendererEvent, code: string) => {
@@ -31,7 +32,6 @@ const electronHandler = {
         func(...args);
       };
       ipcRenderer.on(channel, subscription);
-
       return () => {
         ipcRenderer.removeListener(channel, subscription);
       };
@@ -66,6 +66,7 @@ contextBridge.exposeInMainWorld('fileAPI', {
     ipcRenderer.invoke('build-generated-file-tree', mapping, projectPath),
   mergeFileTrees: (baseTree: any, compareTree: any) =>
     ipcRenderer.invoke('merge-file-trees', baseTree, compareTree),
+  deleteFile: (filePath: string) => ipcRenderer.invoke('delete-file', filePath),
 });
 
 contextBridge.exposeInMainWorld('env', {
@@ -73,7 +74,7 @@ contextBridge.exposeInMainWorld('env', {
   AUTH0_DOMAIN: process.env.AUTH0_DOMAIN,
   AUTH0_CLIENT_ID: process.env.AUTH0_CLIENT_ID,
   AUTH0_AUDIENCE: process.env.AUTH0_AUDIENCE,
-  ELECTRON_START_URL: process.env.ELECTRON_START_URL,
+  PROTOCOL_SCHEME: process.env.PROTOCOL_SCHEME,
 });
 
 export type ElectronHandler = typeof electronHandler;

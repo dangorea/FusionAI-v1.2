@@ -13,7 +13,7 @@ export class CodeGenerationHistoryService extends IndexedDBService<CodeGeneratio
 
   constructor() {
     super({
-      dbName: 'fusionai',
+      dbName: 'angenai',
       storeName: 'code-generation-history',
       dbVersion: 1,
       keyPath: 'sessionId',

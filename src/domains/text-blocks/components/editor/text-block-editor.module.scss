@@ -1,0 +1,53 @@
+.editorContainer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  background-color: #fff;
+  border-radius: 4px;
+  border-left: 1px solid #f0f0f0;
+  flex: 1;
+}
+
+.editorHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.nameInputWrapper {
+  flex: 1;
+  margin-right: 16px;
+}
+
+.nameInput {
+  font-size: 18px;
+  font-weight: 500;
+}
+
+.divider {
+  margin: 8px 0 16px;
+}
+
+.editorContent {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  background-color: #f5f5f5;
+  border-radius: 4px;
+  color: #888;
+  gap: 16px;
+}
+
+.emptyStateText {
+  color: #888;
+  font-size: 16px;
+}

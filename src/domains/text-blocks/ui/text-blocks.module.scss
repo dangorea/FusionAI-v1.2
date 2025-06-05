@@ -1,0 +1,11 @@
+.confluenceLayout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.contentContainer {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}

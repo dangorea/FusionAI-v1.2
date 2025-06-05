@@ -26,7 +26,6 @@ const userSlice = createSlice({
       },
     );
     builder.addCase(fetchUser.rejected, (state) => {
-      // Handle errors as needed, e.g., clear user state or show an error message
       state.user = null;
     });
   },

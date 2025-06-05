@@ -1,2 +1,2 @@
-export * from './table';
-export * from './modal';
+export { WorkItemTable } from './table';
+export { WorkItemModalForm } from './form';

@@ -1,0 +1,34 @@
+.container {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+
+  span {
+    padding: 0 !important;
+  }
+}
+
+.mirror {
+  position: absolute;
+  top: 0;
+  left: 0;
+  visibility: hidden;
+  white-space: pre;
+  padding: 0 4px;
+}
+
+.titleInput {
+  overflow-x: auto;
+  white-space: nowrap;
+  min-width: 1ch;
+  max-width: 300px;
+
+  input {
+    font-weight: 700 !important;
+    font-size: 1.2rem !important;
+  }
+}
+
+.editIcon {
+  cursor: pointer;
+}
